@@ -1,4 +1,8 @@
 import React, { useState, useRef } from "react";
+import * as pdfjsLib from "pdfjs-dist";
+import pdfjsWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl;
 
 /**
  * Gerenciador de Documentos — Congregação Parque Scaffid
@@ -18,6 +22,7 @@ const IMG_CALENDARIO = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDA
 const TEMPLATE = {
   vinho: "#800000", dourado: "#B08500", azul: "#1F3864",
   rosaClaro: "#F2DEDE", amareloBg: "#FBF3D5", trecho: "#FFF2A8", cinzaLinha: "#BBBBBB",
+  teal: "#2B6E63",
 };
 const PALAVRAS_CHAVE = ["congresso", "superintendente", "assembleia"];
 
@@ -25,7 +30,7 @@ const PALAVRAS_CHAVE = ["congresso", "superintendente", "assembleia"];
 const DOCUMENTOS = [
   { id: "discurso", titulo: "Discurso público\nde final de semana", desc: "Criar ou editar discursos", icone: "microfone", pronto: true },
   { id: "sentinela", titulo: "Reunião A Sentinela", desc: "Editar estudos e notas", icone: "livro", pronto: true },
-  { id: "cartao", titulo: "Cartão de designações", desc: "Organizar designações", icone: "cracha", pronto: false },
+  { id: "cartao", titulo: "Cartão de designações", desc: "Organizar designações", icone: "cracha", pronto: true },
   { id: "calendario", titulo: "Calendário de Pregação", desc: "Visualizar e planejar atividades", icone: "calendario", pronto: true },
   { id: "bastidores", titulo: "Bastidores", desc: "Recursos de apoio e organização", icone: "pessoas", pronto: false },
 ];
@@ -71,6 +76,7 @@ export default function App() {
       {tela === "discurso" && <TelaDiscurso onVoltar={() => setTela("menu")} />}
       {tela === "sentinela" && <TelaSentinela onVoltar={() => setTela("menu")} />}
       {tela === "calendario" && <TelaCalendario onVoltar={() => setTela("menu")} />}
+      {tela === "cartao" && <TelaCartao onVoltar={() => setTela("menu")} />}
     </div>
   );
 }
@@ -837,6 +843,598 @@ function PreviewCalendario({ dados, linhas, foto }) {
 }
 
 
+/* ====================== TELA CARTÃO DE DESIGNAÇÕES ====================== */
+
+// ---- extração do PDF anotado (roda no navegador via pdf.js) ----
+// Os nomes anotados em azul não fazem parte do texto normal da página — são
+// anotações "FreeText" sobrepostas ao PDF original (um jeito comum de
+// preencher esses formulários). Por isso extraímos duas coisas separadas:
+// (1) o texto estrutural da apostila (títulos, durações, cabeçalhos) e
+// (2) as anotações, cada uma com sua posição na página — depois associamos
+// cada designado ao item numerado mais próximo dele na mesma página.
+//
+// Esse PDF também desenha alguns acentos como um caractere avulso flutuando
+// acima da letra (não como marca combinante do Unicode), o que quebraria a
+// leitura por linha; por isso ignoramos esses marcadores e trabalhamos com o
+// texto estrutural sem acento (as anotações com os nomes, essas sim, vêm com
+// acentuação correta).
+const ACENTO_SOLTO_RE = /^[ʰ-˿¨´¸`~]+$/;
+
+async function extrairPDFCartao(file) {
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  const linhas = []; // { texto, y, page }
+  const anotacoes = []; // { texto, y, x, page, usada }
+
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    let atual = "", atualY = null, atualEndX = null;
+    const flush = () => { if (atual) linhas.push({ texto: atual, y: atualY, page: p }); };
+    for (const it of content.items) {
+      const texto = it.str;
+      if (!texto) continue;
+      if (ACENTO_SOLTO_RE.test(texto)) continue;
+      const x = it.transform[4], y = it.transform[5];
+      const largura = it.width || 0;
+      const altura = it.height || 10;
+      if (atualY === null) { atual = texto; atualY = y; atualEndX = x + largura; continue; }
+      if (Math.abs(y - atualY) > 2) {
+        flush();
+        if (Math.abs(y - atualY) > 16) linhas.push({ texto: "", y: atualY, page: p });
+        atual = texto; atualY = y; atualEndX = x + largura;
+      } else {
+        const gap = x - atualEndX;
+        atual += (gap > altura * 0.2 ? " " : "") + texto;
+        atualEndX = x + largura;
+      }
+    }
+    flush();
+    linhas.push({ texto: "", y: null, page: p });
+
+    const anns = await page.getAnnotations();
+    for (const a of anns) {
+      const texto2 = ((a.contentsObj && a.contentsObj.str) || "").trim();
+      if (texto2 && a.rect) {
+        anotacoes.push({
+          texto: texto2,
+          y: (a.rect[1] + a.rect[3]) / 2,
+          x: (a.rect[0] + a.rect[2]) / 2,
+          page: p, usada: false,
+        });
+      }
+    }
+  }
+
+  const offsets = [];
+  let acumulado = 0;
+  for (const l of linhas) {
+    offsets.push({ offset: acumulado, y: l.y, page: l.page });
+    acumulado += l.texto.length + 1;
+  }
+  const texto = linhas.map((l) => l.texto).join("\n").normalize("NFD").replace(/[̀-ͯ]/g, "");
+  return { texto, offsets, anotacoes };
+}
+
+function posicaoDoOffset(offsets, alvo) {
+  let lo = 0, hi = offsets.length - 1, res = offsets[0];
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (offsets[mid].offset <= alvo) { res = offsets[mid]; lo = mid + 1; } else hi = mid - 1;
+  }
+  return res;
+}
+
+function achaAnotacaoProxima(anotacoes, pos, distMax) {
+  let melhor = null, melhorDist = Infinity;
+  for (const a of anotacoes) {
+    if (a.usada || a.page !== pos.page || pos.y == null) continue;
+    const dist = Math.abs(a.y - pos.y);
+    if (dist < melhorDist && dist < distMax) { melhor = a; melhorDist = dist; }
+  }
+  return melhor;
+}
+
+function novoIdCartao() { return Date.now() + Math.random(); }
+
+// Alguns trechos-chave (Cântico, oração, Comentários…) caem justamente nas
+// palavras estilizadas com o acento avulso, então sobra às vezes um espaço
+// extra onde o acento ficava. Este helper monta um regex tolerante a esse
+// espaço solto entre letras.
+function tolerantePalavra(palavra) {
+  return palavra.split("").map((c) => c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("[ \\t]{0,2}");
+}
+const T_CANTICO = tolerantePalavra("Cantico");
+const T_ORACAO = tolerantePalavra("oracao");
+const T_COMENTARIOS = tolerantePalavra("Comentarios");
+const T_INICIAIS = tolerantePalavra("iniciais");
+const T_PALAVRA = tolerantePalavra("PALAVRA");
+const T_DE = tolerantePalavra("DE");
+const T_DEUS = tolerantePalavra("DEUS");
+const T_VIDA = tolerantePalavra("VIDA");
+const T_CRISTA = tolerantePalavra("CRISTA");
+
+const RE_ABRE_SEMANA = new RegExp(`${T_CANTICO}[ \\t]+(\\d+)[ \\t]+e[ \\t]+${T_ORACAO}[ \\t]+${T_COMENTARIOS}[ \\t]+${T_INICIAIS}`, "g");
+const RE_FECHAMENTO = new RegExp(`${T_CANTICO}[ \\t]+(\\d+)[ \\t]+e[ \\t]+${T_ORACAO}(?![ \\t]*${T_COMENTARIOS})`, "g");
+const RE_PALAVRA_DE_DEUS = new RegExp(`${T_PALAVRA}[ \\t]+${T_DE}[ \\t]+${T_DEUS}`, "g");
+const RE_VIDA_CRISTA = new RegExp(`${T_VIDA}[ \\t]+${T_CRISTA}`, "g");
+const RE_ITEM = /(?:^|[\s·])(\d{1,2})\.[ ]+((?:(?!\(\d{1,2}\s*min\)|\d{1,2}\.[ ])[\s\S]){1,90})\((\d{1,2})\s*min\)/g;
+
+// Lê o PDF anotado e devolve um rascunho de semanas. É um reconhecimento "de
+// melhor esforço": datas, lição da leitura e alguma parte tipo "Consideração"
+// costumam precisar de ajuste manual na prévia antes de aplicar.
+function processarCartaoPDF({ texto, offsets, anotacoes }) {
+  const aberturas = [...texto.matchAll(RE_ABRE_SEMANA)];
+  const semanas = [];
+
+  for (let w = 0; w < aberturas.length; w++) {
+    const abre = aberturas[w];
+    const inicio = abre.index;
+    const fim = w + 1 < aberturas.length ? aberturas[w + 1].index : texto.length;
+
+    const linhasBloco = texto.slice(inicio, fim).split("\n").map((l) => l.trim());
+    let presidente = "";
+    for (let i = 1; i < linhasBloco.length && i < 40; i++) {
+      if (/^\d{1,3}$/.test(linhasBloco[i])) {
+        let j = i - 1;
+        while (j >= 0 && !linhasBloco[j]) j--;
+        const cand = linhasBloco[j];
+        if (cand && cand.split(" ").length <= 4 && !/\d/.test(cand) && /^[A-Z][a-zA-Zç\s./]*$/.test(cand)) {
+          presidente = cand;
+          break;
+        }
+      }
+    }
+    const annPresidente = achaAnotacaoProxima(anotacoes, posicaoDoOffset(offsets, inicio), 60);
+    if (annPresidente) { presidente = annPresidente.texto.trim(); annPresidente.usada = true; }
+
+    RE_FECHAMENTO.lastIndex = inicio;
+    const mFecha = RE_FECHAMENTO.exec(texto);
+    let canticoFinal = "", oracaoFinal = "";
+    if (mFecha && mFecha.index < fim) {
+      canticoFinal = mFecha[1];
+      const annFecha = achaAnotacaoProxima(anotacoes, posicaoDoOffset(offsets, mFecha.index), 40);
+      if (annFecha) { oracaoFinal = annFecha.texto.trim(); annFecha.usada = true; }
+    }
+
+    RE_ITEM.lastIndex = inicio;
+    const itens = [];
+    let m;
+    while ((m = RE_ITEM.exec(texto)) && m.index < fim) {
+      const numero = Number(m[1]);
+      const titulo = m[2].replace(/\s+/g, " ").trim();
+      if (titulo && numero >= 1 && numero <= 15) {
+        const pos = posicaoDoOffset(offsets, m.index + m[0].length);
+        const ann = achaAnotacaoProxima(anotacoes, pos, 40);
+        itens.push({ numero, titulo, designado: ann ? ann.texto.trim() : "", posicao: m.index });
+        if (ann) ann.usada = true;
+      }
+    }
+
+    // parte 1 (tema principal) costuma ter o nome colado no cabeçalho
+    // "PALAVRA DE DEUS" em vez de junto da própria duração
+    const item1 = itens.find((i) => i.numero === 1);
+    if (item1 && !item1.designado) {
+      RE_PALAVRA_DE_DEUS.lastIndex = inicio;
+      const mPD = RE_PALAVRA_DE_DEUS.exec(texto);
+      if (mPD && mPD.index < fim) {
+        const annPD = achaAnotacaoProxima(anotacoes, posicaoDoOffset(offsets, mPD.index), 40);
+        if (annPD) { item1.designado = annPD.texto.trim(); annPD.usada = true; }
+      }
+    }
+
+    RE_VIDA_CRISTA.lastIndex = inicio;
+    const mVC = RE_VIDA_CRISTA.exec(texto);
+    const posVidaCrista = mVC && mVC.index < fim ? mVC.index : -1;
+
+    const ministerioItens = [], vidaCristaItens = [];
+    for (const it of itens) {
+      if (it.numero <= 3) continue;
+      if (posVidaCrista !== -1 && it.posicao > posVidaCrista) vidaCristaItens.push(it);
+      else ministerioItens.push(it);
+    }
+
+    const tema1 = itens.find((i) => i.numero === 1);
+    const joias = itens.find((i) => i.numero === 2);
+    const leitura = itens.find((i) => i.numero === 3);
+
+    semanas.push({
+      id: novoIdCartao(), semReuniao: false, motivo: "",
+      dataLabel: "", leituraBiblica: "",
+      presidente, canticoInicial: abre[1], oracaoInicial: presidente, oracaoManual: false,
+      tema1Titulo: tema1 ? tema1.titulo : "", tema1Designado: tema1 ? tema1.designado : "",
+      joiasDesignado: joias ? joias.designado : "",
+      leituraLicao: "", leituraDesignado: leitura ? leitura.designado : "",
+      ministerio: ministerioItens.map((i) => ({ id: novoIdCartao(), titulo: i.titulo, detalhe: "", designado: i.designado })),
+      canticoMeio: "",
+      vidaCrista: vidaCristaItens.map((i) => ({ id: novoIdCartao(), titulo: i.titulo, detalhe: "", designado: i.designado })),
+      canticoFinal, oracaoFinal,
+    });
+  }
+  return semanas;
+}
+
+function novaSemanaCartao() {
+  return {
+    id: novoIdCartao(), semReuniao: false, motivo: "",
+    dataLabel: "", leituraBiblica: "",
+    presidente: "", canticoInicial: "", oracaoInicial: "", oracaoManual: false,
+    tema1Titulo: "", tema1Designado: "",
+    joiasDesignado: "",
+    leituraLicao: "", leituraDesignado: "",
+    ministerio: [{ id: novoIdCartao(), titulo: "", detalhe: "", designado: "" }],
+    canticoMeio: "",
+    vidaCrista: [{ id: novoIdCartao(), titulo: "Estudo bíblico de congregação", detalhe: "", designado: "" }],
+    canticoFinal: "", oracaoFinal: "",
+  };
+}
+
+const CARTAO_INICIAL = {
+  titulo: "Cartão de Designações",
+  subtitulo: "Vida e Ministério Cristão — Reuniões de Meio de Semana",
+  congregacao: "Congregação Parque Scaffid",
+  mesAno: "Agosto/2026",
+  semanas: [
+    {
+      id: 1, semReuniao: false, motivo: "",
+      dataLabel: "03 – 09 DE AGOSTO", leituraBiblica: "Jeremias 22-23",
+      presidente: "Filipe", canticoInicial: "40", oracaoInicial: "Filipe", oracaoManual: false,
+      tema1Titulo: "A Importância dos Bons Pastores", tema1Designado: "Dorival",
+      joiasDesignado: "Lucas Soares",
+      leituraLicao: "Th lição 11", leituraDesignado: "Lucas Santana",
+      ministerio: [
+        { id: 101, titulo: "Iniciando conversas", detalhe: "imd lição 3 pt 4", designado: "Giuliana / Helena" },
+        { id: 102, titulo: "Cultivando interesse", detalhe: "imd lição 9 pt 5", designado: "Gisele / Priscilla" },
+        { id: 103, titulo: "Discurso", detalhe: "imd ap. a 19 / th 15", designado: "Paulo" },
+      ],
+      canticoMeio: "60",
+      vidaCrista: [
+        { id: 111, titulo: "Uma História Escrita por Jeová — O Corpo Governante Unido com os irmãos (Parte 1)", detalhe: "", designado: "Vinicio" },
+        { id: 112, titulo: "Estudo bíblico de congregação", detalhe: "", designado: "Roberto / Fernando" },
+      ],
+      canticoFinal: "137", oracaoFinal: "Fernando",
+    },
+    {
+      id: 2, semReuniao: false, motivo: "",
+      dataLabel: "10 – 16 DE AGOSTO", leituraBiblica: "Jeremias 24-25",
+      presidente: "Roberto Soares", canticoInicial: "124", oracaoInicial: "Roberto Soares", oracaoManual: false,
+      tema1Titulo: "Por que alguns \u201cfigos\u201d eram bons e outros eram ruins?", tema1Designado: "João Bizerra",
+      joiasDesignado: "Daniel",
+      leituraLicao: "Th lição 5", leituraDesignado: "Bryan",
+      ministerio: [
+        { id: 201, titulo: "Iniciando conversas", detalhe: "imd lição 2 pt 5", designado: "Vera Freires / Jaqueline" },
+        { id: 202, titulo: "Cultivando interesse", detalhe: "imd lição 9 pt 5", designado: "Claudia / Mariana" },
+        { id: 203, titulo: "Fazendo discípulos", detalhe: "imd lição 12 pt 4", designado: "Lucas Soares / Lucas Santana" },
+      ],
+      canticoMeio: "65",
+      vidaCrista: [
+        { id: 211, titulo: "Necessidades Locais", detalhe: "", designado: "Rogerio" },
+        { id: 212, titulo: "Estudo bíblico de congregação", detalhe: "", designado: "Rodrigo / Cesar" },
+      ],
+      canticoFinal: "137", oracaoFinal: "Cesar",
+    },
+    {
+      id: 3, semReuniao: true,
+      motivo: "Não haverá reunião de meio de semana — Congresso nos dias 21, 22 e 23 de agosto",
+      dataLabel: "17 – 23 DE AGOSTO", leituraBiblica: "Jeremias 26-28",
+      presidente: "", canticoInicial: "", oracaoInicial: "", oracaoManual: false,
+      tema1Titulo: "", tema1Designado: "", joiasDesignado: "", leituraLicao: "", leituraDesignado: "",
+      ministerio: [], canticoMeio: "", vidaCrista: [], canticoFinal: "", oracaoFinal: "",
+    },
+    {
+      id: 4, semReuniao: false, motivo: "",
+      dataLabel: "24 – 30 DE AGOSTO", leituraBiblica: "Jeremias 29-30",
+      presidente: "Roberto Soares", canticoInicial: "12", oracaoInicial: "Roberto Soares", oracaoManual: false,
+      tema1Titulo: "Jeová disciplina seus servos na medida certa", tema1Designado: "Valter",
+      joiasDesignado: "João Bizerra",
+      leituraLicao: "Th lição 2", leituraDesignado: "Jair",
+      ministerio: [
+        { id: 401, titulo: "Iniciando conversas", detalhe: "imd lição 3 pt 4", designado: "Grazyele / Luciana" },
+        { id: 402, titulo: "Iniciando conversas", detalhe: "imd lição 1 pt 5", designado: "Wellington / Anderson" },
+        { id: 403, titulo: "Discurso", detalhe: "th lição 1", designado: "Daniel" },
+      ],
+      canticoMeio: "3",
+      vidaCrista: [
+        { id: 411, titulo: "Jeová dá esperança a seus servos", detalhe: "", designado: "Vinicius" },
+        { id: 412, titulo: "Campanha Especial de Setembro", detalhe: "", designado: "" },
+      ],
+      canticoFinal: "156", oracaoFinal: "Filipe",
+    },
+    {
+      id: 5, semReuniao: false, motivo: "",
+      dataLabel: "31 DE AGOSTO – 06 DE SETEMBRO", leituraBiblica: "Jeremias 31",
+      presidente: "Rogerio", canticoInicial: "27", oracaoInicial: "Rogerio", oracaoManual: false,
+      tema1Titulo: "Rejeite crenças e costumes que não são baseados na Bíblia", tema1Designado: "Ricardo",
+      joiasDesignado: "Anderson",
+      leituraLicao: "Th lição 12", leituraDesignado: "Cesar",
+      ministerio: [
+        { id: 501, titulo: "Iniciando conversas", detalhe: "imd lição 4 pt 3", designado: "Layane / Luana" },
+        { id: 502, titulo: "Iniciando conversas", detalhe: "imd lição 3 pt 3", designado: "Sarah / Rebeca" },
+        { id: 503, titulo: "Explicando suas crenças", detalhe: "th lição 14", designado: "Erik Gransiero" },
+      ],
+      canticoMeio: "67",
+      vidaCrista: [
+        { id: 511, titulo: "Necessidades Locais", detalhe: "", designado: "Roberto Soares" },
+        { id: 512, titulo: "Estudo bíblico de congregação", detalhe: "", designado: "Vinicius / Lucas Santana" },
+      ],
+      canticoFinal: "132", oracaoFinal: "Lucas Santana",
+    },
+  ],
+  observacoes: [
+    { id: 1, texto: "17 a 23/08 — Semana do congresso: não haverá reunião de meio de semana. O Congresso Regional será nos dias 21, 22 e 23 de agosto." },
+    { id: 2, texto: "Campanha de convites: de 01 a 20 de agosto. Levemos convites conosco em todas as saídas de campo e no testemunho informal." },
+    { id: 3, texto: "Designados: preparem-se com antecedência e cumpram o tempo designado. Em caso de impedimento, avisem o presidente da semana o quanto antes." },
+  ],
+};
+
+function TelaCartao({ onVoltar }) {
+  const [dados, setDados] = useState(CARTAO_INICIAL);
+  const inputPdf = useRef(null);
+  const [pdfProcessando, setPdfProcessando] = useState(false);
+  const [pdfErro, setPdfErro] = useState("");
+  const [pdfPrevia, setPdfPrevia] = useState(null);
+
+  function editaCampo(campo, valor) { setDados((d) => ({ ...d, [campo]: valor })); }
+
+  function editaSemana(id, campo, valor) {
+    setDados((d) => ({ ...d, semanas: d.semanas.map((s) => {
+      if (s.id !== id) return s;
+      const nova = { ...s, [campo]: valor };
+      if (campo === "presidente" && !s.oracaoManual) nova.oracaoInicial = valor;
+      if (campo === "oracaoInicial") nova.oracaoManual = true;
+      return nova;
+    }) }));
+  }
+  function resetOracaoInicial(id) {
+    setDados((d) => ({ ...d, semanas: d.semanas.map((s) => (s.id === id ? { ...s, oracaoManual: false, oracaoInicial: s.presidente } : s)) }));
+  }
+  function toggleSemReuniao(id) {
+    setDados((d) => ({ ...d, semanas: d.semanas.map((s) => (s.id === id ? { ...s, semReuniao: !s.semReuniao } : s)) }));
+  }
+  function addSemana() { setDados((d) => ({ ...d, semanas: [...d.semanas, novaSemanaCartao()] })); }
+  function removeSemana(id) { setDados((d) => ({ ...d, semanas: d.semanas.filter((s) => s.id !== id) })); }
+
+  function addParte(semanaId, secao) {
+    setDados((d) => ({ ...d, semanas: d.semanas.map((s) => (s.id === semanaId ? { ...s, [secao]: [...s[secao], { id: novoIdCartao(), titulo: "", detalhe: "", designado: "" }] } : s)) }));
+  }
+  function removeParte(semanaId, secao, parteId) {
+    setDados((d) => ({ ...d, semanas: d.semanas.map((s) => (s.id === semanaId ? { ...s, [secao]: s[secao].filter((p) => p.id !== parteId) } : s)) }));
+  }
+  function editaParte(semanaId, secao, parteId, campo, valor) {
+    setDados((d) => ({ ...d, semanas: d.semanas.map((s) => (s.id === semanaId ? { ...s, [secao]: s[secao].map((p) => (p.id === parteId ? { ...p, [campo]: valor } : p)) } : s)) }));
+  }
+
+  function editaObs(id, valor) { setDados((d) => ({ ...d, observacoes: d.observacoes.map((o) => (o.id === id ? { ...o, texto: valor } : o)) })); }
+  function addObs() { setDados((d) => ({ ...d, observacoes: [...d.observacoes, { id: novoIdCartao(), texto: "" }] })); }
+  function removeObs(id) { setDados((d) => ({ ...d, observacoes: d.observacoes.filter((o) => o.id !== id) })); }
+
+  async function processarPDF(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    setPdfErro(""); setPdfPrevia(null); setPdfProcessando(true);
+    try {
+      const extraido = await extrairPDFCartao(file);
+      const semanasNovas = processarCartaoPDF(extraido);
+      if (!semanasNovas.length) setPdfErro("Não consegui reconhecer nenhuma semana nesse PDF. Confira se é a apostila da Vida e Ministério Cristão.");
+      else setPdfPrevia(semanasNovas);
+    } catch (err) {
+      console.error(err);
+      setPdfErro("Não consegui ler esse arquivo. Confira se é um PDF válido.");
+    } finally {
+      setPdfProcessando(false);
+      if (inputPdf.current) inputPdf.current.value = "";
+    }
+  }
+  function aplicarPdfPrevia() { setDados((d) => ({ ...d, semanas: pdfPrevia })); setPdfPrevia(null); }
+  function cancelarPdfPrevia() { setPdfPrevia(null); }
+
+  return (
+    <div style={S.page}>
+      <header style={S.appbar}>
+        <button style={S.voltar} onClick={onVoltar}><Icone nome="voltar" size={18} color="#fff" /> Voltar ao menu principal</button>
+        <div style={{ marginLeft: 14 }}>
+          <div style={S.brandTitle}>Cartão de Designações</div>
+          <div style={S.brandSub}>{dados.congregacao}</div>
+        </div>
+        <div style={S.appbarTag}>Validação</div>
+      </header>
+
+      <div style={S.grid} className="grid">
+        <section style={S.editor}>
+          <div style={S.wpp}>
+            <div style={S.wppHead}>
+              <span style={S.wppTitulo}>Importar rascunho em PDF</span>
+              <span style={S.wppDica}>Envie a apostila da Vida e Ministério Cristão já com as designações anotadas — eu tento reconhecer presidente, cânticos e cada parte com seu designado.</span>
+            </div>
+            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+              <button style={S.btnProcessar} onClick={() => inputPdf.current && inputPdf.current.click()} disabled={pdfProcessando}>{pdfProcessando ? "Lendo PDF…" : "Selecionar PDF"}</button>
+              <input ref={inputPdf} type="file" accept="application/pdf" onChange={processarPDF} style={{ display: "none" }} />
+              {pdfErro && <span style={S.erro}>{pdfErro}</span>}
+            </div>
+            {pdfPrevia && (
+              <div style={S.previaBox}>
+                <div style={S.previaTitulo}>Reconheci {pdfPrevia.length} semana(s) nesse PDF. Confira com calma — nem tudo o PDF anota de forma padronizada, então alguns campos podem precisar de ajuste manual. Isto vai substituir as semanas atuais.</div>
+                <table style={S.previaTable}><thead><tr><th style={S.previaTh}>Semana</th><th style={S.previaTh}>Presidente</th><th style={S.previaTh}>Partes reconhecidas</th></tr></thead>
+                  <tbody>{pdfPrevia.map((s, i) => (
+                    <tr key={i}><td style={S.previaTd}>{i + 1}ª</td><td style={S.previaTd}>{s.presidente || "—"}</td><td style={S.previaTd}>{s.ministerio.length + s.vidaCrista.length + 3}</td></tr>
+                  ))}</tbody>
+                </table>
+                <div style={S.previaBtns}><button style={S.btnSim} onClick={aplicarPdfPrevia}>Substituir semanas</button><button style={S.btnNao} onClick={cancelarPdfPrevia}>Cancelar</button></div>
+              </div>
+            )}
+          </div>
+
+          <h2 style={S.h2}>Dados do mês</h2>
+          <div style={S.field}><label style={S.lab}>Mês / Ano</label><input style={S.input} value={dados.mesAno} onChange={(e) => editaCampo("mesAno", e.target.value)} /></div>
+
+          <h3 style={S.h3}>Semanas</h3>
+          {dados.semanas.map((s) => (
+            <SemanaCartao key={s.id} semana={s}
+              onEdita={(campo, valor) => editaSemana(s.id, campo, valor)}
+              onResetOracao={() => resetOracaoInicial(s.id)}
+              onToggleSemReuniao={() => toggleSemReuniao(s.id)}
+              onRemove={() => removeSemana(s.id)}
+              onAddParte={(secao) => addParte(s.id, secao)}
+              onRemoveParte={(secao, parteId) => removeParte(s.id, secao, parteId)}
+              onEditaParte={(secao, parteId, campo, valor) => editaParte(s.id, secao, parteId, campo, valor)}
+            />
+          ))}
+          <button style={S.btnAdd} onClick={addSemana}>+ Adicionar semana</button>
+
+          <h3 style={S.h3}>Observações</h3>
+          {dados.observacoes.map((o) => (
+            <div key={o.id} style={S.obsCard}>
+              <textarea style={S.obsArea} rows={2} value={o.texto} placeholder="Digite a observação…" onChange={(e) => editaObs(o.id, e.target.value)} />
+              <div style={S.cardFooter}><button style={S.btnRemover} onClick={() => removeObs(o.id)}>Remover</button></div>
+            </div>
+          ))}
+          <button style={S.btnAdd} onClick={addObs}>+ Adicionar observação</button>
+        </section>
+
+        <section style={S.previewWrap}><h2 style={S.h2}>Pré-visualização</h2><PreviewCartao dados={dados} /></section>
+      </div>
+    </div>
+  );
+}
+
+function SemanaCartao({ semana: s, onEdita, onResetOracao, onToggleSemReuniao, onRemove, onAddParte, onRemoveParte, onEditaParte }) {
+  return (
+    <div style={S.card}>
+      <div style={S.cardTop}>
+        <input style={{ ...S.input, fontWeight: 700, maxWidth: 220 }} placeholder="Ex.: 03 – 09 DE AGOSTO" value={s.dataLabel} onChange={(e) => onEdita("dataLabel", e.target.value)} />
+        <input style={{ ...S.input, maxWidth: 170 }} placeholder="Leitura (ex.: Jeremias 22-23)" value={s.leituraBiblica} onChange={(e) => onEdita("leituraBiblica", e.target.value)} />
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: UI.cinza, cursor: "pointer", whiteSpace: "nowrap" }}>
+          <input type="checkbox" checked={s.semReuniao} onChange={onToggleSemReuniao} /> Sem reunião
+        </label>
+        <button style={S.btnRemoverSemana} onClick={onRemove}>Remover semana</button>
+      </div>
+
+      {s.semReuniao ? (
+        <div style={S.field}>
+          <label style={S.lab}>Motivo</label>
+          <input style={S.input} placeholder="Ex.: Congresso Regional — 21, 22 e 23 de agosto" value={s.motivo} onChange={(e) => onEdita("motivo", e.target.value)} />
+        </div>
+      ) : (
+        <>
+          <div style={SC.linha3}>
+            <div style={S.field}><label style={S.lab}>Presidente</label><input style={S.input} value={s.presidente} onChange={(e) => onEdita("presidente", e.target.value)} /></div>
+            <div style={S.field}><label style={S.lab}>Cântico inicial</label><input style={S.input} value={s.canticoInicial} onChange={(e) => onEdita("canticoInicial", e.target.value)} /></div>
+            <div style={S.field}>
+              <label style={S.lab}>Oração inicial{!s.oracaoManual && s.presidente ? " (igual ao presidente)" : ""}</label>
+              <input style={S.input} value={s.oracaoInicial} onChange={(e) => onEdita("oracaoInicial", e.target.value)} />
+              {s.oracaoManual && <button style={{ ...S.btnGhostAlt, marginTop: 6 }} onClick={onResetOracao}>Usar mesmo nome do presidente</button>}
+            </div>
+          </div>
+
+          <h4 style={SC.h4Teal}>Tesouros da Palavra de Deus</h4>
+          <div style={S.field}><label style={S.lab}>Tema (parte 1)</label><input style={S.input} value={s.tema1Titulo} onChange={(e) => onEdita("tema1Titulo", e.target.value)} /></div>
+          <div style={SC.linha3}>
+            <div style={S.field}><label style={S.lab}>Designado do tema</label><input style={S.input} value={s.tema1Designado} onChange={(e) => onEdita("tema1Designado", e.target.value)} /></div>
+            <div style={S.field}><label style={S.lab}>Joias espirituais</label><input style={S.input} value={s.joiasDesignado} onChange={(e) => onEdita("joiasDesignado", e.target.value)} /></div>
+            <div style={S.field}><label style={S.lab}>Leitura da Bíblia</label><input style={S.input} value={s.leituraDesignado} onChange={(e) => onEdita("leituraDesignado", e.target.value)} /></div>
+          </div>
+          <div style={S.field}><label style={S.lab}>Lição da leitura (opcional)</label><input style={{ ...S.input, maxWidth: 200 }} placeholder="Ex.: Th lição 11" value={s.leituraLicao} onChange={(e) => onEdita("leituraLicao", e.target.value)} /></div>
+
+          <h4 style={SC.h4Dourado}>Faça Seu Melhor no Ministério</h4>
+          {s.ministerio.map((p) => (
+            <ParteCartao key={p.id} parte={p} onEdita={(campo, valor) => onEditaParte("ministerio", p.id, campo, valor)} onRemove={() => onRemoveParte("ministerio", p.id)} />
+          ))}
+          <button style={S.btnAdd} onClick={() => onAddParte("ministerio")}>+ Adicionar parte</button>
+
+          <div style={S.field}><label style={S.lab}>Cântico (entre as seções)</label><input style={{ ...S.input, maxWidth: 120 }} value={s.canticoMeio} onChange={(e) => onEdita("canticoMeio", e.target.value)} /></div>
+
+          <h4 style={SC.h4Vinho}>Nossa Vida Cristã</h4>
+          {s.vidaCrista.map((p) => (
+            <ParteCartao key={p.id} parte={p} onEdita={(campo, valor) => onEditaParte("vidaCrista", p.id, campo, valor)} onRemove={() => onRemoveParte("vidaCrista", p.id)} />
+          ))}
+          <button style={S.btnAdd} onClick={() => onAddParte("vidaCrista")}>+ Adicionar parte</button>
+
+          <div style={SC.linha2}>
+            <div style={S.field}><label style={S.lab}>Cântico final</label><input style={S.input} value={s.canticoFinal} onChange={(e) => onEdita("canticoFinal", e.target.value)} /></div>
+            <div style={S.field}><label style={S.lab}>Oração final</label><input style={S.input} value={s.oracaoFinal} onChange={(e) => onEdita("oracaoFinal", e.target.value)} /></div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function ParteCartao({ parte: p, onEdita, onRemove }) {
+  return (
+    <div style={SC.parteRow}>
+      <input style={{ ...S.input, flex: 2, minWidth: 140 }} placeholder="Título da parte" value={p.titulo} onChange={(e) => onEdita("titulo", e.target.value)} />
+      <input style={{ ...S.input, flex: 1, minWidth: 120 }} placeholder="Detalhe (ex.: lmd lição 3 pt 4)" value={p.detalhe} onChange={(e) => onEdita("detalhe", e.target.value)} />
+      <input style={{ ...S.input, flex: 1, minWidth: 120 }} placeholder="Designado(s)" value={p.designado} onChange={(e) => onEdita("designado", e.target.value)} />
+      <button style={S.btnRemover} onClick={onRemove}>Remover</button>
+    </div>
+  );
+}
+
+function ItemLinhaCartao({ numero, titulo, detalhe, nome, zebra }) {
+  return (
+    <div style={{ ...PVC.item, ...(zebra ? PVC.itemZebra : {}) }}>
+      <span style={PVC.itemNum}>{numero}</span>
+      <span style={PVC.itemTitulo}>{titulo}{detalhe ? <span style={PVC.itemDetalhe}> ({detalhe})</span> : null}</span>
+      <span style={PVC.itemNome}>{nome}</span>
+    </div>
+  );
+}
+
+function PreviewCartao({ dados }) {
+  return (
+    <div style={PVC.frameOuter}>
+      <div style={PVC.headerTitulo}>{dados.titulo}</div>
+      <div style={PVC.headerSub}>{dados.subtitulo}</div>
+      <div style={PVC.headerInfo}>{dados.congregacao} • {dados.mesAno}</div>
+
+      {dados.semanas.map((s) => (
+        <div key={s.id} style={PVC.semana}>
+          <div style={PVC.semanaHeader}>{s.dataLabel || "—"}{s.leituraBiblica ? " • " + s.leituraBiblica : ""}</div>
+          {s.semReuniao ? (
+            <div style={PVC.semReuniao}>
+              <div style={PVC.semReuniaoTitulo}>SEM REUNIÃO DE MEIO DE SEMANA</div>
+              <div style={PVC.semReuniaoMotivo}>{s.motivo}</div>
+            </div>
+          ) : (
+            <>
+              <div style={PVC.semanaLinha2}>
+                <span><strong>Presidente:</strong> {s.presidente}</span>
+                <span><strong>Cântico:</strong> {s.canticoInicial}</span>
+                <span><strong>Oração:</strong> {s.oracaoInicial}</span>
+              </div>
+              <div style={PVC.comentario}>Comentários iniciais (1 minuto)</div>
+
+              <div style={{ ...PVC.secaoBar, background: TEMPLATE.teal }}>TESOUROS DA PALAVRA DE DEUS</div>
+              <ItemLinhaCartao numero={1} titulo={s.tema1Titulo} nome={s.tema1Designado} />
+              <ItemLinhaCartao numero={2} titulo="Joias Espirituais" nome={s.joiasDesignado} zebra />
+              <ItemLinhaCartao numero={3} titulo="Leitura da Bíblia" detalhe={s.leituraLicao} nome={s.leituraDesignado} />
+
+              <div style={{ ...PVC.secaoBar, background: TEMPLATE.dourado }}>FAÇA SEU MELHOR NO MINISTÉRIO</div>
+              {s.ministerio.map((p, i) => (
+                <ItemLinhaCartao key={p.id} numero={4 + i} titulo={p.titulo} detalhe={p.detalhe} nome={p.designado} zebra={i % 2 === 1} />
+              ))}
+
+              {s.canticoMeio && <div style={PVC.canticoMeio}>Cântico {s.canticoMeio}</div>}
+
+              <div style={{ ...PVC.secaoBar, background: TEMPLATE.vinho }}>NOSSA VIDA CRISTÃ</div>
+              {s.vidaCrista.map((p, i) => (
+                <ItemLinhaCartao key={p.id} numero={4 + s.ministerio.length + i} titulo={p.titulo} detalhe={p.detalhe} nome={p.designado} zebra={i % 2 === 1} />
+              ))}
+
+              <div style={PVC.comentario}>Comentários finais e anúncios (3 min) — Cântico: {s.canticoFinal} • Oração: {s.oracaoFinal}</div>
+            </>
+          )}
+        </div>
+      ))}
+
+      <div style={PV.obsTitulo}>OBSERVAÇÕES</div>
+      <div style={PV.regua} />
+      {dados.observacoes.map((o) => (<div key={o.id} style={PV.obsItem}><span style={PV.bullet}>•</span><span>{o.texto}</span></div>))}
+    </div>
+  );
+}
+
+
 /* ---------------- estilos ---------------- */
 const UI = { azul: "#1F3864", azulClaro: "#eaf0fb", tinta: "#1c2430", cinza: "#5b6472", borda: "#e6e9ef", fundo: "#f7f9fc", verde: "#1f7a4d" };
 const CAL = {
@@ -985,6 +1583,37 @@ const SS = {
 const SP = {
   bloco: { border: "1px solid " + TEMPLATE.cinzaLinha, borderRadius: 3, overflow: "hidden", marginBottom: 12 },
   cabecalho: { color: "#fff", fontWeight: 700, fontSize: 12, textAlign: "center", padding: "6px" },
+};
+
+const SC = {
+  linha3: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 },
+  linha2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 },
+  h4Teal: { fontSize: 12, color: TEMPLATE.teal, margin: "18px 0 8px", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 },
+  h4Dourado: { fontSize: 12, color: TEMPLATE.dourado, margin: "18px 0 8px", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 },
+  h4Vinho: { fontSize: 12, color: TEMPLATE.vinho, margin: "18px 0 8px", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 },
+  parteRow: { display: "flex", gap: 8, marginBottom: 8, flexWrap: "wrap", alignItems: "center" },
+};
+
+const PVC = {
+  frameOuter: { background: "#fff", border: "3px double " + TEMPLATE.vinho, padding: "16px 14px" },
+  headerTitulo: { textAlign: "center", color: TEMPLATE.vinho, fontWeight: 800, fontSize: 19 },
+  headerSub: { textAlign: "center", color: TEMPLATE.azul, fontWeight: 700, fontSize: 10.5, marginTop: 3 },
+  headerInfo: { textAlign: "center", color: TEMPLATE.dourado, fontWeight: 700, fontSize: 10, marginTop: 3, marginBottom: 14 },
+  semana: { border: "1px solid " + TEMPLATE.cinzaLinha, borderRadius: 3, overflow: "hidden", marginBottom: 14 },
+  semanaHeader: { background: TEMPLATE.azul, color: "#fff", textAlign: "center", fontWeight: 700, fontSize: 11.5, padding: "6px 8px" },
+  semanaLinha2: { display: "flex", justifyContent: "center", gap: 18, background: "#eef1f8", fontSize: 10.5, padding: "5px 8px", flexWrap: "wrap" },
+  comentario: { textAlign: "center", fontSize: 9.5, color: "#666", background: "#f7f8fa", padding: "3px 8px", fontStyle: "italic" },
+  secaoBar: { color: "#fff", fontWeight: 700, fontSize: 10.5, padding: "4px 8px" },
+  item: { display: "flex", fontSize: 10, borderBottom: "1px solid #eee", padding: "3px 8px", gap: 6 },
+  itemZebra: { background: "#fafbfc" },
+  itemNum: { width: 16, color: "#888", fontWeight: 700, flexShrink: 0 },
+  itemTitulo: { flex: 1 },
+  itemDetalhe: { fontStyle: "italic", color: "#888", fontSize: 9 },
+  itemNome: { fontWeight: 700, color: TEMPLATE.azul, textAlign: "right", minWidth: 90 },
+  canticoMeio: { textAlign: "center", background: "#fdf6e3", color: TEMPLATE.dourado, fontWeight: 700, fontSize: 9.5, padding: "3px 8px" },
+  semReuniao: { background: TEMPLATE.rosaClaro, textAlign: "center", padding: "16px 10px" },
+  semReuniaoTitulo: { color: TEMPLATE.vinho, fontWeight: 800, fontSize: 11 },
+  semReuniaoMotivo: { color: TEMPLATE.vinho, fontStyle: "italic", fontSize: 10, marginTop: 4 },
 };
 
 const CSS = `
