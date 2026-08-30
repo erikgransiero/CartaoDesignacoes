@@ -1,10 +1,13 @@
 name: Publicar no GitHub Pages
 
+# Só publica quando alguém empurra para "main" (produção) ou "preview"
+# (validação). O trabalho do dia a dia acontece em outras branches e não
+# aciona deploy nenhum — assim nada vai ao ar sem decisão explícita.
 on:
   push:
     branches:
       - main
-      - "claude/**"
+      - preview
   workflow_dispatch:
 
 permissions:
@@ -20,17 +23,67 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Verifica se a branch "preview" existe
+        id: check-preview
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/branches/preview")
+          if [ "$code" = "200" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
-      - run: npm run build
+
+      # ---------- Produção (main) → raiz do site ----------
+      - name: Baixa código da main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: src-main
+
+      - name: Build produção
+        working-directory: src-main
+        run: |
+          npm ci
+          npm run build
+
+      # ---------- Preview → /preview/ ----------
+      - name: Baixa código da preview
+        if: steps.check-preview.outputs.exists == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: preview
+          path: src-preview
+
+      - name: Build preview
+        if: steps.check-preview.outputs.exists == 'true'
+        working-directory: src-preview
+        run: |
+          npm ci
+          npm run build -- --base=/CartaoDesignacoes/preview/
+
+      # ---------- Combina os dois num único site ----------
+      - name: Monta site (produção + preview)
+        run: |
+          mkdir -p site
+          cp -r src-main/dist/. site/
+          if [ -d src-preview/dist ]; then
+            mkdir -p site/preview
+            cp -r src-preview/dist/. site/preview/
+          fi
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: site
 
   deploy:
     needs: build
