@@ -100,32 +100,45 @@ function LogoJW({ size = 58 }) {
 
 /* ============================ APP ============================ */
 export default function App() {
-  const [tela, setTela] = useState("menu"); // "menu" | "discurso" | ... | "usuarios"
+  const [sessao, setSessao] = useState(leSessao);
+  const [tela, setTela] = useState("menu");
 
-  // Navegação pela barra lateral: documentos só abrem quando prontos; o menu
-  // e Configurações (usuários) abrem sempre.
   function navega(destino) {
     if (destino === "menu" || destino === "usuarios") { setTela(destino); return; }
     const doc = DOCUMENTOS.find((d) => d.id === destino);
     if (doc && doc.pronto) setTela(destino);
   }
+  function sair() {
+    apagaSessao();
+    setSessao(null);
+    setTela("menu");
+  }
+
+  if (!sessao) {
+    return (
+      <div style={M.appShell}>
+        <style>{CSS}</style>
+        <TelaLogin onLogar={(nova) => setSessao(nova)} />
+      </div>
+    );
+  }
 
   return (
     <div style={M.appShell}>
       <style>{CSS}</style>
-      {tela === "menu" && <TelaMenu onNavega={navega} />}
+      {tela === "menu" && <TelaMenu onNavega={navega} sessao={sessao} onSair={sair} />}
       {tela === "discurso" && <TelaDiscurso onVoltar={() => setTela("menu")} />}
       {tela === "sentinela" && <TelaSentinela onVoltar={() => setTela("menu")} />}
       {tela === "calendario" && <TelaCalendario onVoltar={() => setTela("menu")} />}
       {tela === "cartao" && <TelaCartao onVoltar={() => setTela("menu")} />}
       {tela === "bastidores" && <TelaBastidores onVoltar={() => setTela("menu")} />}
-      {tela === "usuarios" && <TelaUsuarios onNavega={navega} />}
+      {tela === "usuarios" && <TelaUsuarios onNavega={navega} sessao={sessao} onSair={sair} />}
     </div>
   );
 }
 
 /* ============ BARRA LATERAL (compartilhada entre menu e Configurações) ============ */
-function Sidebar({ atual, onNavega }) {
+function Sidebar({ atual, onNavega, sessao, onSair }) {
   return (
     <aside style={M.sidebar}>
       <div style={{ ...M.sidebarLogo, cursor: "pointer" }} onClick={() => onNavega("menu")} title="Ir para o menu principal"><LogoJW /></div>
@@ -146,17 +159,29 @@ function Sidebar({ atual, onNavega }) {
           <Icone nome="engrenagem" size={22} color={atual === "usuarios" ? TEMPLATE.azul : "#5b6472"} />
           <span style={M.navLabel}>Configurações</span>
         </button>
+        {sessao && (
+          <div style={M.sessaoBox}>
+            <div style={M.sessaoInfo}>
+              <span style={M.sessaoAvatar}><Icone nome="usuario" size={16} color="#fff" /></span>
+              <div style={{ minWidth: 0 }}>
+                <div style={M.sessaoNome}>{sessao.nome}</div>
+                <div style={M.sessaoPerfil}>{sessao.perfil === "editor" ? "Editor" : "Visualizador"}</div>
+              </div>
+            </div>
+            <button style={M.sairBtn} onClick={onSair} title="Sair"><Icone nome="voltar" size={16} color="#5b6472" /> Sair</button>
+          </div>
+        )}
       </div>
     </aside>
   );
 }
 
 /* ============================ TELA MENU ============================ */
-function TelaMenu({ onNavega }) {
+function TelaMenu({ onNavega, sessao, onSair }) {
   const onAbrir = onNavega;
   return (
     <div style={M.layout}>
-      <Sidebar atual="menu" onNavega={onNavega} />
+      <Sidebar atual="menu" onNavega={onNavega} sessao={sessao} onSair={onSair} />
 
       {/* Conteúdo */}
       <main style={M.main}>
@@ -201,6 +226,172 @@ function TelaMenu({ onNavega }) {
 }
 
 
+/* ====================== TELA DE LOGIN ====================== */
+
+function normalizaUsuario(s) {
+  return (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ").trim();
+}
+
+function TelaLogin({ onLogar }) {
+  const [dados] = useEstadoSalvo("usuarios", USUARIOS_INICIAL);
+  const [usuario, setUsuario] = useState("");
+  const [senha, setSenha] = useState("");
+  const [lembrar, setLembrar] = useState(true);
+  const [verSenha, setVerSenha] = useState(false);
+  const [erro, setErro] = useState("");
+  const [entrando, setEntrando] = useState(false);
+
+  async function entrar(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    setErro(""); setEntrando(true);
+    try {
+      const chave = normalizaUsuario(usuario);
+      // Atalho do administrador: "super adm" entra sem senha, sempre como Editor.
+      if (chave === "super adm" || chave === "superadm") {
+        const sessao = { ...SUPER_ADM, entrouEm: Date.now() };
+        salvaSessao(sessao, lembrar);
+        onLogar(sessao);
+        return;
+      }
+      const u = dados.usuarios.find((x) =>
+        x.email.toLowerCase() === chave || normalizaUsuario(x.nome) === chave
+      );
+      if (!u) { setErro("Usuário ou senha inválidos."); return; }
+      if (u.status !== "ativo") { setErro("Este usuário está inativo. Fale com o administrador."); return; }
+      if (!u.senhaHash) { setErro("Este usuário ainda não tem senha definida. Entre como “super adm” e recadastre."); return; }
+      const hash = await hashSenha(senha);
+      if (hash !== u.senhaHash) { setErro("Usuário ou senha inválidos."); return; }
+      const sessao = { id: u.id, nome: u.nome, email: u.email, perfil: u.perfil, entrouEm: Date.now() };
+      salvaSessao(sessao, lembrar);
+      onLogar(sessao);
+    } finally {
+      setEntrando(false);
+    }
+  }
+
+  return (
+    <div style={LG.layout}>
+      <style>{LG.css}</style>
+
+      <div style={LG.lateral}>
+        <div style={LG.logo}><LogoJW size={64} /></div>
+        <div style={LG.textoLateral}>
+          <h1 style={LG.h1}>Bem-vindo!</h1>
+          <p style={LG.hSub}>Faça login para acessar seus documentos<br />e organizar o ministério.</p>
+        </div>
+        <div style={LG.ilustra}><IlustracaoSalao /></div>
+      </div>
+
+      <div style={LG.direito}>
+        <div style={LG.topbar}>
+          <button style={LG.chipTop}>🌐 Português <span style={{ opacity: .6 }}>▾</span></button>
+          <button style={LG.chipTop}>❔ Ajuda</button>
+        </div>
+
+        <form style={LG.card} onSubmit={entrar} autoComplete="on">
+          <div style={LG.avatarTopo}><Icone nome="usuario" size={44} color={USU.azul} /></div>
+          <div style={LG.tituloCard}>Entrar</div>
+          <div style={LG.subCard}>Digite seu login e senha para continuar.</div>
+
+          <div style={LG.campo}>
+            <label style={LG.label}>Login (e-mail ou usuário)</label>
+            <div style={LG.inputWrap}>
+              <span style={LG.inputIcone}><Icone nome="usuario" size={20} color="#8a93a3" /></span>
+              <input style={{ ...LG.input, paddingLeft: 40 }} placeholder="Digite seu e-mail ou usuário"
+                value={usuario} onChange={(e) => setUsuario(e.target.value)}
+                autoComplete="username" autoCapitalize="none" spellCheck="false" />
+            </div>
+          </div>
+
+          <div style={LG.campo}>
+            <label style={LG.label}>Senha</label>
+            <div style={LG.inputWrap}>
+              <span style={LG.inputIcone}><Icone nome="cadeado" size={20} color="#8a93a3" /></span>
+              <input style={{ ...LG.input, paddingLeft: 40, paddingRight: 44 }} type={verSenha ? "text" : "password"}
+                placeholder="Digite sua senha" value={senha} onChange={(e) => setSenha(e.target.value)} autoComplete="current-password" />
+              <button style={LG.olhoBtn} type="button" onClick={() => setVerSenha((v) => !v)} title={verSenha ? "Ocultar" : "Mostrar"}>
+                <Icone nome={verSenha ? "olho-off" : "olho"} size={20} color="#8a93a3" />
+              </button>
+            </div>
+          </div>
+
+          <div style={LG.linhaAux}>
+            <label style={LG.check}>
+              <input type="checkbox" checked={lembrar} onChange={(e) => setLembrar(e.target.checked)} />
+              Lembrar meu acesso
+            </label>
+            <a href="#" style={LG.link} onClick={(e) => { e.preventDefault(); setErro("Peça ao administrador (super adm) para redefinir sua senha."); }}>Esqueceu sua senha?</a>
+          </div>
+
+          {erro && <div style={LG.erro}>{erro}</div>}
+
+          <button style={{ ...LG.btnEntrar, opacity: entrando ? .7 : 1 }} type="submit" disabled={entrando}>
+            <Icone nome="cadeado" size={18} color="#fff" />
+            {entrando ? "Entrando…" : "Entrar"}
+          </button>
+
+          <div style={LG.divisor}><span style={LG.divisorTexto}>Acesso autorizado</span></div>
+
+          <div style={LG.avisoSeguro}>
+            <span style={LG.avisoIcone}><Icone nome="escudo-check" size={22} color="#fff" /></span>
+            <div>
+              <div style={LG.avisoTitulo}>Acesso seguro e restrito</div>
+              <div style={LG.avisoTexto}>Somente usuários cadastrados e autorizados poderão acessar o sistema.</div>
+            </div>
+          </div>
+        </form>
+
+        <div style={LG.rodape}>© {new Date().getFullYear()} Congregação Parque Scaffid</div>
+      </div>
+    </div>
+  );
+}
+
+function IlustracaoSalao() {
+  return (
+    <svg viewBox="0 0 480 320" width="100%" role="img" aria-label="Salão do Reino">
+      <defs>
+        <linearGradient id="ceu" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#eaf1fb" /><stop offset="1" stopColor="#f6f9fd" />
+        </linearGradient>
+      </defs>
+      <rect x="0" y="0" width="480" height="320" fill="url(#ceu)" />
+      {/* silhueta de cidade */}
+      <g fill="#e4ecf7">
+        <rect x="10" y="140" width="60" height="120" /><rect x="80" y="120" width="40" height="140" />
+        <rect x="380" y="150" width="50" height="110" /><rect x="440" y="130" width="35" height="130" />
+      </g>
+      {/* prédio central – Salão do Reino */}
+      <g>
+        <rect x="150" y="130" width="180" height="130" fill="#fff" stroke="#c9d6ee" />
+        <rect x="150" y="130" width="180" height="18" fill="#e5ecf7" />
+        <rect x="200" y="160" width="80" height="60" fill="#3E5AA6" opacity=".18" />
+        <rect x="215" y="175" width="50" height="30" fill="#3E5AA6" />
+        <text x="240" y="196" fontFamily="system-ui" fontSize="12" fontWeight="700" fill="#fff" textAnchor="middle">JW.ORG</text>
+        <rect x="160" y="230" width="30" height="30" fill="#e4ecf7" />
+        <rect x="290" y="230" width="30" height="30" fill="#e4ecf7" />
+      </g>
+      {/* duas pessoas conversando */}
+      <g transform="translate(180 240)">
+        <circle cx="0" cy="0" r="10" fill="#b7c3dc" />
+        <path d="M-14 34 c0 -14 6 -22 14 -22 s14 8 14 22 Z" fill="#5f78bb" />
+      </g>
+      <g transform="translate(220 240)">
+        <circle cx="0" cy="0" r="10" fill="#c9b8a3" />
+        <path d="M-14 34 c0 -14 6 -22 14 -22 s14 8 14 22 Z" fill="#8a6d4c" />
+      </g>
+      {/* palmeira à esquerda */}
+      <g transform="translate(88 200)">
+        <rect x="-3" y="0" width="6" height="60" fill="#8a6d4c" />
+        <path d="M0 0 c-30 -8 -40 8 -32 -12 c8 -14 24 -12 32 12 Z" fill="#5aa25b" />
+        <path d="M0 0 c30 -8 40 8 32 -12 c-8 -14 -24 -12 -32 12 Z" fill="#5aa25b" />
+      </g>
+      {/* solo */}
+      <rect x="0" y="260" width="480" height="60" fill="#e6ebf3" />
+    </svg>
+  );
+}
+
 /* ====================== TELA CONFIGURAÇÕES → USUÁRIOS ====================== */
 
 const PERFIS = [
@@ -208,12 +399,47 @@ const PERFIS = [
   { id: "editor", titulo: "Editor", desc: "Pode alterar as informações dos documentos." },
 ];
 
+// Hash da senha "senha1234" (SHA-256). Só usado nos dois pré-cadastrados
+// deste seed inicial, para você testar o login sem precisar cadastrar
+// ninguém antes.
+const HASH_SENHA_DEMO = "2c70dfbc967bd610fc7fbc6dfef0708a99d6be1fc44be3dffa47f0dde132442b";
+
 const USUARIOS_INICIAL = {
   usuarios: [
-    { id: 1, nome: "Erik Gransiero", email: "erik@parquescaffid.org", status: "ativo", perfil: "editor", senhaHash: "" },
-    { id: 2, nome: "Roberto Soares", email: "roberto@parquescaffid.org", status: "ativo", perfil: "visualizador", senhaHash: "" },
+    { id: 1, nome: "Erik Gransiero", email: "erik@parquescaffid.org", status: "ativo", perfil: "editor", senhaHash: HASH_SENHA_DEMO },
+    { id: 2, nome: "Roberto Soares", email: "roberto@parquescaffid.org", status: "ativo", perfil: "visualizador", senhaHash: HASH_SENHA_DEMO },
   ],
 };
+
+/* ---------------- sessão do usuário logado ---------------- */
+// A sessão fica no navegador: sessionStorage por padrão (some ao fechar
+// a aba), ou localStorage quando marcar "Lembrar meu acesso". Isso resolve
+// só a UX de reentrar sem digitar de novo — o gate de acesso real depende
+// de um servidor, o que este projeto (site estático) não tem.
+const CHAVE_SESSAO = "gerenciador-documentos:sessao";
+const SUPER_ADM = { id: "super", nome: "Super Adm", email: "superadm", perfil: "editor" };
+
+function leSessao() {
+  try {
+    const bruto = window.sessionStorage.getItem(CHAVE_SESSAO) || window.localStorage.getItem(CHAVE_SESSAO);
+    if (!bruto) return null;
+    const s = JSON.parse(bruto);
+    return s && s.id ? s : null;
+  } catch (e) { return null; }
+}
+function salvaSessao(sessao, lembrar) {
+  try {
+    const bruto = JSON.stringify(sessao);
+    if (lembrar) { window.localStorage.setItem(CHAVE_SESSAO, bruto); window.sessionStorage.removeItem(CHAVE_SESSAO); }
+    else { window.sessionStorage.setItem(CHAVE_SESSAO, bruto); window.localStorage.removeItem(CHAVE_SESSAO); }
+  } catch (e) {}
+}
+function apagaSessao() {
+  try {
+    window.sessionStorage.removeItem(CHAVE_SESSAO);
+    window.localStorage.removeItem(CHAVE_SESSAO);
+  } catch (e) {}
+}
 
 // Guarda apenas um hash da senha (SHA-256), nunca o texto digitado.
 async function hashSenha(senha) {
@@ -227,7 +453,7 @@ async function hashSenha(senha) {
 
 const FORM_VAZIO = { nome: "", email: "", senha: "", confirmar: "", status: "ativo" };
 
-function TelaUsuarios({ onNavega }) {
+function TelaUsuarios({ onNavega, sessao, onSair }) {
   const [dados, setDados] = useEstadoSalvo("usuarios", USUARIOS_INICIAL);
   const [form, setForm] = useState(FORM_VAZIO);
   const [verSenha, setVerSenha] = useState(false);
@@ -268,7 +494,7 @@ function TelaUsuarios({ onNavega }) {
 
   return (
     <div style={M.layout}>
-      <Sidebar atual="usuarios" onNavega={onNavega} />
+      <Sidebar atual="usuarios" onNavega={onNavega} sessao={sessao} onSair={onSair} />
 
       <main style={M.main}>
         <div style={M.topbar}>
@@ -2469,6 +2695,12 @@ const M = {
   navItemAtivo: { background: UI.azulClaro, color: UI.azul, fontWeight: 700 },
   navLabel: { lineHeight: 1.25 },
   sidebarFooter: { marginTop: "auto", borderTop: "1px solid " + UI.borda, paddingTop: 12 },
+  sessaoBox: { marginTop: 10, padding: "10px 12px", background: "#f6f8fd", border: "1px solid " + UI.borda, borderRadius: 10 },
+  sessaoInfo: { display: "flex", alignItems: "center", gap: 10, marginBottom: 8 },
+  sessaoAvatar: { width: 28, height: 28, borderRadius: "50%", background: "#5f78bb", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  sessaoNome: { fontSize: 13, fontWeight: 700, color: UI.tinta, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  sessaoPerfil: { fontSize: 11, color: UI.cinza },
+  sairBtn: { display: "inline-flex", alignItems: "center", gap: 6, background: "#fff", border: "1px solid " + UI.borda, borderRadius: 8, padding: "6px 10px", fontSize: 12, color: UI.cinza, cursor: "pointer", width: "100%", justifyContent: "center" },
   main: { padding: "18px 30px 30px", overflow: "auto" },
   topbar: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
   topbarIcons: { display: "flex", alignItems: "center", gap: 14 },
@@ -2555,6 +2787,47 @@ const USU = (() => {
     perfilEditor: { background: "#eef2fb", color: azul, borderColor: "#c9d6ee" },
     perfilVisualizador: { background: "#f4f6f9", color: "#5b6472", borderColor: "#dfe2e8" },
     btnRemover: { background: "#fff", border: "1px solid #e3c2c2", borderRadius: 8, padding: "7px 9px", cursor: "pointer", display: "inline-flex" },
+  };
+})();
+
+const LG = (() => {
+  const azul = "#243B6B";
+  const azulBtn = "#2D4CA0";
+  const borda = "#E3E7EF";
+  return {
+    css: "@media (max-width: 900px){ .login-lateral{ display:none !important; } .login-direito{ padding: 20px !important; } }",
+    layout: { minHeight: "100vh", display: "grid", gridTemplateColumns: "minmax(0, 42%) minmax(0, 1fr)", background: "#f6f8fd" },
+    lateral: { position: "relative", background: "linear-gradient(180deg, #eaf1fb, #f6f9fd)", padding: "26px 30px", display: "flex", flexDirection: "column", overflow: "hidden" },
+    logo: { alignSelf: "flex-start" },
+    textoLateral: { marginTop: 60, marginLeft: 4 },
+    h1: { fontSize: 40, color: azul, fontWeight: 800, margin: "0 0 10px" },
+    hSub: { fontSize: 15, color: "#5b6472", lineHeight: 1.55, margin: 0, maxWidth: 380 },
+    ilustra: { marginTop: "auto", marginLeft: -12, marginRight: -12 },
+    direito: { padding: "26px 30px 30px", display: "flex", flexDirection: "column", position: "relative" },
+    topbar: { display: "flex", justifyContent: "flex-end", gap: 12, marginBottom: 20 },
+    chipTop: { background: "transparent", border: "none", color: "#5b6472", fontSize: 14, cursor: "pointer", padding: "6px 10px", borderRadius: 8, display: "inline-flex", alignItems: "center", gap: 6 },
+    card: { width: "100%", maxWidth: 420, background: "#fff", border: "1px solid " + borda, borderRadius: 18, padding: "34px 34px 26px", margin: "auto", boxShadow: "0 6px 22px rgba(30,50,110,.06)" },
+    avatarTopo: { width: 68, height: 68, border: "2px solid " + USU.azul, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" },
+    tituloCard: { textAlign: "center", fontSize: 26, fontWeight: 800, color: azul, marginBottom: 6 },
+    subCard: { textAlign: "center", fontSize: 14, color: "#5b6472", marginBottom: 22 },
+    campo: { marginBottom: 16 },
+    label: { display: "block", fontSize: 14, fontWeight: 600, color: "#2b3542", marginBottom: 7 },
+    inputWrap: { position: "relative" },
+    inputIcone: { position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", display: "inline-flex", pointerEvents: "none" },
+    input: { width: "100%", padding: "13px 14px", border: "1px solid " + borda, borderRadius: 10, fontSize: 15, color: "#2b3542", boxSizing: "border-box", background: "#fafbfd" },
+    olhoBtn: { position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "transparent", border: "none", cursor: "pointer", padding: 6, display: "inline-flex" },
+    linhaAux: { display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 16 },
+    check: { display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13.5, color: "#2b3542", cursor: "pointer" },
+    link: { fontSize: 13.5, color: azulBtn, textDecoration: "none" },
+    erro: { fontSize: 13, color: "#9a3b3b", background: "#fbeaea", border: "1px solid #e3c2c2", padding: "10px 12px", borderRadius: 8, marginBottom: 14 },
+    btnEntrar: { width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, background: azulBtn, border: "none", color: "#fff", fontSize: 16, fontWeight: 700, padding: "13px 16px", borderRadius: 10, cursor: "pointer", boxShadow: "0 3px 10px rgba(45,76,160,.28)" },
+    divisor: { textAlign: "center", position: "relative", margin: "22px 0 14px" },
+    divisorTexto: { background: "#fff", padding: "0 10px", position: "relative", zIndex: 1, fontSize: 13, color: "#5b6472" },
+    avisoSeguro: { display: "flex", gap: 12, alignItems: "flex-start", background: "#eef2fb", border: "1px solid #d8e0f2", padding: 14, borderRadius: 12 },
+    avisoIcone: { width: 36, height: 36, borderRadius: "50%", background: USU.azul, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+    avisoTitulo: { fontSize: 14, fontWeight: 700, color: azul, marginBottom: 4 },
+    avisoTexto: { fontSize: 12.5, color: "#5b6472", lineHeight: 1.45 },
+    rodape: { textAlign: "center", fontSize: 12, color: "#8a93a3", marginTop: 22 },
   };
 })();
 
