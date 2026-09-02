@@ -1844,6 +1844,9 @@ function TelaBastidores({ onVoltar }) {
   const resumo = React.useMemo(() => resumoParticipacoes(dados.linhas), [dados.linhas]);
   const muitasVezes = resumo.filter((r) => r.total > 2);
   const umaVez = resumo.filter((r) => r.total === 1);
+  // cadastrados que não entraram em nenhuma linha do mês
+  const naoEscalados = (dados.irmaos || []).filter((ir) =>
+    ir.nome && ir.nome.trim() && !resumo.some((r) => mesmoIrmao(r.nome, ir.nome)));
 
   return (
     <div style={S.page}>
@@ -1936,8 +1939,8 @@ function TelaBastidores({ onVoltar }) {
 
           <h3 style={S.h3}>Resumo de participações no mês</h3>
           <p style={S.hint}>
-            Só aparece quem está fora do ritmo de duas participações: de um lado quem foi escalado mais de duas vezes,
-            do outro quem ficou com uma só. Quem está com exatamente 2 fica fora da lista.
+            Só aparece quem está fora do ritmo de duas participações: quem foi escalado mais de duas vezes, quem ficou
+            com uma só e quem não entrou em nenhuma linha do mês. Quem está com exatamente 2 fica fora da lista.
           </p>
           <div style={SB.resumoGrid}>
             <div style={SB.resumoBloco}>
@@ -1963,6 +1966,21 @@ function TelaBastidores({ onVoltar }) {
                   ))}
                 </div>
               ) : <div style={SB.resumoVazio}>Ninguém ficou com uma participação só.</div>}
+            </div>
+            <div style={SB.resumoBloco}>
+              <div style={{ ...SB.resumoTitulo, color: UI.cinza }}>Não escalados no mês ({naoEscalados.length})</div>
+              {naoEscalados.length ? (
+                <div style={SB.resumoChips}>
+                  {naoEscalados.map((ir) => {
+                    const semPosicao = !(ir.funcoes || []).length;
+                    return (
+                      <span key={ir.id} style={{ ...SB.resumoChip, background: "#f4f6f9", borderColor: UI.borda, color: UI.cinza }}>
+                        {ir.nome}{semPosicao && <em style={SB.resumoNota}> · sem posição</em>}
+                      </span>
+                    );
+                  })}
+                </div>
+              ) : <div style={SB.resumoVazio}>Todos os cadastrados foram escalados.</div>}
             </div>
           </div>
 
@@ -2287,12 +2305,13 @@ const SB = {
   funcoes: { display: "flex", gap: 6, flexWrap: "wrap" },
   chip: { display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, padding: "5px 9px", border: "1px solid " + UI.borda, borderRadius: 20, background: "#fff", color: UI.cinza, cursor: "pointer" },
   chipOn: { background: "#eef2fb", borderColor: UI.azul, color: UI.azul, fontWeight: 700 },
-  resumoGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 4 },
+  resumoGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 10, marginBottom: 4 },
   resumoBloco: { border: "1px solid " + UI.borda, borderRadius: 10, padding: 12, background: "#fcfdff" },
   resumoTitulo: { fontSize: 12, fontWeight: 700, marginBottom: 8 },
   resumoChips: { display: "flex", gap: 6, flexWrap: "wrap" },
   resumoChip: { fontSize: 12, padding: "4px 10px", borderRadius: 20, border: "1px solid transparent", whiteSpace: "nowrap" },
   resumoVazio: { fontSize: 12, color: UI.cinza, fontStyle: "italic" },
+  resumoNota: { fontSize: 11, opacity: .75 },
 };
 
 const PVB = {
