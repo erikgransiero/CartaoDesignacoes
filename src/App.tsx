@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
@@ -32,8 +32,37 @@ const DOCUMENTOS = [
   { id: "sentinela", titulo: "Reunião A Sentinela", desc: "Editar estudos e notas", icone: "livro", pronto: true },
   { id: "cartao", titulo: "Cartão de designações", desc: "Organizar designações", icone: "cracha", pronto: true },
   { id: "calendario", titulo: "Calendário de Pregação", desc: "Visualizar e planejar atividades", icone: "calendario", pronto: true },
-  { id: "bastidores", titulo: "Bastidores", desc: "Recursos de apoio e organização", icone: "pessoas", pronto: false },
+  { id: "bastidores", titulo: "Bastidores", desc: "Áudio, volantes, indicadores e limpeza", icone: "pessoas", pronto: true },
 ];
+
+/* ---------------- persistência no navegador ---------------- */
+// Cada tela guarda o que foi preenchido no próprio navegador. Além de não
+// perder o trabalho ao voltar para o menu, é isso que permite os Bastidores
+// compararem os designados com o Cartão de Designações e com A Sentinela.
+const CHAVE_SALVA = "gerenciador-documentos:";
+
+function leSalvo(chave, inicial) {
+  try {
+    const bruto = window.localStorage.getItem(CHAVE_SALVA + chave);
+    if (!bruto) return inicial;
+    const dados = JSON.parse(bruto);
+    return dados && typeof dados === "object" ? dados : inicial;
+  } catch (e) {
+    return inicial;
+  }
+}
+
+function useEstadoSalvo(chave, inicial) {
+  const [dados, setDados] = useState(() => leSalvo(chave, inicial));
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(CHAVE_SALVA + chave, JSON.stringify(dados));
+    } catch (e) {
+      /* navegador sem espaço ou em modo privado: seguimos sem salvar */
+    }
+  }, [chave, dados]);
+  return [dados, setDados];
+}
 
 /* ---------------- ÍCONES (SVG de linha, estilo jw.org) ---------------- */
 function Icone({ nome, size = 40, color = TEMPLATE.azul }) {
@@ -77,6 +106,7 @@ export default function App() {
       {tela === "sentinela" && <TelaSentinela onVoltar={() => setTela("menu")} />}
       {tela === "calendario" && <TelaCalendario onVoltar={() => setTela("menu")} />}
       {tela === "cartao" && <TelaCartao onVoltar={() => setTela("menu")} />}
+      {tela === "bastidores" && <TelaBastidores onVoltar={() => setTela("menu")} />}
     </div>
   );
 }
@@ -179,7 +209,7 @@ const DADOS_INICIAIS = {
 };
 
 function TelaDiscurso({ onVoltar }) {
-  const [dados, setDados] = useState(DADOS_INICIAIS);
+  const [dados, setDados] = useEstadoSalvo("discurso", DADOS_INICIAIS);
   const [aviso, setAviso] = useState(null);
   const [selLinha, setSelLinha] = useState(null);
   const [selObs, setSelObs] = useState(null);
@@ -388,7 +418,7 @@ const SENTINELA_INICIAL = {
 };
 
 function TelaSentinela({ onVoltar }) {
-  const [dados, setDados] = React.useState(SENTINELA_INICIAL);
+  const [dados, setDados] = useEstadoSalvo("sentinela", SENTINELA_INICIAL);
   const [selObs, setSelObs] = React.useState(null);
   const [colado, setColado] = React.useState("");
   const [previa, setPrevia] = React.useState(null);
@@ -628,7 +658,7 @@ function TelaCalendario({ onVoltar }) {
     base.dias = gerarDias(base.qtdDias, base.inicioSemana);
     return base;
   }, []);
-  const [dados, setDados] = React.useState(inicial);
+  const [dados, setDados] = useEstadoSalvo("calendario", inicial);
   const [diaAberto, setDiaAberto] = React.useState(null);
   const [foto, setFoto] = React.useState(IMG_CALENDARIO);
   const [fotoOriginalAtiva, setFotoOriginalAtiva] = React.useState(true);
@@ -1168,7 +1198,7 @@ const CARTAO_INICIAL = {
 };
 
 function TelaCartao({ onVoltar }) {
-  const [dados, setDados] = useState(CARTAO_INICIAL);
+  const [dados, setDados] = useEstadoSalvo("cartao", CARTAO_INICIAL);
   const inputPdf = useRef(null);
   const [pdfProcessando, setPdfProcessando] = useState(false);
   const [pdfErro, setPdfErro] = useState("");
@@ -1435,6 +1465,578 @@ function PreviewCartao({ dados }) {
 }
 
 
+/* ====================== TELA BASTIDORES ====================== */
+
+const DIAS_ABREV = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
+const DIAS_NOME = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
+const ORDEM_DIAS = [1, 2, 3, 4, 5, 6, 0]; // segunda → domingo, como no menu
+const MESES_NOME = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+const GRUPOS_LIMPEZA = ["A", "B", "C"];
+const ESTILO_GRUPO = {
+  A: { fundo: "#E3F0F0", cor: "#007575" },
+  B: { fundo: "#FFF3D6", cor: "#B08500" },
+  C: { fundo: "#F5E3E3", cor: "#800000" },
+};
+const FUNDO_FDS = "#EAEFF7";      // linha de fim de semana
+const COR_NOME = "#3B5998";
+const COR_CONFLITO = "#F8D0D0";   // vermelho claro: conflito
+const COR_SEGUIDO = "#FFF0B3";    // amarelo claro: trabalhou na reunião anterior
+
+const COLUNAS_DESIGNADOS = [
+  { campo: "audioVideo", titulo: "Áudio / Vídeo", funcao: "audioVideo" },
+  { campo: "volanteDireito", titulo: "Volante Direito", funcao: "volante" },
+  { campo: "volanteEsquerdo", titulo: "Volante Esquerdo", funcao: "volante" },
+  { campo: "indicadorEntrada", titulo: "Indicador Entrada", funcao: "indicador" },
+  { campo: "indicadorAuditorio", titulo: "Indicador Auditório", funcao: "indicador" },
+];
+const CAMPOS_DESIGNADOS = COLUNAS_DESIGNADOS.map((c) => c.campo);
+const FUNCOES_IRMAO = [
+  { id: "audioVideo", titulo: "Áudio / Vídeo" },
+  { id: "volante", titulo: "Volante" },
+  { id: "indicador", titulo: "Indicador" },
+];
+
+/* ---- datas ---- */
+function isoData(ano, mes, dia) {
+  return `${ano}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+}
+function partesData(iso) {
+  const [a, m, d] = (iso || "").split("-").map(Number);
+  return { ano: a, mes: m, dia: d };
+}
+function diaDaSemanaISO(iso) {
+  const { ano, mes, dia } = partesData(iso);
+  if (!ano) return 0;
+  return new Date(ano, mes - 1, dia).getDay();
+}
+function formataDataCurta(iso) {
+  const { mes, dia } = partesData(iso);
+  if (!mes) return "";
+  return `${String(dia).padStart(2, "0")}/${String(mes).padStart(2, "0")}`;
+}
+// Move a data para outro dia da mesma semana (semana começando na segunda).
+function trocaDiaDaSemana(iso, novoDia) {
+  const { ano, mes, dia } = partesData(iso);
+  if (!ano) return iso;
+  const d = new Date(ano, mes - 1, dia);
+  const deslocAtual = (d.getDay() + 6) % 7;   // 0 = segunda
+  const deslocNovo = (novoDia + 6) % 7;
+  d.setDate(d.getDate() - deslocAtual + deslocNovo);
+  return isoData(d.getFullYear(), d.getMonth() + 1, d.getDate());
+}
+
+/* ---- comparação de nomes ---- */
+function normalizaNome(s) {
+  return (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z\s]/g, " ").replace(/\s+/g, " ").trim();
+}
+function separaNomes(valor) {
+  return String(valor || "").split(/[\/,]/).map((n) => n.trim()).filter(Boolean);
+}
+// "Erik" e "Erik Gransiero" contam como a mesma pessoa; "Lucas Soares" e
+// "Lucas Santana", não.
+function mesmoIrmao(a, b) {
+  const ta = normalizaNome(a).split(" ").filter(Boolean);
+  const tb = normalizaNome(b).split(" ").filter(Boolean);
+  if (!ta.length || !tb.length) return false;
+  const [menor, maior] = ta.length <= tb.length ? [ta, tb] : [tb, ta];
+  return menor.every((t) => maior.includes(t));
+}
+
+/* ---- casar a linha com a semana certa do Cartão / da Sentinela ---- */
+function intervaloDoRotulo(rotulo) {
+  const texto = String(rotulo || "");
+  const mIntervalo = texto.match(/(\d{1,2})\s*[–—-]\s*(\d{1,2})\b/);
+  if (mIntervalo) return { ini: Number(mIntervalo[1]), fim: Number(mIntervalo[2]) };
+  const mUnico = texto.match(/(\d{1,2})/);
+  if (!mUnico) return null;
+  const ini = Number(mUnico[1]);
+  const fim = ini + 6 > 31 ? ini + 6 - 31 : ini + 6;
+  return { ini, fim };
+}
+function mesesDoRotulo(rotulo) {
+  const t = normalizaNome(rotulo);
+  const achados = [];
+  MESES_NOME.forEach((nome, i) => { if (t.includes(normalizaNome(nome))) achados.push(i + 1); });
+  return achados;
+}
+// Casa a linha com a semana certa comparando dia E mês do rótulo. Se os
+// rótulos são de outro mês (ex.: Cartão de agosto x Bastidores de setembro),
+// não há o que comparar — melhor não apontar conflito nenhum do que apontar
+// um conflito falso.
+function achaSemanaPorData(itens, pegaRotulo, dia, mes, idxFallback) {
+  let algumRotuloTinhaMes = false;
+  for (const it of itens || []) {
+    const rotulo = pegaRotulo(it);
+    const meses = mesesDoRotulo(rotulo);
+    if (meses.length) {
+      algumRotuloTinhaMes = true;
+      if (!meses.includes(mes)) continue;
+    }
+    const iv = intervaloDoRotulo(rotulo);
+    if (!iv) continue;
+    const dentro = iv.fim >= iv.ini ? dia >= iv.ini && dia <= iv.fim : dia >= iv.ini || dia <= iv.fim;
+    if (dentro) return it;
+  }
+  if (algumRotuloTinhaMes) return null;
+  return (itens || [])[idxFallback] || null;
+}
+function nomesDaSemanaCartao(semana) {
+  if (!semana || semana.semReuniao) return [];
+  const brutos = [semana.presidente, semana.oracaoInicial, semana.tema1Designado,
+    semana.joiasDesignado, semana.leituraDesignado, semana.oracaoFinal];
+  (semana.ministerio || []).forEach((p) => brutos.push(p.designado));
+  (semana.vidaCrista || []).forEach((p) => brutos.push(p.designado));
+  return brutos.flatMap(separaNomes);
+}
+function nomesDoBlocoSentinela(bloco) {
+  if (!bloco) return [];
+  const brutos = [bloco.presidente, bloco.oracaoInicial, bloco.estudo, bloco.leitor,
+    bloco.oracaoFinal, bloco.discursoInicialResp, bloco.discursoFinalResp];
+  return brutos.flatMap(separaNomes);
+}
+// Para cada linha, quais nomes já estão designados na reunião daquela semana:
+// linha de meio de semana (seg–sex) confere o Cartão de Designações; linha de
+// fim de semana (sáb/dom) confere A Sentinela.
+function conflitosPorLinha(linhas, cartao, sentinela) {
+  let idxMeio = 0, idxFds = 0;
+  return linhas.map((linha) => {
+    const dow = diaDaSemanaISO(linha.data);
+    const { dia, mes } = partesData(linha.data);
+    if (dow === 0 || dow === 6) {
+      const bloco = achaSemanaPorData(sentinela.blocos, (b) => b.data, dia, mes, idxFds++);
+      return nomesDoBlocoSentinela(bloco);
+    }
+    const semana = achaSemanaPorData(cartao.semanas, (s) => s.dataLabel, dia, mes, idxMeio++);
+    return nomesDaSemanaCartao(semana);
+  });
+}
+
+/* ---- validação de cada célula ---- */
+function estadoCelula(linhas, idx, campo, conflitos) {
+  const linha = linhas[idx];
+  const valor = linha[campo];
+  if (!valor || !valor.trim()) return "";
+  const outrosDaLinha = CAMPOS_DESIGNADOS.filter((c) => c !== campo).map((c) => linha[c]);
+  if (outrosDaLinha.some((v) => v && mesmoIrmao(v, valor))) return "conflito";
+  if ((conflitos || []).some((n) => mesmoIrmao(n, valor))) return "conflito";
+  const anterior = linhas[idx - 1];
+  if (anterior && CAMPOS_DESIGNADOS.some((c) => anterior[c] && mesmoIrmao(anterior[c], valor))) return "seguido";
+  return "";
+}
+function fundoDaCelula(estado) {
+  if (estado === "conflito") return COR_CONFLITO;
+  if (estado === "seguido") return COR_SEGUIDO;
+  return "";
+}
+
+/* ---- linhas do mês ---- */
+function novaLinhaBastidores(data) {
+  return {
+    id: novoIdCartao(), data,
+    audioVideo: "", volanteDireito: "", volanteEsquerdo: "",
+    indicadorEntrada: "", indicadorAuditorio: "", limpeza: "A",
+  };
+}
+// A partir da letra escolhida numa linha, as seguintes seguem o ciclo A → B → C.
+function aplicaCicloLimpeza(linhas, idxInicio, letra) {
+  const base = GRUPOS_LIMPEZA.indexOf(letra);
+  if (base < 0) return linhas;
+  return linhas.map((l, i) => (i < idxInicio ? l : { ...l, limpeza: GRUPOS_LIMPEZA[(base + (i - idxInicio)) % 3] }));
+}
+function gerarLinhasDoMes(mes, ano, diaFds, diaMeio, letraInicial) {
+  const linhas = [];
+  const ultimoDia = new Date(ano, mes, 0).getDate();
+  for (let dia = 1; dia <= ultimoDia; dia++) {
+    const dow = new Date(ano, mes - 1, dia).getDay();
+    if (dow === diaFds || dow === diaMeio) linhas.push(novaLinhaBastidores(isoData(ano, mes, dia)));
+  }
+  linhas.sort((a, b) => a.data.localeCompare(b.data));
+  return aplicaCicloLimpeza(linhas, 0, letraInicial || "A");
+}
+
+/* ---- sorteio das designações ---- */
+function sorteiaDesignados(linhas, irmaos, conflitos) {
+  const novas = linhas.map((l) => ({ ...l }));
+  novas.forEach((linha, i) => {
+    const anterior = novas[i - 1];
+    const daSemana = conflitos[i] || [];
+    const usadosNaLinha = [];
+    for (const col of COLUNAS_DESIGNADOS) {
+      const candidatos = (irmaos || []).filter((ir) => ir.nome && ir.nome.trim() && (ir.funcoes || []).includes(col.funcao));
+      if (!candidatos.length) { linha[col.campo] = ""; continue; }
+      // pesos: repetir na mesma linha é o pior; depois conflito com a
+      // designação da semana; depois ter trabalhado na reunião anterior.
+      const ranqueados = candidatos.map((ir) => {
+        let peso = Math.random();
+        if (usadosNaLinha.some((n) => mesmoIrmao(n, ir.nome))) peso += 100;
+        if (daSemana.some((n) => mesmoIrmao(n, ir.nome))) peso += 50;
+        if (anterior && CAMPOS_DESIGNADOS.some((c) => anterior[c] && mesmoIrmao(anterior[c], ir.nome))) peso += 10;
+        return { ir, peso };
+      }).sort((a, b) => a.peso - b.peso);
+      linha[col.campo] = ranqueados[0].ir.nome;
+      usadosNaLinha.push(ranqueados[0].ir.nome);
+    }
+  });
+  return novas;
+}
+
+const IRMAOS_INICIAIS = [
+  { nome: "João Pedro", funcoes: ["audioVideo"] },
+  { nome: "Erik", funcoes: ["audioVideo"] },
+  { nome: "Lucas Soares", funcoes: ["audioVideo"] },
+  { nome: "Rodrigo", funcoes: ["audioVideo"] },
+  { nome: "Valmir", funcoes: ["volante"] },
+  { nome: "Lucas Santana", funcoes: ["volante"] },
+  { nome: "José Carlos", funcoes: ["volante"] },
+  { nome: "Daniel", funcoes: ["volante"] },
+  { nome: "Bryan", funcoes: ["volante"] },
+  { nome: "Orlando", funcoes: ["volante"] },
+  { nome: "Paulo", funcoes: ["volante", "indicador"] },
+  { nome: "Ricardo", funcoes: ["volante", "indicador"] },
+  { nome: "Anderson", funcoes: ["volante", "indicador"] },
+  { nome: "Cézar", funcoes: ["indicador"] },
+  { nome: "Wellington", funcoes: ["indicador"] },
+  { nome: "Vicente", funcoes: ["indicador"] },
+  { nome: "Vinicio", funcoes: ["indicador"] },
+  { nome: "João Bizerra", funcoes: ["indicador"] },
+  { nome: "Jair", funcoes: ["indicador"] },
+  { nome: "Dorival", funcoes: ["indicador"] },
+  { nome: "Filipe", funcoes: ["indicador"] },
+].map((ir, i) => ({ id: 900 + i, ...ir }));
+
+const BASTIDORES_INICIAL = {
+  titulo: "Bastidores",
+  subtitulo: "Áudio e Vídeo • Volantes • Indicadores • Limpeza",
+  congregacao: "Congregação Parque Scaffid",
+  mes: 9, ano: 2026,
+  diaFimDeSemana: 0, // domingo
+  diaMeioDeSemana: 2, // terça
+  responsavelAudio: "Rogério Mota",
+  responsavelIndicadores: "Dorival Matos",
+  avisoResponsaveis: "Caso não consiga cumprir com sua designação, avise imediatamente aos responsáveis!",
+  linhas: [
+    { id: 801, data: "2026-09-06", audioVideo: "João Pedro", volanteDireito: "Valmir", volanteEsquerdo: "Bryan", indicadorEntrada: "Ricardo", indicadorAuditorio: "Cézar", limpeza: "B" },
+    { id: 802, data: "2026-09-08", audioVideo: "Erik", volanteDireito: "Lucas Santana", volanteEsquerdo: "Anderson", indicadorEntrada: "Wellington", indicadorAuditorio: "Vicente", limpeza: "C" },
+    { id: 803, data: "2026-09-13", audioVideo: "Lucas Soares", volanteDireito: "José Carlos", volanteEsquerdo: "Valmir", indicadorEntrada: "Paulo", indicadorAuditorio: "Vinicio", limpeza: "A" },
+    { id: 804, data: "2026-09-15", audioVideo: "João Pedro", volanteDireito: "Daniel", volanteEsquerdo: "Orlando", indicadorEntrada: "João Bizerra", indicadorAuditorio: "Jair", limpeza: "B" },
+    { id: 805, data: "2026-09-20", audioVideo: "Erik", volanteDireito: "Lucas Santana", volanteEsquerdo: "Bryan", indicadorEntrada: "Anderson", indicadorAuditorio: "Dorival", limpeza: "C" },
+    { id: 806, data: "2026-09-22", audioVideo: "Lucas Soares", volanteDireito: "José Carlos", volanteEsquerdo: "Ricardo", indicadorEntrada: "Cézar", indicadorAuditorio: "Vicente", limpeza: "A" },
+    { id: 807, data: "2026-09-27", audioVideo: "Rodrigo", volanteDireito: "Paulo", volanteEsquerdo: "Daniel", indicadorEntrada: "João Bizerra", indicadorAuditorio: "Wellington", limpeza: "B" },
+    { id: 808, data: "2026-09-29", audioVideo: "João Pedro", volanteDireito: "Bryan", volanteEsquerdo: "Orlando", indicadorEntrada: "Vinicio", indicadorAuditorio: "Filipe", limpeza: "C" },
+  ],
+  irmaos: IRMAOS_INICIAIS,
+  tituloOrientacoes: "ORIENTAÇÕES AO IRMÃO DESIGNADO PARA ÁUDIO / VÍDEO",
+  orientacoes: [
+    { id: 1, texto: "Conectar o TABLET ao ZOOM e deixá-lo disponível na tribuna." },
+    { id: 2, texto: "Ao ligar o tablet no início da reunião, verificar a bateria. Se estiver descarregado, iniciar a carga durante a primeira parte da reunião." },
+    { id: 3, texto: "Ao término da reunião, recolher, desligar e guardar o tablet." },
+  ],
+  observacoes: [
+    { id: 1, texto: "27/09 — Discurso especial com o tema: “Como a Bíblia pode ajudar você?” no horário das 18:00hs. Chegar com antecedência para testar som, microfones e vídeo antes da chegada dos irmãos." },
+  ],
+};
+
+function TelaBastidores({ onVoltar }) {
+  const [dados, setDados] = useEstadoSalvo("bastidores", BASTIDORES_INICIAL);
+  // lidos uma vez ao abrir a tela: é com eles que conferimos os conflitos
+  const cartao = React.useMemo(() => leSalvo("cartao", CARTAO_INICIAL), []);
+  const sentinela = React.useMemo(() => leSalvo("sentinela", SENTINELA_INICIAL), []);
+  const conflitos = React.useMemo(
+    () => conflitosPorLinha(dados.linhas, cartao, sentinela),
+    [dados.linhas, cartao, sentinela]
+  );
+
+  function editaCampo(campo, valor) { setDados((d) => ({ ...d, [campo]: valor })); }
+
+  function regeneraMes(mes, ano) {
+    setDados((d) => {
+      const linhas = gerarLinhasDoMes(mes, ano, d.diaFimDeSemana, d.diaMeioDeSemana, d.linhas[0] ? d.linhas[0].limpeza : "A");
+      const conf = conflitosPorLinha(linhas, cartao, sentinela);
+      return { ...d, mes, ano, linhas: sorteiaDesignados(linhas, d.irmaos, conf) };
+    });
+  }
+  function sortearNovamente() {
+    setDados((d) => ({ ...d, linhas: sorteiaDesignados(d.linhas, d.irmaos, conflitosPorLinha(d.linhas, cartao, sentinela)) }));
+  }
+
+  function editaLinha(id, campo, valor) {
+    setDados((d) => ({ ...d, linhas: d.linhas.map((l) => (l.id === id ? { ...l, [campo]: valor } : l)) }));
+  }
+  function mudaDiaDaLinha(id, novoDia) {
+    setDados((d) => {
+      const linhas = d.linhas.map((l) => (l.id === id ? { ...l, data: trocaDiaDaSemana(l.data, novoDia) } : l));
+      linhas.sort((a, b) => a.data.localeCompare(b.data));
+      return { ...d, linhas };
+    });
+  }
+  function mudaLimpeza(id, letra) {
+    setDados((d) => {
+      const idx = d.linhas.findIndex((l) => l.id === id);
+      if (idx < 0) return d;
+      return { ...d, linhas: aplicaCicloLimpeza(d.linhas, idx, letra) };
+    });
+  }
+  function addLinha() {
+    setDados((d) => {
+      const ultima = d.linhas[d.linhas.length - 1];
+      const base = ultima ? ultima.data : isoData(d.ano, d.mes, 1);
+      const p = partesData(base);
+      const prox = new Date(p.ano, p.mes - 1, p.dia + 7);
+      const nova = novaLinhaBastidores(isoData(prox.getFullYear(), prox.getMonth() + 1, prox.getDate()));
+      return { ...d, linhas: aplicaCicloLimpeza([...d.linhas, nova], 0, d.linhas[0] ? d.linhas[0].limpeza : "A") };
+    });
+  }
+  function removeLinha(id) {
+    setDados((d) => {
+      const linhas = d.linhas.filter((l) => l.id !== id);
+      return { ...d, linhas: aplicaCicloLimpeza(linhas, 0, linhas[0] ? linhas[0].limpeza : "A") };
+    });
+  }
+
+  function addIrmao() {
+    setDados((d) => ({ ...d, irmaos: [...d.irmaos, { id: novoIdCartao(), nome: "", funcoes: [] }] }));
+  }
+  function removeIrmao(id) {
+    setDados((d) => ({ ...d, irmaos: d.irmaos.filter((ir) => ir.id !== id) }));
+  }
+  function editaIrmao(id, nome) {
+    setDados((d) => ({ ...d, irmaos: d.irmaos.map((ir) => (ir.id === id ? { ...ir, nome } : ir)) }));
+  }
+  function alternaFuncao(id, funcao) {
+    setDados((d) => ({ ...d, irmaos: d.irmaos.map((ir) => {
+      if (ir.id !== id) return ir;
+      const tem = (ir.funcoes || []).includes(funcao);
+      return { ...ir, funcoes: tem ? ir.funcoes.filter((f) => f !== funcao) : [...(ir.funcoes || []), funcao] };
+    }) }));
+  }
+
+  function editaOrientacao(id, texto) {
+    setDados((d) => ({ ...d, orientacoes: d.orientacoes.map((o) => (o.id === id ? { ...o, texto } : o)) }));
+  }
+  function addOrientacao() { setDados((d) => ({ ...d, orientacoes: [...d.orientacoes, { id: novoIdCartao(), texto: "" }] })); }
+  function removeOrientacao(id) { setDados((d) => ({ ...d, orientacoes: d.orientacoes.filter((o) => o.id !== id) })); }
+  function editaObs(id, texto) { setDados((d) => ({ ...d, observacoes: d.observacoes.map((o) => (o.id === id ? { ...o, texto } : o)) })); }
+  function addObs() { setDados((d) => ({ ...d, observacoes: [...d.observacoes, { id: novoIdCartao(), texto: "" }] })); }
+  function removeObs(id) { setDados((d) => ({ ...d, observacoes: d.observacoes.filter((o) => o.id !== id) })); }
+
+  const totalConflitos = dados.linhas.reduce((soma, _l, i) => soma + CAMPOS_DESIGNADOS
+    .filter((c) => estadoCelula(dados.linhas, i, c, conflitos[i]) === "conflito").length, 0);
+
+  return (
+    <div style={S.page}>
+      <header style={S.appbar}>
+        <button style={S.voltar} onClick={onVoltar}><Icone nome="voltar" size={18} color="#fff" /> Voltar ao menu principal</button>
+        <div style={{ marginLeft: 14 }}>
+          <div style={S.brandTitle}>Bastidores</div>
+          <div style={S.brandSub}>{dados.congregacao}</div>
+        </div>
+        <div style={S.appbarTag}>Validação</div>
+      </header>
+
+      <div style={S.grid} className="grid">
+        <section style={S.editor}>
+          <h2 style={S.h2}>Mês da programação</h2>
+          <div style={SC.linha3}>
+            <div style={S.field}>
+              <label style={S.lab}>Mês</label>
+              <select style={S.tipoSelect} value={dados.mes} onChange={(e) => regeneraMes(Number(e.target.value), dados.ano)}>
+                {MESES_NOME.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+              </select>
+            </div>
+            <div style={S.field}>
+              <label style={S.lab}>Ano</label>
+              <input type="number" style={{ ...S.input, maxWidth: 110 }} value={dados.ano}
+                onChange={(e) => regeneraMes(dados.mes, Number(e.target.value) || dados.ano)} />
+            </div>
+            <div style={S.field}>
+              <label style={S.lab}>&nbsp;</label>
+              <button style={S.btnProcessar} onClick={sortearNovamente}>Sortear novamente</button>
+            </div>
+          </div>
+          <p style={S.hint}>
+            Ao trocar o mês, as linhas são recriadas (uma reunião de fim de semana e uma de meio de semana por semana)
+            e preenchidas com uma sugestão automática a partir do cadastro de irmãos.
+          </p>
+
+          <h3 style={S.h3}>Designações</h3>
+          <p style={S.hint}>
+            <span style={{ ...SB.legenda, background: COR_CONFLITO }}>vermelho</span> = o irmão já tem parte na reunião dessa semana
+            (Cartão de Designações nas reuniões de meio de semana, A Sentinela nos fins de semana) ou está repetido na mesma linha.{" "}
+            <span style={{ ...SB.legenda, background: COR_SEGUIDO }}>amarelo</span> = trabalhou também na reunião anterior.
+            {totalConflitos > 0 && <strong> {totalConflitos} conflito(s) para revisar.</strong>}
+          </p>
+
+          <div style={SB.tabelaScroll}>
+            <table style={SB.tabela}>
+              <thead>
+                <tr>
+                  <th style={SB.th}>Data</th>
+                  {COLUNAS_DESIGNADOS.map((c) => <th key={c.campo} style={SB.th}>{c.titulo}</th>)}
+                  <th style={SB.th}>Limpeza</th>
+                  <th style={SB.th}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {dados.linhas.map((linha, i) => {
+                  const dow = diaDaSemanaISO(linha.data);
+                  const fds = dow === 0 || dow === 6;
+                  return (
+                    <tr key={linha.id} style={{ background: fds ? FUNDO_FDS : "#fff" }}>
+                      <td style={SB.td}>
+                        <select style={SB.selectDia} value={dow} onChange={(e) => mudaDiaDaLinha(linha.id, Number(e.target.value))}>
+                          {ORDEM_DIAS.map((d) => <option key={d} value={d} title={DIAS_NOME[d]}>{DIAS_ABREV[d]}</option>)}
+                        </select>
+                        <div style={SB.dataTexto}>{formataDataCurta(linha.data)}</div>
+                      </td>
+                      {COLUNAS_DESIGNADOS.map((c) => (
+                        <td key={c.campo} style={SB.td}>
+                          <input style={{ ...SB.inputNome, background: fundoDaCelula(estadoCelula(dados.linhas, i, c.campo, conflitos[i])) || "#fff" }}
+                            value={linha[c.campo]} onChange={(e) => editaLinha(linha.id, c.campo, e.target.value)} />
+                        </td>
+                      ))}
+                      <td style={SB.td}>
+                        <select style={{ ...SB.selectLimpeza, background: ESTILO_GRUPO[linha.limpeza].fundo, color: ESTILO_GRUPO[linha.limpeza].cor }}
+                          value={linha.limpeza} onChange={(e) => mudaLimpeza(linha.id, e.target.value)}>
+                          {GRUPOS_LIMPEZA.map((g) => <option key={g} value={g}>{g}</option>)}
+                        </select>
+                      </td>
+                      <td style={SB.td}>
+                        <button style={SB.btnLinha} onClick={() => removeLinha(linha.id)} title="Remover linha">×</button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <button style={S.btnAdd} onClick={addLinha}>+ Adicionar linha</button>
+
+          <h3 style={S.h3}>Irmãos disponíveis para o trabalho</h3>
+          <p style={S.hint}>Marque em que posições cada irmão pode servir. O sorteio automático só usa quem estiver marcado.</p>
+          {dados.irmaos.map((ir) => (
+            <div key={ir.id} style={SB.irmaoRow}>
+              <input style={{ ...S.input, flex: 1, minWidth: 140 }} placeholder="Nome do irmão" value={ir.nome}
+                onChange={(e) => editaIrmao(ir.id, e.target.value)} />
+              <div style={SB.funcoes}>
+                {FUNCOES_IRMAO.map((f) => (
+                  <label key={f.id} style={{ ...SB.chip, ...((ir.funcoes || []).includes(f.id) ? SB.chipOn : {}) }}>
+                    <input type="checkbox" checked={(ir.funcoes || []).includes(f.id)} onChange={() => alternaFuncao(ir.id, f.id)} />
+                    {f.titulo}
+                  </label>
+                ))}
+              </div>
+              <button style={S.btnRemover} onClick={() => removeIrmao(ir.id)}>Remover</button>
+            </div>
+          ))}
+          <button style={S.btnAdd} onClick={addIrmao}>+ Adicionar irmão</button>
+
+          <h3 style={S.h3}>Responsáveis</h3>
+          <div style={SC.linha2}>
+            <div style={S.field}><label style={S.lab}>Áudio e Vídeo</label>
+              <input style={S.input} value={dados.responsavelAudio} onChange={(e) => editaCampo("responsavelAudio", e.target.value)} /></div>
+            <div style={S.field}><label style={S.lab}>Indicadores</label>
+              <input style={S.input} value={dados.responsavelIndicadores} onChange={(e) => editaCampo("responsavelIndicadores", e.target.value)} /></div>
+          </div>
+          <div style={S.field}><label style={S.lab}>Aviso</label>
+            <input style={S.input} value={dados.avisoResponsaveis} onChange={(e) => editaCampo("avisoResponsaveis", e.target.value)} /></div>
+
+          <h3 style={S.h3}>Orientações</h3>
+          <div style={S.field}><label style={S.lab}>Título da seção</label>
+            <input style={S.input} value={dados.tituloOrientacoes} onChange={(e) => editaCampo("tituloOrientacoes", e.target.value)} /></div>
+          {dados.orientacoes.map((o) => (
+            <div key={o.id} style={S.obsCard}>
+              <textarea style={S.obsArea} rows={2} value={o.texto} onChange={(e) => editaOrientacao(o.id, e.target.value)} />
+              <div style={S.cardFooter}><button style={S.btnRemover} onClick={() => removeOrientacao(o.id)}>Remover</button></div>
+            </div>
+          ))}
+          <button style={S.btnAdd} onClick={addOrientacao}>+ Adicionar orientação</button>
+
+          <h3 style={S.h3}>Observações</h3>
+          {dados.observacoes.map((o) => (
+            <div key={o.id} style={S.obsCard}>
+              <textarea style={S.obsArea} rows={2} value={o.texto} onChange={(e) => editaObs(o.id, e.target.value)} />
+              <div style={S.cardFooter}><button style={S.btnRemover} onClick={() => removeObs(o.id)}>Remover</button></div>
+            </div>
+          ))}
+          <button style={S.btnAdd} onClick={addObs}>+ Adicionar observação</button>
+        </section>
+
+        <section style={S.previewWrap}><h2 style={S.h2}>Pré-visualização</h2>
+          <PreviewBastidores dados={dados} conflitos={conflitos} />
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function PreviewBastidores({ dados, conflitos }) {
+  return (
+    <div style={PVB.frame}>
+      <div style={PVB.titulo}>{dados.titulo}</div>
+      <div style={PVB.subtitulo}>{dados.subtitulo}</div>
+      <div style={PVB.info}>{dados.congregacao} • {MESES_NOME[dados.mes - 1]}/{dados.ano}</div>
+
+      <table style={PVB.tabela}>
+        <thead>
+          <tr>
+            <th style={PVB.th}>Data</th>
+            {COLUNAS_DESIGNADOS.map((c) => <th key={c.campo} style={PVB.th}>{c.titulo}</th>)}
+            <th style={PVB.th}>Limpeza Pós-Reunião</th>
+          </tr>
+        </thead>
+        <tbody>
+          {dados.linhas.map((linha, i) => {
+            const dow = diaDaSemanaISO(linha.data);
+            const fds = dow === 0 || dow === 6;
+            const grupo = ESTILO_GRUPO[linha.limpeza] || ESTILO_GRUPO.A;
+            return (
+              <tr key={linha.id} style={{ background: fds ? FUNDO_FDS : "#fff" }}>
+                <td style={PVB.tdData}>
+                  <div style={PVB.diaSemana}>{DIAS_ABREV[dow]}</div>
+                  <div style={PVB.diaData}>{formataDataCurta(linha.data)}</div>
+                </td>
+                {COLUNAS_DESIGNADOS.map((c) => {
+                  const fundo = fundoDaCelula(estadoCelula(dados.linhas, i, c.campo, conflitos[i]));
+                  return <td key={c.campo} style={{ ...PVB.tdNome, background: fundo || "transparent" }}>{linha[c.campo]}</td>;
+                })}
+                <td style={{ ...PVB.tdLimpeza, background: grupo.fundo, color: grupo.cor }}>{linha.limpeza}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      <div style={PVB.legendaLinha}>
+        {GRUPOS_LIMPEZA.map((g) => (
+          <div key={g} style={{ ...PVB.legendaBox, background: ESTILO_GRUPO[g].fundo, color: ESTILO_GRUPO[g].cor }}>
+            GRUPO {g} — limpeza pós-reunião
+          </div>
+        ))}
+      </div>
+
+      <div style={PVB.secaoTitulo}>RESPONSÁVEIS</div>
+      <div style={PVB.regua} />
+      <div style={PVB.responsaveis}>
+        <span><strong>Áudio e Vídeo:</strong> {dados.responsavelAudio}</span>
+        <span><strong>Indicadores:</strong> {dados.responsavelIndicadores}</span>
+      </div>
+      <div style={PVB.aviso}>{dados.avisoResponsaveis}</div>
+
+      <div style={PVB.secaoTitulo}>{dados.tituloOrientacoes}</div>
+      <div style={PVB.regua} />
+      {dados.orientacoes.map((o, i) => (
+        <div key={o.id} style={PVB.orientacao}><strong>{i + 1}.</strong> {o.texto}</div>
+      ))}
+      {dados.observacoes.map((o) => (
+        <div key={o.id} style={PVB.observacao}>* {o.texto}</div>
+      ))}
+    </div>
+  );
+}
+
+
 /* ---------------- estilos ---------------- */
 const UI = { azul: "#1F3864", azulClaro: "#eaf0fb", tinta: "#1c2430", cinza: "#5b6472", borda: "#e6e9ef", fundo: "#f7f9fc", verde: "#1f7a4d" };
 const CAL = {
@@ -1614,6 +2216,45 @@ const PVC = {
   semReuniao: { background: TEMPLATE.rosaClaro, textAlign: "center", padding: "16px 10px" },
   semReuniaoTitulo: { color: TEMPLATE.vinho, fontWeight: 800, fontSize: 11 },
   semReuniaoMotivo: { color: TEMPLATE.vinho, fontStyle: "italic", fontSize: 10, marginTop: 4 },
+};
+
+const SB = {
+  legenda: { display: "inline-block", padding: "1px 6px", borderRadius: 4, fontWeight: 700, color: "#5b3030" },
+  tabelaScroll: { overflowX: "auto", border: "1px solid " + UI.borda, borderRadius: 10, marginBottom: 10 },
+  tabela: { borderCollapse: "collapse", width: "100%", minWidth: 780 },
+  th: { background: TEMPLATE.azul, color: "#fff", fontSize: 11, fontWeight: 700, padding: "7px 8px", textAlign: "left", whiteSpace: "nowrap" },
+  td: { padding: "5px 6px", borderBottom: "1px solid " + UI.borda, verticalAlign: "middle" },
+  selectDia: { fontSize: 11, padding: "4px 6px", border: "1px solid " + UI.borda, borderRadius: 6, background: "#fff", color: TEMPLATE.azul, fontWeight: 700, cursor: "pointer", width: "100%" },
+  dataTexto: { fontSize: 12, color: "#595959", fontWeight: 700, marginTop: 2, textAlign: "center" },
+  inputNome: { width: "100%", minWidth: 110, padding: "6px 8px", border: "1px solid " + UI.borda, borderRadius: 6, fontSize: 13, color: COR_NOME, fontWeight: 600 },
+  selectLimpeza: { fontSize: 13, fontWeight: 800, padding: "6px 8px", border: "1px solid " + UI.borda, borderRadius: 6, cursor: "pointer", textAlign: "center" },
+  btnLinha: { fontSize: 14, lineHeight: 1, padding: "5px 9px", border: "1px solid #e3c2c2", color: "#9a3b3b", background: "#fff", borderRadius: 6, cursor: "pointer" },
+  irmaoRow: { display: "flex", gap: 8, alignItems: "center", marginBottom: 8, flexWrap: "wrap" },
+  funcoes: { display: "flex", gap: 6, flexWrap: "wrap" },
+  chip: { display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, padding: "5px 9px", border: "1px solid " + UI.borda, borderRadius: 20, background: "#fff", color: UI.cinza, cursor: "pointer" },
+  chipOn: { background: "#eef2fb", borderColor: UI.azul, color: UI.azul, fontWeight: 700 },
+};
+
+const PVB = {
+  frame: { background: "#fff", border: "1px solid " + UI.borda, borderRadius: 4, padding: "16px 14px" },
+  titulo: { textAlign: "center", color: TEMPLATE.azul, fontWeight: 800, fontSize: 19 },
+  subtitulo: { textAlign: "center", color: TEMPLATE.dourado, fontWeight: 700, fontSize: 10.5, marginTop: 3 },
+  info: { textAlign: "center", color: "#595959", fontWeight: 700, fontSize: 10, marginTop: 3, marginBottom: 14 },
+  tabela: { width: "100%", borderCollapse: "collapse", tableLayout: "fixed" },
+  th: { background: TEMPLATE.azul, color: "#fff", fontSize: 8.5, fontWeight: 700, padding: "5px 4px", textAlign: "center", border: "1px solid #fff" },
+  tdData: { border: "1px solid " + TEMPLATE.cinzaLinha, padding: "4px 2px", textAlign: "center", width: "11%" },
+  diaSemana: { fontSize: 9, fontWeight: 700, color: TEMPLATE.azul },
+  diaData: { fontSize: 9.5, color: "#595959", fontWeight: 700 },
+  tdNome: { border: "1px solid " + TEMPLATE.cinzaLinha, padding: "5px 4px", textAlign: "center", fontSize: 9.5, fontWeight: 700, color: COR_NOME },
+  tdLimpeza: { border: "1px solid " + TEMPLATE.cinzaLinha, padding: "5px 4px", textAlign: "center", fontSize: 11, fontWeight: 800, width: "10%" },
+  legendaLinha: { display: "flex", gap: 6, marginTop: 10 },
+  legendaBox: { flex: 1, textAlign: "center", fontSize: 8, fontWeight: 700, padding: "5px 3px", borderRadius: 2 },
+  secaoTitulo: { textAlign: "center", color: TEMPLATE.dourado, fontWeight: 700, fontSize: 11, marginTop: 18 },
+  regua: { borderBottom: "1px solid " + TEMPLATE.dourado, margin: "4px 0 8px" },
+  responsaveis: { display: "flex", justifyContent: "center", gap: 26, fontSize: 10, color: "#333", flexWrap: "wrap" },
+  aviso: { textAlign: "center", fontSize: 9.5, color: TEMPLATE.vinho, fontStyle: "italic", marginTop: 6 },
+  orientacao: { fontSize: 9.5, lineHeight: 1.5, color: "#333", marginBottom: 4 },
+  observacao: { fontSize: 9.5, lineHeight: 1.5, color: TEMPLATE.vinho, marginTop: 8, fontStyle: "italic" },
 };
 
 const CSS = `
