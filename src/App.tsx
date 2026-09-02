@@ -1631,6 +1631,23 @@ function fundoDaCelula(estado) {
   return "";
 }
 
+/* ---- resumo de quantas vezes cada irmão trabalha no mês ---- */
+function resumoParticipacoes(linhas) {
+  const mapa = new Map();
+  for (const linha of linhas) {
+    for (const campo of CAMPOS_DESIGNADOS) {
+      for (const nome of separaNomes(linha[campo])) {
+        const chave = normalizaNome(nome);
+        if (!chave) continue;
+        const atual = mapa.get(chave);
+        if (atual) atual.total += 1;
+        else mapa.set(chave, { nome: nome.trim(), total: 1 });
+      }
+    }
+  }
+  return [...mapa.values()].sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome));
+}
+
 /* ---- linhas do mês ---- */
 function novaLinhaBastidores(data) {
   return {
@@ -1824,6 +1841,10 @@ function TelaBastidores({ onVoltar }) {
   const totalConflitos = dados.linhas.reduce((soma, _l, i) => soma + CAMPOS_DESIGNADOS
     .filter((c) => estadoCelula(dados.linhas, i, c, conflitos[i]) === "conflito").length, 0);
 
+  const resumo = React.useMemo(() => resumoParticipacoes(dados.linhas), [dados.linhas]);
+  const muitasVezes = resumo.filter((r) => r.total > 2);
+  const umaVez = resumo.filter((r) => r.total === 1);
+
   return (
     <div style={S.page}>
       <header style={S.appbar}>
@@ -1884,7 +1905,7 @@ function TelaBastidores({ onVoltar }) {
                   const fds = dow === 0 || dow === 6;
                   return (
                     <tr key={linha.id} style={{ background: fds ? FUNDO_FDS : "#fff" }}>
-                      <td style={SB.td}>
+                      <td style={SB.tdData}>
                         <select style={SB.selectDia} value={dow} onChange={(e) => mudaDiaDaLinha(linha.id, Number(e.target.value))}>
                           {ORDEM_DIAS.map((d) => <option key={d} value={d} title={DIAS_NOME[d]}>{DIAS_ABREV[d]}</option>)}
                         </select>
@@ -1912,6 +1933,38 @@ function TelaBastidores({ onVoltar }) {
             </table>
           </div>
           <button style={S.btnAdd} onClick={addLinha}>+ Adicionar linha</button>
+
+          <h3 style={S.h3}>Resumo de participações no mês</h3>
+          <p style={S.hint}>
+            Só aparece quem está fora do ritmo de duas participações: de um lado quem foi escalado mais de duas vezes,
+            do outro quem ficou com uma só. Quem está com exatamente 2 fica fora da lista.
+          </p>
+          <div style={SB.resumoGrid}>
+            <div style={SB.resumoBloco}>
+              <div style={{ ...SB.resumoTitulo, color: "#9a3b3b" }}>Mais de 2 vezes ({muitasVezes.length})</div>
+              {muitasVezes.length ? (
+                <div style={SB.resumoChips}>
+                  {muitasVezes.map((r) => (
+                    <span key={r.nome} style={{ ...SB.resumoChip, background: COR_CONFLITO, borderColor: "#e3b6b6", color: "#7a2e2e" }}>
+                      {r.nome} <strong>{r.total}×</strong>
+                    </span>
+                  ))}
+                </div>
+              ) : <div style={SB.resumoVazio}>Ninguém passou de 2 participações.</div>}
+            </div>
+            <div style={SB.resumoBloco}>
+              <div style={{ ...SB.resumoTitulo, color: UI.azul }}>Apenas 1 vez ({umaVez.length})</div>
+              {umaVez.length ? (
+                <div style={SB.resumoChips}>
+                  {umaVez.map((r) => (
+                    <span key={r.nome} style={{ ...SB.resumoChip, background: "#eef2fb", borderColor: "#c9d6ee", color: UI.azul }}>
+                      {r.nome}
+                    </span>
+                  ))}
+                </div>
+              ) : <div style={SB.resumoVazio}>Ninguém ficou com uma participação só.</div>}
+            </div>
+          </div>
 
           <h3 style={S.h3}>Irmãos disponíveis para o trabalho</h3>
           <p style={S.hint}>Marque em que posições cada irmão pode servir. O sorteio automático só usa quem estiver marcado.</p>
@@ -2224,7 +2277,8 @@ const SB = {
   tabela: { borderCollapse: "collapse", width: "100%", minWidth: 780 },
   th: { background: TEMPLATE.azul, color: "#fff", fontSize: 11, fontWeight: 700, padding: "7px 8px", textAlign: "left", whiteSpace: "nowrap" },
   td: { padding: "5px 6px", borderBottom: "1px solid " + UI.borda, verticalAlign: "middle" },
-  selectDia: { fontSize: 11, padding: "4px 6px", border: "1px solid " + UI.borda, borderRadius: 6, background: "#fff", color: TEMPLATE.azul, fontWeight: 700, cursor: "pointer", width: "100%" },
+  tdData: { padding: "5px 6px", borderBottom: "1px solid " + UI.borda, verticalAlign: "middle", minWidth: 74 },
+  selectDia: { fontSize: 11, padding: "4px 4px", border: "1px solid " + UI.borda, borderRadius: 6, background: "#fff", color: TEMPLATE.azul, fontWeight: 700, cursor: "pointer", width: "100%", minWidth: 62 },
   dataTexto: { fontSize: 12, color: "#595959", fontWeight: 700, marginTop: 2, textAlign: "center" },
   inputNome: { width: "100%", minWidth: 110, padding: "6px 8px", border: "1px solid " + UI.borda, borderRadius: 6, fontSize: 13, color: COR_NOME, fontWeight: 600 },
   selectLimpeza: { fontSize: 13, fontWeight: 800, padding: "6px 8px", border: "1px solid " + UI.borda, borderRadius: 6, cursor: "pointer", textAlign: "center" },
@@ -2233,6 +2287,12 @@ const SB = {
   funcoes: { display: "flex", gap: 6, flexWrap: "wrap" },
   chip: { display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, padding: "5px 9px", border: "1px solid " + UI.borda, borderRadius: 20, background: "#fff", color: UI.cinza, cursor: "pointer" },
   chipOn: { background: "#eef2fb", borderColor: UI.azul, color: UI.azul, fontWeight: 700 },
+  resumoGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 4 },
+  resumoBloco: { border: "1px solid " + UI.borda, borderRadius: 10, padding: 12, background: "#fcfdff" },
+  resumoTitulo: { fontSize: 12, fontWeight: 700, marginBottom: 8 },
+  resumoChips: { display: "flex", gap: 6, flexWrap: "wrap" },
+  resumoChip: { fontSize: 12, padding: "4px 10px", borderRadius: 20, border: "1px solid transparent", whiteSpace: "nowrap" },
+  resumoVazio: { fontSize: 12, color: UI.cinza, fontStyle: "italic" },
 };
 
 const PVB = {
