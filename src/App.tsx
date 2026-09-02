@@ -76,6 +76,15 @@ function Icone({ nome, size = 40, color = TEMPLATE.azul }) {
     case "engrenagem": return (<svg {...p}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" /></svg>);
     case "sino": return (<svg {...p} strokeWidth="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" /></svg>);
     case "voltar": return (<svg {...p} strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>);
+    case "usuario": return (<svg {...p}><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6" /></svg>);
+    case "usuario-mais": return (<svg {...p}><circle cx="9" cy="8" r="3.5" /><path d="M3 21c0-3.6 2.7-5.5 6-5.5 1.1 0 2.1.2 3 .6" /><line x1="18" y1="14" x2="18" y2="20" /><line x1="15" y1="17" x2="21" y2="17" /></svg>);
+    case "cadeado": return (<svg {...p}><rect x="4" y="10" width="16" height="11" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /><circle cx="12" cy="15.5" r="1.3" fill={color} stroke="none" /></svg>);
+    case "olho": return (<svg {...p}><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" /><circle cx="12" cy="12" r="3" /></svg>);
+    case "olho-off": return (<svg {...p}><path d="M9.9 4.7A9.8 9.8 0 0 1 12 4.5c7 0 10.5 7 10.5 7a17 17 0 0 1-3 3.7M6.3 6.3A17 17 0 0 0 1.5 11.5S5 18.5 12 18.5c1.7 0 3.2-.4 4.5-1M3 3l18 18" /><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" /></svg>);
+    case "escudo-check": return (<svg {...p}><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3Z" /><polyline points="9 12 11.5 14.5 15.5 10" /></svg>);
+    case "relogio": return (<svg {...p}><circle cx="12" cy="12" r="8.5" /><polyline points="12 7 12 12 15.5 14" /></svg>);
+    case "lixeira": return (<svg {...p}><polyline points="3 6 5 6 21 6" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>);
+    case "check-circle": return (<svg {...p}><circle cx="12" cy="12" r="9" /><polyline points="8.5 12 11 14.5 15.5 9.5" /></svg>);
     default: return null;
   }
 }
@@ -91,45 +100,63 @@ function LogoJW({ size = 58 }) {
 
 /* ============================ APP ============================ */
 export default function App() {
-  const [tela, setTela] = useState("menu"); // "menu" | "discurso"
+  const [tela, setTela] = useState("menu"); // "menu" | "discurso" | ... | "usuarios"
 
-  function abrir(docId) {
-    const doc = DOCUMENTOS.find((d) => d.id === docId);
-    if (doc && doc.pronto) setTela(docId);
+  // Navegação pela barra lateral: documentos só abrem quando prontos; o menu
+  // e Configurações (usuários) abrem sempre.
+  function navega(destino) {
+    if (destino === "menu" || destino === "usuarios") { setTela(destino); return; }
+    const doc = DOCUMENTOS.find((d) => d.id === destino);
+    if (doc && doc.pronto) setTela(destino);
   }
 
   return (
     <div style={M.appShell}>
       <style>{CSS}</style>
-      {tela === "menu" && <TelaMenu onAbrir={abrir} telaAtual={tela} />}
+      {tela === "menu" && <TelaMenu onNavega={navega} />}
       {tela === "discurso" && <TelaDiscurso onVoltar={() => setTela("menu")} />}
       {tela === "sentinela" && <TelaSentinela onVoltar={() => setTela("menu")} />}
       {tela === "calendario" && <TelaCalendario onVoltar={() => setTela("menu")} />}
       {tela === "cartao" && <TelaCartao onVoltar={() => setTela("menu")} />}
       {tela === "bastidores" && <TelaBastidores onVoltar={() => setTela("menu")} />}
+      {tela === "usuarios" && <TelaUsuarios onNavega={navega} />}
     </div>
   );
 }
 
-/* ============================ TELA MENU ============================ */
-function TelaMenu({ onAbrir }) {
+/* ============ BARRA LATERAL (compartilhada entre menu e Configurações) ============ */
+function Sidebar({ atual, onNavega }) {
   return (
-    <div style={M.layout}>
-      {/* Sidebar */}
-      <aside style={M.sidebar}>
-        <div style={M.sidebarLogo}><LogoJW /></div>
-        <nav style={M.nav}>
-          {DOCUMENTOS.map((d) => (
-            <button key={d.id} style={{ ...M.navItem, ...(d.id === "discurso" ? M.navItemAtivo : {}) }} onClick={() => onAbrir(d.id)}>
-              <Icone nome={d.icone} size={22} color={d.id === "discurso" ? TEMPLATE.azul : "#5b6472"} />
+    <aside style={M.sidebar}>
+      <div style={{ ...M.sidebarLogo, cursor: "pointer" }} onClick={() => onNavega("menu")} title="Ir para o menu principal"><LogoJW /></div>
+      <nav style={M.nav}>
+        {DOCUMENTOS.map((d) => {
+          const ativo = d.id === atual;
+          return (
+            <button key={d.id} style={{ ...M.navItem, ...(ativo ? M.navItemAtivo : {}), ...(d.pronto ? {} : { opacity: 0.5 }) }}
+              onClick={() => onNavega(d.id)} title={d.pronto ? "" : "Em construção"}>
+              <Icone nome={d.icone} size={22} color={ativo ? TEMPLATE.azul : "#5b6472"} />
               <span style={M.navLabel}>{d.titulo.replace("\n", " ")}</span>
             </button>
-          ))}
-        </nav>
-        <div style={M.sidebarFooter}>
-          <button style={M.navItem}><Icone nome="engrenagem" size={22} color="#5b6472" /><span style={M.navLabel}>Configurações</span></button>
-        </div>
-      </aside>
+          );
+        })}
+      </nav>
+      <div style={M.sidebarFooter}>
+        <button style={{ ...M.navItem, ...(atual === "usuarios" ? M.navItemAtivo : {}) }} onClick={() => onNavega("usuarios")}>
+          <Icone nome="engrenagem" size={22} color={atual === "usuarios" ? TEMPLATE.azul : "#5b6472"} />
+          <span style={M.navLabel}>Configurações</span>
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+/* ============================ TELA MENU ============================ */
+function TelaMenu({ onNavega }) {
+  const onAbrir = onNavega;
+  return (
+    <div style={M.layout}>
+      <Sidebar atual="menu" onNavega={onNavega} />
 
       {/* Conteúdo */}
       <main style={M.main}>
@@ -173,6 +200,245 @@ function TelaMenu({ onAbrir }) {
   );
 }
 
+
+/* ====================== TELA CONFIGURAÇÕES → USUÁRIOS ====================== */
+
+const PERFIS = [
+  { id: "visualizador", titulo: "Visualizador", desc: "Só pode visualizar os documentos prontos." },
+  { id: "editor", titulo: "Editor", desc: "Pode alterar as informações dos documentos." },
+];
+
+const USUARIOS_INICIAL = {
+  usuarios: [
+    { id: 1, nome: "Erik Gransiero", email: "erik@parquescaffid.org", status: "ativo", perfil: "editor", senhaHash: "" },
+    { id: 2, nome: "Roberto Soares", email: "roberto@parquescaffid.org", status: "ativo", perfil: "visualizador", senhaHash: "" },
+  ],
+};
+
+// Guarda apenas um hash da senha (SHA-256), nunca o texto digitado.
+async function hashSenha(senha) {
+  try {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(senha));
+    return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  } catch (e) {
+    return "";
+  }
+}
+
+const FORM_VAZIO = { nome: "", email: "", senha: "", confirmar: "", status: "ativo" };
+
+function TelaUsuarios({ onNavega }) {
+  const [dados, setDados] = useEstadoSalvo("usuarios", USUARIOS_INICIAL);
+  const [form, setForm] = useState(FORM_VAZIO);
+  const [verSenha, setVerSenha] = useState(false);
+  const [verConfirmar, setVerConfirmar] = useState(false);
+  const [erro, setErro] = useState("");
+  const [aviso, setAviso] = useState("");
+
+  function editaForm(campo, valor) { setForm((f) => ({ ...f, [campo]: valor })); setErro(""); setAviso(""); }
+  function limpar() { setForm(FORM_VAZIO); setErro(""); setAviso(""); }
+
+  async function salvar() {
+    const nome = form.nome.trim();
+    const email = form.email.trim().toLowerCase();
+    if (!nome) { setErro("Informe o nome completo."); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setErro("Informe um e-mail válido para o login."); return; }
+    if (dados.usuarios.some((u) => u.email.toLowerCase() === email)) { setErro("Já existe um usuário com esse e-mail."); return; }
+    if (form.senha.length < 8 || !/[a-zA-Z]/.test(form.senha) || !/\d/.test(form.senha)) {
+      setErro("A senha deve ter pelo menos 8 caracteres, incluindo letras e números."); return;
+    }
+    if (form.senha !== form.confirmar) { setErro("As senhas não coincidem."); return; }
+
+    const senhaHash = await hashSenha(form.senha);
+    const novo = { id: novoIdCartao(), nome, email, status: form.status, perfil: "visualizador", senhaHash };
+    setDados((d) => ({ ...d, usuarios: [...d.usuarios, novo] }));
+    limpar();
+    setAviso("Usuário “" + nome + "” cadastrado. Defina o perfil de acesso na lista abaixo.");
+  }
+
+  function mudaPerfil(id, perfil) {
+    setDados((d) => ({ ...d, usuarios: d.usuarios.map((u) => (u.id === id ? { ...u, perfil } : u)) }));
+  }
+  function mudaStatus(id, status) {
+    setDados((d) => ({ ...d, usuarios: d.usuarios.map((u) => (u.id === id ? { ...u, status } : u)) }));
+  }
+  function removeUsuario(id) {
+    setDados((d) => ({ ...d, usuarios: d.usuarios.filter((u) => u.id !== id) }));
+  }
+
+  return (
+    <div style={M.layout}>
+      <Sidebar atual="usuarios" onNavega={onNavega} />
+
+      <main style={M.main}>
+        <div style={M.topbar}>
+          <div style={USU.breadcrumb}>
+            <span style={USU.bcLink} onClick={() => onNavega("usuarios")}>Configurações</span>
+            <span style={USU.bcSep}>›</span>
+            <span style={USU.bcLink} onClick={() => onNavega("usuarios")}>Usuários</span>
+            <span style={USU.bcSep}>›</span>
+            <span style={USU.bcAtual}>Cadastro</span>
+          </div>
+          <div style={M.topbarIcons}>
+            <span style={{ ...M.iconBtn, position: "relative" }}><Icone nome="sino" size={22} color="#5b6472" /><span style={USU.sinoDot} /></span>
+            <span style={USU.avatar}><Icone nome="usuario" size={20} color="#fff" /></span>
+          </div>
+        </div>
+
+        <h1 style={USU.h1}>Cadastro de usuários</h1>
+        <p style={USU.sub}>Cadastre novos usuários que poderão acessar o sistema.<br />A permissão de acesso será definida após o cadastro.</p>
+
+        <div style={USU.grid}>
+          {/* Card do formulário */}
+          <div style={USU.card}>
+            <div style={USU.cardHead}>
+              <span style={USU.cardHeadIcone}><Icone nome="usuario" size={22} color={USU.azul} /></span>
+              <h2 style={USU.cardTitulo}>Informações do usuário</h2>
+            </div>
+
+            <div style={USU.campo}>
+              <label style={USU.label}>Nome completo <span style={USU.req}>*</span></label>
+              <input style={USU.input} placeholder="Digite o nome completo do usuário" value={form.nome} onChange={(e) => editaForm("nome", e.target.value)} />
+            </div>
+
+            <div style={USU.campo}>
+              <label style={USU.label}>Login (e-mail) <span style={USU.req}>*</span></label>
+              <input style={USU.input} placeholder="Digite o e-mail que será usado para login" value={form.email} onChange={(e) => editaForm("email", e.target.value)} />
+              <div style={USU.ajuda}>Este e-mail será utilizado para acessar o sistema.</div>
+            </div>
+
+            <div style={USU.campo}>
+              <label style={USU.label}>Senha <span style={USU.req}>*</span></label>
+              <div style={USU.inputWrap}>
+                <input style={{ ...USU.input, paddingRight: 44 }} type={verSenha ? "text" : "password"} placeholder="Digite a senha" value={form.senha} onChange={(e) => editaForm("senha", e.target.value)} />
+                <button style={USU.olhoBtn} onClick={() => setVerSenha((v) => !v)} title={verSenha ? "Ocultar" : "Mostrar"} type="button"><Icone nome={verSenha ? "olho-off" : "olho"} size={20} color="#8a93a3" /></button>
+              </div>
+              <div style={USU.ajuda}>A senha deve ter pelo menos 8 caracteres, incluindo letras e números.</div>
+            </div>
+
+            <div style={USU.campo}>
+              <label style={USU.label}>Confirmar senha <span style={USU.req}>*</span></label>
+              <div style={USU.inputWrap}>
+                <input style={{ ...USU.input, paddingRight: 44 }} type={verConfirmar ? "text" : "password"} placeholder="Digite novamente a senha" value={form.confirmar} onChange={(e) => editaForm("confirmar", e.target.value)} />
+                <button style={USU.olhoBtn} onClick={() => setVerConfirmar((v) => !v)} title={verConfirmar ? "Ocultar" : "Mostrar"} type="button"><Icone nome={verConfirmar ? "olho-off" : "olho"} size={20} color="#8a93a3" /></button>
+              </div>
+            </div>
+
+            <div style={USU.campo}>
+              <label style={USU.label}>Status do usuário</label>
+              <div style={USU.inputWrap}>
+                <span style={USU.statusIcone}><Icone nome="check-circle" size={18} color={form.status === "ativo" ? UI.verde : "#b0b7c3"} /></span>
+                <select style={{ ...USU.input, paddingLeft: 38 }} value={form.status} onChange={(e) => editaForm("status", e.target.value)}>
+                  <option value="ativo">Ativo</option>
+                  <option value="inativo">Inativo</option>
+                </select>
+              </div>
+            </div>
+
+            {erro && <div style={USU.erro}>{erro}</div>}
+            {aviso && <div style={USU.avisoOk}>{aviso}</div>}
+
+            <div style={USU.formFooter}>
+              <button style={USU.linkCancelar} onClick={() => onNavega("menu")} type="button">Cancelar</button>
+              <div style={{ display: "flex", gap: 12 }}>
+                <button style={USU.btnLimpar} onClick={limpar} type="button">Limpar</button>
+                <button style={USU.btnSalvar} onClick={salvar} type="button"><Icone nome="usuario-mais" size={18} color="#fff" /> Salvar usuário</button>
+              </div>
+            </div>
+          </div>
+
+          {/* Card informativo */}
+          <div style={USU.cardInfo}>
+            <div style={USU.ilustra}><IlustracaoAcesso /></div>
+            <h3 style={USU.infoTitulo}>Acesso seguro e autorizado</h3>
+            <p style={USU.infoSub}>Somente usuários cadastrados e autorizados poderão acessar o sistema.</p>
+            <div style={USU.infoItens}>
+              <InfoItem icone="cadeado" titulo="Controle de acesso" texto="Defina quem pode visualizar e editar cada documento." />
+              <InfoItem icone="pessoas" titulo="Segurança" texto="Proteja as informações do seu ministério com permissões adequadas." />
+              <InfoItem icone="relogio" titulo="Histórico de atividades" texto="Acompanhe as ações realizadas por cada usuário." />
+            </div>
+          </div>
+        </div>
+
+        {/* Lista de usuários cadastrados */}
+        <div style={USU.cardLista}>
+          <div style={USU.cardHead}>
+            <span style={USU.cardHeadIcone}><Icone nome="pessoas" size={22} color={USU.azul} /></span>
+            <h2 style={USU.cardTitulo}>Usuários cadastrados</h2>
+            <span style={USU.contador}>{dados.usuarios.length}</span>
+          </div>
+          <p style={USU.listaAjuda}>Defina o perfil de acesso de cada usuário: <strong>Visualizador</strong> só vê os documentos prontos; <strong>Editor</strong> pode alterar as informações.</p>
+
+          <div style={USU.tabelaScroll}>
+            <table style={USU.tabela}>
+              <thead>
+                <tr>
+                  <th style={USU.th}>Nome</th>
+                  <th style={USU.th}>E-mail (login)</th>
+                  <th style={USU.th}>Status</th>
+                  <th style={USU.th}>Perfil de acesso</th>
+                  <th style={USU.th}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {dados.usuarios.length === 0 ? (
+                  <tr><td style={USU.tdVazio} colSpan={5}>Nenhum usuário cadastrado ainda.</td></tr>
+                ) : dados.usuarios.map((u) => (
+                  <tr key={u.id}>
+                    <td style={USU.td}><div style={USU.nomeCel}><span style={USU.avatarLista}><Icone nome="usuario" size={16} color="#fff" /></span>{u.nome}</div></td>
+                    <td style={{ ...USU.td, color: UI.cinza }}>{u.email}</td>
+                    <td style={USU.td}>
+                      <select style={{ ...USU.selectStatus, ...(u.status === "ativo" ? USU.statusAtivo : USU.statusInativo) }} value={u.status} onChange={(e) => mudaStatus(u.id, e.target.value)}>
+                        <option value="ativo">Ativo</option>
+                        <option value="inativo">Inativo</option>
+                      </select>
+                    </td>
+                    <td style={USU.td}>
+                      <select style={{ ...USU.selectPerfil, ...(u.perfil === "editor" ? USU.perfilEditor : USU.perfilVisualizador) }} value={u.perfil} onChange={(e) => mudaPerfil(u.id, e.target.value)}>
+                        {PERFIS.map((p) => <option key={p.id} value={p.id}>{p.titulo}</option>)}
+                      </select>
+                    </td>
+                    <td style={USU.td}><button style={USU.btnRemover} onClick={() => removeUsuario(u.id)} title="Remover usuário"><Icone nome="lixeira" size={16} color="#9a3b3b" /></button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function InfoItem({ icone, titulo, texto }) {
+  return (
+    <div style={USU.infoItem}>
+      <span style={USU.infoItemIcone}><Icone nome={icone} size={20} color={USU.azul} /></span>
+      <div>
+        <div style={USU.infoItemTitulo}>{titulo}</div>
+        <div style={USU.infoItemTexto}>{texto}</div>
+      </div>
+    </div>
+  );
+}
+
+function IlustracaoAcesso() {
+  return (
+    <svg viewBox="0 0 320 150" width="100%" height="150" role="img" aria-label="Acesso seguro">
+      <ellipse cx="160" cy="120" rx="120" ry="18" fill="#eef2fb" />
+      <g transform="translate(160 26)">
+        <path d="M0 0 L26 9 V27 c0 17 -11 30 -26 37 c-15 -7 -26 -20 -26 -37 V9 Z" fill="#3E5AA6" />
+        <polyline points="-11,26 -3,34 13,16" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+      </g>
+      {[[92, "#9fb0d6"], [160, "#5f78bb"], [228, "#9fb0d6"]].map(([cx, cor], i) => (
+        <g key={i} transform={"translate(" + cx + " 92)"}>
+          <circle cx="0" cy="0" r="14" fill={cor} />
+          <path d="M-22 40 c0 -16 10 -24 22 -24 s22 8 22 24 Z" fill={cor} />
+        </g>
+      ))}
+    </svg>
+  );
+}
 
 /* ====================== TELA DISCURSO PÚBLICO ====================== */
 function normaliza(s) { return (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
@@ -2229,6 +2495,68 @@ const M = {
   rodapeArt: { minHeight: 130 },
   rodapeImg: { width: "100%", height: "100%", objectFit: "cover", display: "block" },
 };
+
+const USU = (() => {
+  const azul = "#3E5AA6";
+  const tituloNavy = "#243B6B";
+  const borda = "#E3E7EF";
+  return {
+    azul,
+    breadcrumb: { display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: UI.cinza },
+    bcLink: { color: azul, cursor: "pointer" },
+    bcSep: { color: "#b7c0d0" },
+    bcAtual: { color: UI.cinza },
+    sinoDot: { position: "absolute", top: -2, right: -1, width: 8, height: 8, borderRadius: "50%", background: "#e0663a", border: "1.5px solid #fff" },
+    avatar: { width: 38, height: 38, borderRadius: "50%", background: tituloNavy, display: "inline-flex", alignItems: "center", justifyContent: "center" },
+    h1: { fontSize: 30, color: tituloNavy, fontWeight: 700, margin: "10px 0 8px" },
+    sub: { fontSize: 15, color: UI.cinza, lineHeight: 1.5, margin: "0 0 22px" },
+    grid: { display: "grid", gridTemplateColumns: "minmax(0,1.35fr) minmax(0,1fr)", gap: 24, alignItems: "start", marginBottom: 24 },
+    card: { background: "#fff", border: "1px solid " + borda, borderRadius: 16, padding: 26, boxShadow: "0 1px 3px rgba(20,40,80,.04)" },
+    cardInfo: { background: "#fff", border: "1px solid " + borda, borderRadius: 16, padding: 26, boxShadow: "0 1px 3px rgba(20,40,80,.04)" },
+    cardHead: { display: "flex", alignItems: "center", gap: 12, marginBottom: 22 },
+    cardHeadIcone: { width: 38, height: 38, borderRadius: 10, background: "#eef2fb", display: "inline-flex", alignItems: "center", justifyContent: "center" },
+    cardTitulo: { fontSize: 18, fontWeight: 700, color: tituloNavy, margin: 0 },
+    contador: { marginLeft: 8, fontSize: 13, fontWeight: 700, color: azul, background: "#eef2fb", borderRadius: 20, padding: "2px 11px" },
+    campo: { marginBottom: 18 },
+    label: { display: "block", fontSize: 14, fontWeight: 600, color: "#2b3542", marginBottom: 7 },
+    req: { color: "#e0663a" },
+    inputWrap: { position: "relative" },
+    input: { width: "100%", padding: "13px 14px", border: "1px solid " + borda, borderRadius: 10, fontSize: 15, color: "#2b3542", boxSizing: "border-box", background: "#fff", appearance: "none" },
+    ajuda: { fontSize: 12.5, color: "#8a93a3", marginTop: 6 },
+    olhoBtn: { position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "transparent", border: "none", cursor: "pointer", padding: 6, display: "inline-flex" },
+    statusIcone: { position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", display: "inline-flex", pointerEvents: "none" },
+    erro: { fontSize: 13, color: "#9a3b3b", background: "#fbeaea", border: "1px solid #e3c2c2", padding: "10px 12px", borderRadius: 8, marginBottom: 14 },
+    avisoOk: { fontSize: 13, color: "#1f6b45", background: "#e8f5ee", border: "1px solid #bfe0cd", padding: "10px 12px", borderRadius: 8, marginBottom: 14 },
+    formFooter: { display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 22 },
+    linkCancelar: { background: "transparent", border: "none", color: azul, fontSize: 15, cursor: "pointer", padding: "8px 4px" },
+    btnLimpar: { background: "#fff", border: "1px solid " + borda, color: "#2b3542", fontSize: 15, padding: "11px 20px", borderRadius: 10, cursor: "pointer" },
+    btnSalvar: { display: "inline-flex", alignItems: "center", gap: 8, background: azul, border: "none", color: "#fff", fontSize: 15, fontWeight: 600, padding: "11px 20px", borderRadius: 10, cursor: "pointer", boxShadow: "0 2px 6px rgba(62,90,166,.28)" },
+    ilustra: { background: "#f6f8fd", borderRadius: 12, padding: "6px 10px 0", marginBottom: 18 },
+    infoTitulo: { fontSize: 20, fontWeight: 700, color: tituloNavy, margin: "0 0 8px" },
+    infoSub: { fontSize: 14, color: UI.cinza, lineHeight: 1.5, margin: "0 0 20px" },
+    infoItens: { display: "flex", flexDirection: "column", gap: 16 },
+    infoItem: { display: "flex", gap: 12, alignItems: "flex-start" },
+    infoItemIcone: { width: 38, height: 38, flexShrink: 0, borderRadius: 10, background: "#eef2fb", display: "inline-flex", alignItems: "center", justifyContent: "center" },
+    infoItemTitulo: { fontSize: 15, fontWeight: 700, color: "#2b3542" },
+    infoItemTexto: { fontSize: 13.5, color: UI.cinza, lineHeight: 1.45, marginTop: 2 },
+    cardLista: { background: "#fff", border: "1px solid " + borda, borderRadius: 16, padding: 26, boxShadow: "0 1px 3px rgba(20,40,80,.04)" },
+    listaAjuda: { fontSize: 13.5, color: UI.cinza, lineHeight: 1.5, margin: "0 0 16px" },
+    tabelaScroll: { overflowX: "auto", border: "1px solid " + borda, borderRadius: 12 },
+    tabela: { width: "100%", borderCollapse: "collapse", minWidth: 640 },
+    th: { textAlign: "left", fontSize: 12.5, fontWeight: 700, color: UI.cinza, textTransform: "uppercase", letterSpacing: 0.3, padding: "12px 14px", background: "#f7f9fc", borderBottom: "1px solid " + borda, whiteSpace: "nowrap" },
+    td: { fontSize: 14, color: "#2b3542", padding: "12px 14px", borderBottom: "1px solid #f0f2f6", verticalAlign: "middle" },
+    tdVazio: { fontSize: 14, color: UI.cinza, fontStyle: "italic", padding: "24px 14px", textAlign: "center" },
+    nomeCel: { display: "flex", alignItems: "center", gap: 10, fontWeight: 600 },
+    avatarLista: { width: 28, height: 28, borderRadius: "50%", background: "#9fb0d6", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+    selectStatus: { fontSize: 13, fontWeight: 700, padding: "6px 10px", borderRadius: 20, border: "1px solid transparent", cursor: "pointer", appearance: "none" },
+    statusAtivo: { background: "#e8f5ee", color: "#1f7a4d", borderColor: "#bfe0cd" },
+    statusInativo: { background: "#f2f3f5", color: "#7a828f", borderColor: "#dfe2e8" },
+    selectPerfil: { fontSize: 13, fontWeight: 700, padding: "7px 12px", borderRadius: 8, border: "1px solid " + borda, cursor: "pointer", background: "#fff" },
+    perfilEditor: { background: "#eef2fb", color: azul, borderColor: "#c9d6ee" },
+    perfilVisualizador: { background: "#f4f6f9", color: "#5b6472", borderColor: "#dfe2e8" },
+    btnRemover: { background: "#fff", border: "1px solid #e3c2c2", borderRadius: 8, padding: "7px 9px", cursor: "pointer", display: "inline-flex" },
+  };
+})();
 
 const S = {
   page: { minHeight: "100vh", background: UI.fundo },
