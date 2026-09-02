@@ -1483,6 +1483,20 @@ const COR_NOME = "#3B5998";
 const COR_CONFLITO = "#F8D0D0";   // vermelho claro: conflito
 const COR_SEGUIDO = "#FFF0B3";    // amarelo claro: trabalhou na reunião anterior
 
+// Destaque manual da linha, além do fundo automático de fim de semana:
+//  - "evento": fundo amarelo, mantém as colunas (marca uma semana especial);
+//  - "aviso": fundo vermelho com as colunas mescladas num texto livre
+//    (ex.: semana de congresso, sem reunião no Salão do Reino).
+const DESTAQUES_LINHA = [
+  { id: "normal", titulo: "Normal" },
+  { id: "evento", titulo: "Evento (amarelo)" },
+  { id: "aviso", titulo: "Aviso (vermelho)" },
+];
+const FUNDO_EVENTO = "#FBF3D5";
+const COR_EVENTO_DATA = "#B08500";
+const FUNDO_AVISO = "#F5E3E3";
+const COR_AVISO = "#800000";
+
 const COLUNAS_DESIGNADOS = [
   { campo: "audioVideo", titulo: "Áudio / Vídeo", funcao: "audioVideo" },
   { campo: "volanteDireito", titulo: "Volante Direito", funcao: "volante" },
@@ -1602,6 +1616,7 @@ function nomesDoBlocoSentinela(bloco) {
 function conflitosPorLinha(linhas, cartao, sentinela) {
   let idxMeio = 0, idxFds = 0;
   return linhas.map((linha) => {
+    if (linha.destaque === "aviso") return [];
     const dow = diaDaSemanaISO(linha.data);
     const { dia, mes } = partesData(linha.data);
     if (dow === 0 || dow === 6) {
@@ -1622,7 +1637,7 @@ function estadoCelula(linhas, idx, campo, conflitos) {
   if (outrosDaLinha.some((v) => v && mesmoIrmao(v, valor))) return "conflito";
   if ((conflitos || []).some((n) => mesmoIrmao(n, valor))) return "conflito";
   const anterior = linhas[idx - 1];
-  if (anterior && CAMPOS_DESIGNADOS.some((c) => anterior[c] && mesmoIrmao(anterior[c], valor))) return "seguido";
+  if (anterior && anterior.destaque !== "aviso" && CAMPOS_DESIGNADOS.some((c) => anterior[c] && mesmoIrmao(anterior[c], valor))) return "seguido";
   return "";
 }
 function fundoDaCelula(estado) {
@@ -1635,6 +1650,7 @@ function fundoDaCelula(estado) {
 function resumoParticipacoes(linhas) {
   const mapa = new Map();
   for (const linha of linhas) {
+    if (linha.destaque === "aviso") continue;
     for (const campo of CAMPOS_DESIGNADOS) {
       for (const nome of separaNomes(linha[campo])) {
         const chave = normalizaNome(nome);
@@ -1654,7 +1670,16 @@ function novaLinhaBastidores(data) {
     id: novoIdCartao(), data,
     audioVideo: "", volanteDireito: "", volanteEsquerdo: "",
     indicadorEntrada: "", indicadorAuditorio: "", limpeza: "A",
+    destaque: "normal", avisoTitulo: "", avisoSub: "",
   };
+}
+// Fundo da linha: o destaque manual (evento/aviso) tem prioridade sobre o
+// azul automático de fim de semana.
+function fundoDaLinha(linha) {
+  if (linha.destaque === "evento") return FUNDO_EVENTO;
+  if (linha.destaque === "aviso") return FUNDO_AVISO;
+  const dow = diaDaSemanaISO(linha.data);
+  return dow === 0 || dow === 6 ? FUNDO_FDS : "#fff";
 }
 // A partir da letra escolhida numa linha, as seguintes seguem o ciclo A → B → C.
 function aplicaCicloLimpeza(linhas, idxInicio, letra) {
@@ -1781,6 +1806,9 @@ function TelaBastidores({ onVoltar }) {
   function editaLinha(id, campo, valor) {
     setDados((d) => ({ ...d, linhas: d.linhas.map((l) => (l.id === id ? { ...l, [campo]: valor } : l)) }));
   }
+  function mudaDestaque(id, destaque) {
+    setDados((d) => ({ ...d, linhas: d.linhas.map((l) => (l.id === id ? { ...l, destaque } : l)) }));
+  }
   function mudaDiaDaLinha(id, novoDia) {
     setDados((d) => {
       const linhas = d.linhas.map((l) => (l.id === id ? { ...l, data: trocaDiaDaSemana(l.data, novoDia) } : l));
@@ -1891,6 +1919,10 @@ function TelaBastidores({ onVoltar }) {
             <span style={{ ...SB.legenda, background: COR_SEGUIDO }}>amarelo</span> = trabalhou também na reunião anterior.
             {totalConflitos > 0 && <strong> {totalConflitos} conflito(s) para revisar.</strong>}
           </p>
+          <p style={S.hint}>
+            A coluna <strong>Destaque</strong> marca a linha: <em>Evento</em> deixa o fundo amarelo mantendo as designações;
+            <em> Aviso</em> deixa o fundo vermelho e junta as colunas num texto livre (ex.: semana de congresso, sem reunião).
+          </p>
 
           <div style={SB.tabelaScroll}>
             <table style={SB.tabela}>
@@ -1899,36 +1931,58 @@ function TelaBastidores({ onVoltar }) {
                   <th style={SB.th}>Data</th>
                   {COLUNAS_DESIGNADOS.map((c) => <th key={c.campo} style={SB.th}>{c.titulo}</th>)}
                   <th style={SB.th}>Limpeza</th>
+                  <th style={SB.th}>Destaque</th>
                   <th style={SB.th}></th>
                 </tr>
               </thead>
               <tbody>
                 {dados.linhas.map((linha, i) => {
+                  const fundoLinha = fundoDaLinha(linha);
                   const dow = diaDaSemanaISO(linha.data);
-                  const fds = dow === 0 || dow === 6;
+                  const controles = (
+                    <>
+                      <td style={SB.td}>
+                        <select style={SB.selectDestaque} value={linha.destaque || "normal"} onChange={(e) => mudaDestaque(linha.id, e.target.value)}>
+                          {DESTAQUES_LINHA.map((op) => <option key={op.id} value={op.id}>{op.titulo}</option>)}
+                        </select>
+                      </td>
+                      <td style={SB.td}>
+                        <button style={SB.btnLinha} onClick={() => removeLinha(linha.id)} title="Remover linha">×</button>
+                      </td>
+                    </>
+                  );
                   return (
-                    <tr key={linha.id} style={{ background: fds ? FUNDO_FDS : "#fff" }}>
+                    <tr key={linha.id} style={{ background: fundoLinha }}>
                       <td style={SB.tdData}>
                         <select style={SB.selectDia} value={dow} onChange={(e) => mudaDiaDaLinha(linha.id, Number(e.target.value))}>
                           {ORDEM_DIAS.map((d) => <option key={d} value={d} title={DIAS_NOME[d]}>{DIAS_ABREV[d]}</option>)}
                         </select>
                         <div style={SB.dataTexto}>{formataDataCurta(linha.data)}</div>
                       </td>
-                      {COLUNAS_DESIGNADOS.map((c) => (
-                        <td key={c.campo} style={SB.td}>
-                          <input style={{ ...SB.inputNome, background: fundoDaCelula(estadoCelula(dados.linhas, i, c.campo, conflitos[i])) || "#fff" }}
-                            value={linha[c.campo]} onChange={(e) => editaLinha(linha.id, c.campo, e.target.value)} />
+                      {linha.destaque === "aviso" ? (
+                        <td style={SB.td} colSpan={COLUNAS_DESIGNADOS.length + 1}>
+                          <input style={{ ...SB.inputAvisoTitulo }} placeholder="Título do aviso (ex.: SEMANA DO CONGRESSO REGIONAL — 18/08 e 22/08)"
+                            value={linha.avisoTitulo || ""} onChange={(e) => editaLinha(linha.id, "avisoTitulo", e.target.value)} />
+                          <input style={{ ...SB.inputAvisoSub }} placeholder="Detalhe (ex.: Congresso nos dias 21, 22 e 23. Não haverá reunião no Salão do Reino.)"
+                            value={linha.avisoSub || ""} onChange={(e) => editaLinha(linha.id, "avisoSub", e.target.value)} />
                         </td>
-                      ))}
-                      <td style={SB.td}>
-                        <select style={{ ...SB.selectLimpeza, background: ESTILO_GRUPO[linha.limpeza].fundo, color: ESTILO_GRUPO[linha.limpeza].cor }}
-                          value={linha.limpeza} onChange={(e) => mudaLimpeza(linha.id, e.target.value)}>
-                          {GRUPOS_LIMPEZA.map((g) => <option key={g} value={g}>{g}</option>)}
-                        </select>
-                      </td>
-                      <td style={SB.td}>
-                        <button style={SB.btnLinha} onClick={() => removeLinha(linha.id)} title="Remover linha">×</button>
-                      </td>
+                      ) : (
+                        <>
+                          {COLUNAS_DESIGNADOS.map((c) => (
+                            <td key={c.campo} style={SB.td}>
+                              <input style={{ ...SB.inputNome, background: fundoDaCelula(estadoCelula(dados.linhas, i, c.campo, conflitos[i])) || "#fff" }}
+                                value={linha[c.campo]} onChange={(e) => editaLinha(linha.id, c.campo, e.target.value)} />
+                            </td>
+                          ))}
+                          <td style={SB.td}>
+                            <select style={{ ...SB.selectLimpeza, background: ESTILO_GRUPO[linha.limpeza].fundo, color: ESTILO_GRUPO[linha.limpeza].cor }}
+                              value={linha.limpeza} onChange={(e) => mudaLimpeza(linha.id, e.target.value)}>
+                              {GRUPOS_LIMPEZA.map((g) => <option key={g} value={g}>{g}</option>)}
+                            </select>
+                          </td>
+                        </>
+                      )}
+                      {controles}
                     </tr>
                   );
                 })}
@@ -2060,13 +2114,26 @@ function PreviewBastidores({ dados, conflitos }) {
         <tbody>
           {dados.linhas.map((linha, i) => {
             const dow = diaDaSemanaISO(linha.data);
-            const fds = dow === 0 || dow === 6;
             const grupo = ESTILO_GRUPO[linha.limpeza] || ESTILO_GRUPO.A;
+            const fundoLinha = fundoDaLinha(linha);
+
+            if (linha.destaque === "aviso") {
+              return (
+                <tr key={linha.id} style={{ background: FUNDO_AVISO }}>
+                  <td style={{ ...PVB.tdAviso }} colSpan={COLUNAS_DESIGNADOS.length + 2}>
+                    <div style={PVB.avisoTitulo}>{linha.avisoTitulo}</div>
+                    {linha.avisoSub ? <div style={PVB.avisoSub}>{linha.avisoSub}</div> : null}
+                  </td>
+                </tr>
+              );
+            }
+
+            const dataDourada = linha.destaque === "evento";
             return (
-              <tr key={linha.id} style={{ background: fds ? FUNDO_FDS : "#fff" }}>
+              <tr key={linha.id} style={{ background: fundoLinha }}>
                 <td style={PVB.tdData}>
-                  <div style={PVB.diaSemana}>{DIAS_ABREV[dow]}</div>
-                  <div style={PVB.diaData}>{formataDataCurta(linha.data)}</div>
+                  <div style={{ ...PVB.diaSemana, ...(dataDourada ? { color: COR_EVENTO_DATA } : {}) }}>{DIAS_ABREV[dow]}</div>
+                  <div style={{ ...PVB.diaData, ...(dataDourada ? { color: COR_EVENTO_DATA } : {}) }}>{formataDataCurta(linha.data)}</div>
                 </td>
                 {COLUNAS_DESIGNADOS.map((c) => {
                   const fundo = fundoDaCelula(estadoCelula(dados.linhas, i, c.campo, conflitos[i]));
@@ -2301,6 +2368,9 @@ const SB = {
   inputNome: { width: "100%", minWidth: 110, padding: "6px 8px", border: "1px solid " + UI.borda, borderRadius: 6, fontSize: 13, color: COR_NOME, fontWeight: 600 },
   selectLimpeza: { fontSize: 13, fontWeight: 800, padding: "6px 8px", border: "1px solid " + UI.borda, borderRadius: 6, cursor: "pointer", textAlign: "center" },
   btnLinha: { fontSize: 14, lineHeight: 1, padding: "5px 9px", border: "1px solid #e3c2c2", color: "#9a3b3b", background: "#fff", borderRadius: 6, cursor: "pointer" },
+  selectDestaque: { fontSize: 12, padding: "6px 6px", border: "1px solid " + UI.borda, borderRadius: 6, background: "#fff", color: UI.tinta, cursor: "pointer", minWidth: 120 },
+  inputAvisoTitulo: { width: "100%", padding: "6px 8px", border: "1px solid #e3c2c2", borderRadius: 6, fontSize: 12.5, fontWeight: 700, color: COR_AVISO, background: "#fff", marginBottom: 6 },
+  inputAvisoSub: { width: "100%", padding: "6px 8px", border: "1px solid #e3c2c2", borderRadius: 6, fontSize: 12, color: COR_AVISO, background: "#fff" },
   irmaoRow: { display: "flex", gap: 8, alignItems: "center", marginBottom: 8, flexWrap: "wrap" },
   funcoes: { display: "flex", gap: 6, flexWrap: "wrap" },
   chip: { display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, padding: "5px 9px", border: "1px solid " + UI.borda, borderRadius: 20, background: "#fff", color: UI.cinza, cursor: "pointer" },
@@ -2326,6 +2396,9 @@ const PVB = {
   diaData: { fontSize: 9.5, color: "#595959", fontWeight: 700 },
   tdNome: { border: "1px solid " + TEMPLATE.cinzaLinha, padding: "5px 4px", textAlign: "center", fontSize: 9.5, fontWeight: 700, color: COR_NOME },
   tdLimpeza: { border: "1px solid " + TEMPLATE.cinzaLinha, padding: "5px 4px", textAlign: "center", fontSize: 11, fontWeight: 800, width: "10%" },
+  tdAviso: { border: "1px solid " + TEMPLATE.cinzaLinha, padding: "8px 6px", textAlign: "center" },
+  avisoTitulo: { color: COR_AVISO, fontWeight: 800, fontSize: 10, textTransform: "uppercase" },
+  avisoSub: { color: COR_AVISO, fontStyle: "italic", fontSize: 9, marginTop: 2 },
   legendaLinha: { display: "flex", gap: 6, marginTop: 10 },
   legendaBox: { flex: 1, textAlign: "center", fontSize: 8, fontWeight: 700, padding: "5px 3px", borderRadius: 2 },
   secaoTitulo: { textAlign: "center", color: TEMPLATE.dourado, fontWeight: 700, fontSize: 11, marginTop: 18 },
