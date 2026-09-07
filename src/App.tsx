@@ -85,6 +85,7 @@ function Icone({ nome, size = 40, color = TEMPLATE.azul }) {
     case "relogio": return (<svg {...p}><circle cx="12" cy="12" r="8.5" /><polyline points="12 7 12 12 15.5 14" /></svg>);
     case "lixeira": return (<svg {...p}><polyline points="3 6 5 6 21 6" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>);
     case "check-circle": return (<svg {...p}><circle cx="12" cy="12" r="9" /><polyline points="8.5 12 11 14.5 15.5 9.5" /></svg>);
+    case "pdf": return (<svg {...p}><path d="M6 2h8l4 4v16H6Z" /><polyline points="14 2 14 6 18 6" /><line x1="9" y1="13" x2="9" y2="18" /><line x1="12" y1="13" x2="12" y2="18" /><line x1="15" y1="13" x2="15" y2="18" /></svg>);
     default: return null;
   }
 }
@@ -670,7 +671,16 @@ function IlustracaoAcesso() {
 function normaliza(s) { return (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
 function achaPalavrasChave(texto) { const t = normaliza(texto); return PALAVRAS_CHAVE.filter((p) => t.includes(normaliza(p))); }
 const MESES = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
-function ehData(linha) { const t = (linha || "").trim(); if (/^\d{1,2}\/\d{1,2}(\/\d{2,4})?\s*$/.test(t)) return true; const tn = normaliza(t); if (/^\d{1,2}\s+de\s+/.test(tn) && MESES.some((m) => tn.includes(normaliza(m)))) return true; return false; }
+function ehData(linha) {
+  let t = (linha || "").replace(/\u00A0/g, " ").trim();
+  if (!t) return false;
+  t = t.replace(/^(domingo|segunda-feira|segunda|ter[cç]a-feira|ter[cç]a|quarta-feira|quarta|quinta-feira|quinta|sexta-feira|sexta|s[aá]bado)\s*[,:\-–]?\s*/i, "");
+  t = t.replace(/º/g, "").trim();
+  if (/^\d{1,2}\s*[\/.\-]\s*\d{1,2}(\s*[\/.\-]\s*\d{2,4})?\s*$/.test(t)) return true;
+  const tn = normaliza(t);
+  if (/^\d{1,2}\s+de\s+/.test(tn) && MESES.some((m) => tn.includes(normaliza(m)))) return true;
+  return false;
+}
 function realceSugerido(texto) { const t = normaliza(texto); if (t.includes("superintendente") || t.includes("visita")) return "amarelo"; if (t.includes("congresso") || t.includes("assembleia")) return "rosa"; return "nenhum"; }
 function processarTexto(texto) {
   const linhas = texto.split(/\r?\n/).map((l) => l.trim()); const blocos = []; let i = 0;
@@ -734,6 +744,13 @@ function TelaDiscurso({ onVoltar }) {
   function removeObs(id) { setDados((d) => ({ ...d, observacoes: d.observacoes.filter((o) => o.id !== id) })); }
   function capturaSelObs(obsId, e) { const { selectionStart: ini, selectionEnd: fim } = e.target; setSelObs(fim > ini ? { obsId, ini, fim } : null); }
   function destacaObs() { if (!selObs) return; const { obsId, ini, fim } = selObs; setDados((d) => ({ ...d, observacoes: d.observacoes.map((o) => { if (o.id !== obsId) return o; const v = o.texto || ""; return { ...o, texto: v.slice(0, ini) + "⟦" + v.slice(ini, fim) + "⟧" + v.slice(fim) }; }) })); setSelObs(null); }
+  function exportarPDF() {
+    const tituloOriginal = document.title;
+    document.title = `${dados.titulo} - ${dados.mesAno}`;
+    const restaura = () => { document.title = tituloOriginal; window.removeEventListener("afterprint", restaura); };
+    window.addEventListener("afterprint", restaura);
+    window.print();
+  }
 
   return (
     <div style={S.page}>
@@ -744,6 +761,7 @@ function TelaDiscurso({ onVoltar }) {
           <div style={S.brandSub}>Congregação Parque Scaffid</div>
         </div>
         <div style={S.appbarTag}>Validação</div>
+        <button style={S.btnFoto} onClick={exportarPDF}><Icone nome="pdf" size={16} color={UI.azul} /> Exportar PDF</button>
       </header>
 
       <div style={S.fotoBar}>
@@ -825,7 +843,7 @@ function TelaDiscurso({ onVoltar }) {
           <button style={S.btnAdd} onClick={addObs}>+ Adicionar observação</button>
         </section>
 
-        <section style={S.previewWrap}><h2 style={S.h2}>Pré-visualização</h2><Preview dados={dados} foto={foto} /></section>
+        <section style={S.previewWrap}><h2 style={S.h2}>Pré-visualização</h2><div id="area-impressao"><Preview dados={dados} foto={foto} /></div></section>
       </div>
     </div>
   );
@@ -3020,4 +3038,9 @@ const CSS = `
     div[style*="repeat(5, 1fr)"] { grid-template-columns: repeat(2, 1fr) !important; }
   }
   @media (max-width: 860px) { .grid { grid-template-columns: 1fr !important; } }
+  @media print {
+    body * { visibility: hidden; }
+    #area-impressao, #area-impressao * { visibility: visible; }
+    #area-impressao { position: absolute; left: 0; top: 0; width: 100%; margin: 0; box-shadow: none !important; }
+  }
 `;
