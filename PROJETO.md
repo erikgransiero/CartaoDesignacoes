@@ -179,14 +179,39 @@ Fonte padrão dos documentos: Arial.
 
 ## 6. Revisão em andamento — histórico de itens já resolvidos
 
-### Discurso Público (item 1 concluído em set/2026)
+### Discurso Público (item 1 — concluído e em produção, set/2026)
 1. ~~Bug: colar 4 discursos do WhatsApp só reconhecia 3~~ — **corrigido**
    (causa: formatos de data não previstos — ordinal, ponto, dia da semana).
-2. ~~Adicionar botão "Exportar PDF"~~ — **feito** (`window.print()` +
-   `@media print`, área `id="area-impressao"`).
+2. ~~Adicionar botão "Exportar PDF"~~ — **feito**, com garantia de **1
+   página A4 sempre**, independente do conteúdo:
+   - `@page { size: A4 portrait; margin: 12mm; }`.
+   - Conteúdo não-imprimível é removido do fluxo (`display:none`), não só
+     escondido — evita a paginação fantasma que replicava o cartão em
+     páginas extras.
+   - A moldura vinho tem **altura fixa de 250mm com `overflow: hidden`**
+     (não apenas `min-height`) — a garantia de página única é 100% CSS,
+     não depende de nenhum evento (`beforeprint`) rodar a tempo, o que se
+     mostrou necessário porque em alguns dispositivos/navegadores reais
+     (ex.: iPad) o evento não é confiável o bastante para uma folha que
+     será impressa e fixada em quadro de avisos.
+   - Conteúdo limitado na origem para nunca precisar cortar: **máx. 6
+     discursos e 4 observações** (bloqueado nos botões "+ Adicionar" e no
+     colar do WhatsApp, que trunca com aviso se detectar mais de 6).
+   - Os 3 blocos da folha (cabeçalho+foto, tabela, observações) se
+     distribuem com `justify-content: space-evenly` quando há menos
+     conteúdo que o máximo, preenchendo a página em vez de deixar vão
+     vazio embaixo.
+   - Foto do orador aumentada (agora 7,85cm × 5,56cm, `object-fit: cover`).
 
-*(Publicado em `preview`, aguardando validação do usuário antes de seguir
-para a próxima tela: Reunião A Sentinela.)*
+*(Publicado em produção em 08/09/2026. Próxima tela da revisão: Reunião A
+Sentinela.)*
+
+**Nota técnica:** durante essa correção, `package.json`/`package-lock.json`
+haviam divergido entre `main` e a branch de trabalho (o usuário atualizou
+Vite 5→6 e `@vitejs/plugin-react` 4→5 direto pelo GitHub, e um
+`package-lock.json` chegou a ser apagado em `main`). Foi feito merge de
+`main` na branch de trabalho, lockfile regenerado e todas as telas
+validadas antes de promover — branches sincronizadas novamente.
 
 ---
 
