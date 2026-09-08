@@ -721,6 +721,26 @@ function TelaDiscurso({ onVoltar }) {
   const [colado, setColado] = useState("");
   const [previa, setPrevia] = useState(null);
   const [erroParse, setErroParse] = useState("");
+  const impressaoRef = useRef(null);
+
+  useEffect(() => {
+    const PX_POR_MM = 96 / 25.4;
+    const larguraDisponivel = 186 * PX_POR_MM;
+    const alturaDisponivel = 273 * PX_POR_MM;
+    function ajustarParaUmaPagina() {
+      const el = impressaoRef.current;
+      if (!el) return;
+      el.style.transform = "none";
+      const altura = el.scrollHeight;
+      const largura = el.scrollWidth;
+      const fator = Math.min(1, larguraDisponivel / largura, alturaDisponivel / altura);
+      el.style.transform = `scale(${fator})`;
+    }
+    function restaurar() { const el = impressaoRef.current; if (el) el.style.transform = "none"; }
+    window.addEventListener("beforeprint", ajustarParaUmaPagina);
+    window.addEventListener("afterprint", restaurar);
+    return () => { window.removeEventListener("beforeprint", ajustarParaUmaPagina); window.removeEventListener("afterprint", restaurar); };
+  }, []);
 
   function usarOriginal() { setFoto(FOTO_ORIGINAL); setFotoOriginalAtiva(true); }
   function escolherOutra(e) { const file = e.target.files && e.target.files[0]; if (!file) return; const r = new FileReader(); r.onload = (ev) => { setFoto(ev.target.result); setFotoOriginalAtiva(false); }; r.readAsDataURL(file); }
@@ -843,7 +863,7 @@ function TelaDiscurso({ onVoltar }) {
           <button style={S.btnAdd} onClick={addObs}>+ Adicionar observação</button>
         </section>
 
-        <section style={S.previewWrap}><h2 style={S.h2}>Pré-visualização</h2><div id="area-impressao"><Preview dados={dados} foto={foto} /></div></section>
+        <section style={S.previewWrap}><h2 style={S.h2}>Pré-visualização</h2><div id="area-impressao"><div ref={impressaoRef}><Preview dados={dados} foto={foto} /></div></div></section>
       </div>
     </div>
   );
@@ -3038,9 +3058,15 @@ const CSS = `
     div[style*="repeat(5, 1fr)"] { grid-template-columns: repeat(2, 1fr) !important; }
   }
   @media (max-width: 860px) { .grid { grid-template-columns: 1fr !important; } }
+  @page { size: A4 portrait; margin: 12mm; }
   @media print {
+    html, body { background: #fff !important; }
     body * { visibility: hidden; }
-    #area-impressao, #area-impressao * { visibility: visible; }
-    #area-impressao { position: absolute; left: 0; top: 0; width: 100%; margin: 0; box-shadow: none !important; }
+    #area-impressao, #area-impressao * { visibility: visible; -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
+    #area-impressao {
+      position: fixed; inset: 0; margin: 0; padding: 0; box-shadow: none !important;
+      display: flex; align-items: flex-start; justify-content: center;
+    }
+    #area-impressao > * { width: 186mm; transform-origin: top center; }
   }
 `;
