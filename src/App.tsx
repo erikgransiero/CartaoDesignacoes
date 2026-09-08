@@ -728,7 +728,7 @@ function TelaDiscurso({ onVoltar }) {
   useEffect(() => {
     const PX_POR_MM = 96 / 25.4;
     const larguraDisponivel = 186 * PX_POR_MM;
-    const alturaDisponivel = 270 * PX_POR_MM;
+    const alturaDisponivel = 250 * PX_POR_MM;
     function ajustarParaUmaPagina() {
       const el = impressaoRef.current;
       if (!el) return;
@@ -2960,7 +2960,7 @@ const PV = {
   frameOuter: { background: "#fff", border: "2px solid " + TEMPLATE.vinho, borderRadius: 2, padding: 4 },
   frameInner: { border: "1px solid " + TEMPLATE.vinho, padding: "18px 20px" },
   foto: { display: "flex", justifyContent: "center", marginBottom: 10 },
-  fotoImg: { width: 240, height: "auto", borderRadius: 2 },
+  fotoImg: { width: "7.85cm", height: "5.56cm", objectFit: "cover", borderRadius: 2 },
   fotoPlaceholder: { width: 190, height: 120, background: "#eee", border: "1px solid #ddd", display: "flex", alignItems: "center", justifyContent: "center", color: "#999", fontSize: 12, fontStyle: "italic" },
   titulo: { textAlign: "center", color: TEMPLATE.vinho, fontWeight: 800, fontSize: 22, lineHeight: 1.15 },
   sub: { textAlign: "center", color: TEMPLATE.azul, fontWeight: 700, fontSize: 12, margin: "6px 0 12px" },
@@ -3088,7 +3088,7 @@ const CSS = `
     #area-impressao, #area-impressao * { -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
     #area-impressao { display: flex; justify-content: center; margin: 0; padding: 0; box-shadow: none !important; }
     #area-impressao > * { width: 186mm; transform-origin: top center; }
-    #area-impressao .pv-moldura { min-height: 270mm; display: flex; flex-direction: column; }
+    #area-impressao .pv-moldura { min-height: 250mm; max-height: 250mm; overflow: hidden; display: flex; flex-direction: column; }
     #area-impressao .pv-moldura-interna { flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; }
   }
 `;
