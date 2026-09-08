@@ -117,7 +117,7 @@ export default function App() {
 
   if (!sessao) {
     return (
-      <div style={M.appShell}>
+      <div className="app-shell" style={M.appShell}>
         <style>{CSS}</style>
         <TelaLogin onLogar={(nova) => setSessao(nova)} />
       </div>
@@ -125,7 +125,7 @@ export default function App() {
   }
 
   return (
-    <div style={M.appShell}>
+    <div className="app-shell" style={M.appShell}>
       <style>{CSS}</style>
       {tela === "menu" && <TelaMenu onNavega={navega} sessao={sessao} onSair={sair} />}
       {tela === "discurso" && <TelaDiscurso onVoltar={() => setTela("menu")} />}
@@ -715,7 +715,7 @@ function ehRotuloTema(linha) { return /^\s*tema\s*:?\s*$/i.test((linha || "").re
 function removeRotuloTema(linha) { return (linha || "").replace(/\*/g, "").replace(/^\s*tema\s*:?\s*/i, "").replace(/:/g, "").trim(); }
 function realceSugerido(texto) { const t = normaliza(texto); if (t.includes("superintendente") || t.includes("visita")) return "amarelo"; if (t.includes("congresso") || t.includes("assembleia")) return "rosa"; return "nenhum"; }
 const MAX_TEMAS = 6;
-const MAX_OBSERVACOES = 4;
+const MAX_OBSERVACOES = 3;
 function processarTexto(texto) {
   const linhas = texto.split(/\r?\n/).map((l) => l.trim()); const blocos = []; let i = 0;
   let mesAnoDetectado = null;
@@ -3138,8 +3138,10 @@ const CSS = `
   @media (max-width: 860px) { .grid { grid-template-columns: 1fr !important; } }
   @page { size: A4 portrait; margin: 12mm; }
   @media print {
-    html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
-    .pagina-com-impressao { min-height: 0 !important; background: #fff !important; }
+    html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; height: auto !important; min-height: 0 !important; }
+    #root { min-height: 0 !important; height: auto !important; }
+    .app-shell { min-height: 0 !important; height: auto !important; }
+    .pagina-com-impressao { min-height: 0 !important; height: auto !important; background: #fff !important; }
     .oculta-impressao { display: none !important; }
     .secao-impressao { position: static !important; top: auto !important; }
     .pagina-com-impressao .grid { padding: 0 !important; grid-template-columns: 1fr !important; gap: 0 !important; }
