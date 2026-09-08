@@ -712,7 +712,7 @@ function extraiMesAno(linha) {
   return null;
 }
 function ehRotuloTema(linha) { return /^\s*\*?tema\*?\s*:?\s*$/i.test(linha || ""); }
-function removeRotuloTema(linha) { return (linha || "").replace(/^\s*\*?tema\*?\s*:?\s*/i, "").trim(); }
+function removeRotuloTema(linha) { return (linha || "").replace(/^\s*\*?tema\*?\s*:?\s*/i, "").replace(/\*/g, "").trim(); }
 function realceSugerido(texto) { const t = normaliza(texto); if (t.includes("superintendente") || t.includes("visita")) return "amarelo"; if (t.includes("congresso") || t.includes("assembleia")) return "rosa"; return "nenhum"; }
 const MAX_TEMAS = 6;
 const MAX_OBSERVACOES = 4;
