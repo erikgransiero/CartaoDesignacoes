@@ -726,7 +726,7 @@ function TelaDiscurso({ onVoltar }) {
   useEffect(() => {
     const PX_POR_MM = 96 / 25.4;
     const larguraDisponivel = 186 * PX_POR_MM;
-    const alturaDisponivel = 273 * PX_POR_MM;
+    const alturaDisponivel = 270 * PX_POR_MM;
     function ajustarParaUmaPagina() {
       const el = impressaoRef.current;
       if (!el) return;
@@ -773,8 +773,8 @@ function TelaDiscurso({ onVoltar }) {
   }
 
   return (
-    <div style={S.page}>
-      <header style={S.appbar}>
+    <div className="pagina-com-impressao" style={S.page}>
+      <header className="oculta-impressao" style={S.appbar}>
         <button style={S.voltar} onClick={onVoltar}><Icone nome="voltar" size={18} color="#fff" /> Voltar ao menu principal</button>
         <div style={{ marginLeft: 14 }}>
           <div style={S.brandTitle}>Discurso Público</div>
@@ -784,7 +784,7 @@ function TelaDiscurso({ onVoltar }) {
         <button style={S.btnFoto} onClick={exportarPDF}><Icone nome="pdf" size={16} color={UI.azul} /> Exportar PDF</button>
       </header>
 
-      <div style={S.fotoBar}>
+      <div className="oculta-impressao" style={S.fotoBar}>
         <img src={foto} alt="Foto do orador" style={S.fotoThumb} />
         <div style={S.fotoInfo}><div style={S.fotoTitulo}>Foto do orador</div><div style={S.fotoStatus}>{fotoOriginalAtiva ? "Usando a imagem original do documento" : "Usando uma imagem escolhida por você"}</div></div>
         <div style={S.fotoAcoes}>
@@ -795,7 +795,7 @@ function TelaDiscurso({ onVoltar }) {
       </div>
 
       <div style={S.grid} className="grid">
-        <section style={S.editor}>
+        <section className="oculta-impressao" style={S.editor}>
           <div style={S.wpp}>
             <div style={S.wppHead}><span style={S.wppTitulo}>Colar do WhatsApp</span><span style={S.wppDica}>Cole o texto do mês: cada data numa linha e o tema na linha seguinte.</span></div>
             <textarea style={S.wppArea} rows={6} value={colado} placeholder={"01/08\nOs valores de quem você preza?\n08/08\nTudo o que Deus nos pede é para o nosso bem\n..."} onChange={(e) => setColado(e.target.value)} />
@@ -863,7 +863,7 @@ function TelaDiscurso({ onVoltar }) {
           <button style={S.btnAdd} onClick={addObs}>+ Adicionar observação</button>
         </section>
 
-        <section style={S.previewWrap}><h2 style={S.h2}>Pré-visualização</h2><div id="area-impressao"><div ref={impressaoRef}><Preview dados={dados} foto={foto} /></div></div></section>
+        <section className="secao-impressao" style={S.previewWrap}><h2 className="oculta-impressao" style={S.h2}>Pré-visualização</h2><div id="area-impressao"><div ref={impressaoRef}><Preview dados={dados} foto={foto} /></div></div></section>
       </div>
     </div>
   );
@@ -876,7 +876,7 @@ function estiloSub(realce) { if (realce === "amarelo") return { color: TEMPLATE.
 
 function Preview({ dados, foto }) {
   return (
-    <div style={PV.frameOuter}><div style={PV.frameInner}>
+    <div className="pv-moldura" style={PV.frameOuter}><div className="pv-moldura-interna" style={PV.frameInner}>
       <div style={PV.foto}>{foto ? <img src={foto} alt="Orador" style={PV.fotoImg} /> : <div style={PV.fotoPlaceholder}>sem foto</div>}</div>
       <div style={PV.titulo}>{dados.titulo}</div><div style={PV.titulo}>{dados.mesAno}</div><div style={PV.sub}>{dados.congregacao}</div>
       <table style={PV.table}><thead><tr><th style={{ ...PV.th, width: "24%" }}>Data</th><th style={PV.th}>Tema</th></tr></thead>
@@ -3060,13 +3060,15 @@ const CSS = `
   @media (max-width: 860px) { .grid { grid-template-columns: 1fr !important; } }
   @page { size: A4 portrait; margin: 12mm; }
   @media print {
-    html, body { background: #fff !important; }
-    body * { visibility: hidden; }
-    #area-impressao, #area-impressao * { visibility: visible; -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
-    #area-impressao {
-      position: fixed; inset: 0; margin: 0; padding: 0; box-shadow: none !important;
-      display: flex; align-items: flex-start; justify-content: center;
-    }
+    html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
+    .pagina-com-impressao { min-height: 0 !important; background: #fff !important; }
+    .oculta-impressao { display: none !important; }
+    .secao-impressao { position: static !important; top: auto !important; }
+    .pagina-com-impressao .grid { padding: 0 !important; grid-template-columns: 1fr !important; gap: 0 !important; }
+    #area-impressao, #area-impressao * { -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
+    #area-impressao { display: flex; justify-content: center; margin: 0; padding: 0; box-shadow: none !important; }
     #area-impressao > * { width: 186mm; transform-origin: top center; }
+    #area-impressao .pv-moldura { min-height: 270mm; display: flex; flex-direction: column; }
+    #area-impressao .pv-moldura-interna { flex: 1; display: flex; flex-direction: column; }
   }
 `;
