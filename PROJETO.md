@@ -191,14 +191,16 @@ Fonte padrão dos documentos: Arial.
    - Conteúdo não-imprimível é removido do fluxo (`display:none`), não só
      escondido — evita a paginação fantasma que replicava o cartão em
      páginas extras.
-   - A moldura vinho tem **altura fixa de 250mm com `overflow: hidden`**
-     (não apenas `min-height`) — a garantia de página única é 100% CSS,
-     não depende de nenhum evento (`beforeprint`) rodar a tempo, o que se
-     mostrou necessário porque em alguns dispositivos/navegadores reais
-     (ex.: iPad) o evento não é confiável o bastante para uma folha que
-     será impressa e fixada em quadro de avisos.
+   - A moldura vinho tem **altura fixa entre 200mm e 220mm com
+     `overflow: hidden`** (não apenas `min-height`) — a garantia de página
+     única é 100% CSS, não depende de nenhum evento (`beforeprint`) rodar
+     a tempo. Valor reduzido de 250mm para 220mm depois de descobrir que
+     250mm deixava pouca folga (23mm) contra a área útil real da A4 —
+     risco em dispositivos/impressoras que não respeitam exatamente o
+     `@page` (ex.: papel Carta/Letter em vez de A4). Com 220mm, sobra
+     folga bem maior mesmo nesses casos.
    - Conteúdo limitado na origem para nunca precisar cortar: **máx. 6
-     discursos e 4 observações** (bloqueado nos botões "+ Adicionar" e no
+     discursos e 3 observações** (bloqueado nos botões "+ Adicionar" e no
      colar do WhatsApp, que trunca com aviso se detectar mais de 6).
    - Os 3 blocos da folha (cabeçalho+foto, tabela, observações) se
      distribuem com `justify-content: space-evenly` quando há menos
@@ -225,6 +227,26 @@ Fonte padrão dos documentos: Arial.
    - Campo "Mês / Ano" é preenchido automaticamente a partir do mês/ano da
      primeira data reconhecida (ex.: `09/2026` → "Setembro/2026"),
      mostrado na prévia antes de aplicar.
+
+4. ~~PDF ainda saía em 2 páginas no Safari/iPad (página 2 em branco)~~ —
+   **corrigido**, em produção (08/09/2026). **Causa raiz real, não
+   relacionada a tamanho de conteúdo:** o `<div>` raiz de todo o app
+   (`M.appShell`, renderizado pelo componente `App`, bem acima de
+   qualquer tela) tem `min-height: 100vh`, e essa regra nunca era
+   neutralizada durante a impressão — só o container interno da própria
+   tela (`.pagina-com-impressao`) tinha sido corrigido antes. Em
+   navegadores que resolvem `100vh` de forma mais generosa em contexto de
+   impressão (caso do Safari no iPad, confirmado por print real do
+   usuário mostrando "Página 1 de 2" com a página 2 inteiramente branca),
+   isso força pelo menos uma tela cheia de altura e estoura para uma
+   segunda página — o Chromium usado nos testes automatizados nunca
+   reproduziu isso, por isso passou despercebido até o teste no
+   dispositivo real. Corrigido zerando `min-height`/`height` em toda a
+   cadeia de containers (`html`, `body`, `#root`, `.app-shell`,
+   `.pagina-com-impressao`) durante a impressão — não só no container da
+   tela, mas em TODOS os ancestrais até a raiz do DOM. **Lição para as
+   próximas telas com exportar PDF:** replicar esse reset completo da
+   cadeia de containers desde o início, não só o container da tela.
 
 *(Publicado em produção em 08/09/2026. Próxima tela da revisão: Reunião A
 Sentinela.)*
