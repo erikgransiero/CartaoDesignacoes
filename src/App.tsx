@@ -772,8 +772,8 @@ function TelaDiscurso({ onVoltar }) {
 
   useEffect(() => {
     const PX_POR_MM = 96 / 25.4;
-    const larguraDisponivel = 186 * PX_POR_MM;
-    const alturaDisponivel = 250 * PX_POR_MM;
+    const larguraDisponivel = 170 * PX_POR_MM;
+    const alturaDisponivel = 220 * PX_POR_MM;
     function ajustarParaUmaPagina() {
       const el = impressaoRef.current;
       if (!el) return;
@@ -3145,8 +3145,8 @@ const CSS = `
     .pagina-com-impressao .grid { padding: 0 !important; grid-template-columns: 1fr !important; gap: 0 !important; }
     #area-impressao, #area-impressao * { -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
     #area-impressao { display: flex; justify-content: center; margin: 0; padding: 0; box-shadow: none !important; }
-    #area-impressao > * { width: 186mm; transform-origin: top center; }
-    #area-impressao .pv-moldura { min-height: 250mm; max-height: 250mm; overflow: hidden; display: flex; flex-direction: column; }
+    #area-impressao > * { width: 170mm; transform-origin: top center; }
+    #area-impressao .pv-moldura { min-height: 200mm; max-height: 220mm; overflow: hidden; display: flex; flex-direction: column; }
     #area-impressao .pv-moldura-interna { flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; }
   }
 `;
