@@ -671,30 +671,74 @@ function IlustracaoAcesso() {
 function normaliza(s) { return (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
 function achaPalavrasChave(texto) { const t = normaliza(texto); return PALAVRAS_CHAVE.filter((p) => t.includes(normaliza(p))); }
 const MESES = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
-function ehData(linha) {
+function limpaLinhaData(linha) {
   let t = (linha || "").replace(/\u00A0/g, " ").trim();
-  if (!t) return false;
+  if (!t) return "";
   t = t.replace(/^(domingo|segunda-feira|segunda|ter[cç]a-feira|ter[cç]a|quarta-feira|quarta|quinta-feira|quinta|sexta-feira|sexta|s[aá]bado)\s*[,:\-–]?\s*/i, "");
+  t = t.replace(/\.\s*$/, "");
   t = t.replace(/º/g, "").trim();
+  return t;
+}
+function ehData(linha) {
+  const t = limpaLinhaData(linha);
+  if (!t) return false;
   if (/^\d{1,2}\s*[\/.\-]\s*\d{1,2}(\s*[\/.\-]\s*\d{2,4})?\s*$/.test(t)) return true;
   const tn = normaliza(t);
   if (/^\d{1,2}\s+de\s+/.test(tn) && MESES.some((m) => tn.includes(normaliza(m)))) return true;
   return false;
 }
+function normalizaDataExibicao(linha) {
+  const t = limpaLinhaData(linha);
+  const m = t.match(/^(\d{1,2})\s*[\/.\-]\s*(\d{1,2})(?:\s*[\/.\-]\s*\d{2,4})?\s*$/);
+  if (m) return `${m[1]}/${m[2]}`;
+  return t;
+}
+function extraiMesAno(linha) {
+  const t = limpaLinhaData(linha);
+  const mNum = t.match(/^(\d{1,2})\s*[\/.\-]\s*(\d{1,2})(?:\s*[\/.\-]\s*(\d{2,4}))?\s*$/);
+  if (mNum) {
+    const mes = parseInt(mNum[2], 10);
+    if (mes < 1 || mes > 12) return null;
+    let ano = mNum[3] ? parseInt(mNum[3], 10) : null;
+    if (ano !== null && ano < 100) ano += 2000;
+    return { mes, ano };
+  }
+  const tn = normaliza(t);
+  const mExt = tn.match(/^\d{1,2}\s+de\s+([a-z]+)(?:\s+de\s+(\d{4}))?/);
+  if (mExt) {
+    const idx = MESES.findIndex((mes) => normaliza(mes) === mExt[1]);
+    if (idx >= 0) return { mes: idx + 1, ano: mExt[2] ? parseInt(mExt[2], 10) : null };
+  }
+  return null;
+}
+function ehRotuloTema(linha) { return /^\s*\*?tema\*?\s*:?\s*$/i.test(linha || ""); }
+function removeRotuloTema(linha) { return (linha || "").replace(/^\s*\*?tema\*?\s*:?\s*/i, "").trim(); }
 function realceSugerido(texto) { const t = normaliza(texto); if (t.includes("superintendente") || t.includes("visita")) return "amarelo"; if (t.includes("congresso") || t.includes("assembleia")) return "rosa"; return "nenhum"; }
 const MAX_TEMAS = 6;
 const MAX_OBSERVACOES = 4;
 function processarTexto(texto) {
   const linhas = texto.split(/\r?\n/).map((l) => l.trim()); const blocos = []; let i = 0;
+  let mesAnoDetectado = null;
   while (i < linhas.length) {
     if (!linhas[i]) { i++; continue; }
-    if (ehData(linhas[i])) { const data = linhas[i]; i++; while (i < linhas.length && !linhas[i]) i++;
-      let tema = "", subtema = ""; if (i < linhas.length && !ehData(linhas[i])) { tema = linhas[i]; i++; }
-      if (i < linhas.length && linhas[i] && !ehData(linhas[i])) { subtema = linhas[i]; i++; }
+    if (ehData(linhas[i])) {
+      const data = normalizaDataExibicao(linhas[i]);
+      if (!mesAnoDetectado) mesAnoDetectado = extraiMesAno(linhas[i]);
+      i++; while (i < linhas.length && !linhas[i]) i++;
+      while (i < linhas.length && ehRotuloTema(linhas[i])) { i++; while (i < linhas.length && !linhas[i]) i++; }
+      let tema = "", subtema = "";
+      if (i < linhas.length && !ehData(linhas[i])) { tema = removeRotuloTema(linhas[i]); i++; }
+      if (i < linhas.length && linhas[i] && !ehData(linhas[i])) { subtema = removeRotuloTema(linhas[i]); i++; }
       blocos.push({ id: Date.now() + Math.random(), data, tema, subtema, realce: realceSugerido(tema + " " + subtema) });
     } else { i++; }
   }
-  return blocos;
+  return { blocos, mesAno: mesAnoDetectado };
+}
+function formatarMesAno(mes, ano, mesAnoAtual) {
+  const nome = MESES_NOME[mes - 1];
+  let anoFinal = ano;
+  if (!anoFinal && mesAnoAtual) { const m = String(mesAnoAtual).match(/(\d{4})/); if (m) anoFinal = parseInt(m[1], 10); }
+  return anoFinal ? `${nome}/${anoFinal}` : nome;
 }
 
 const DADOS_INICIAIS = {
@@ -722,6 +766,7 @@ function TelaDiscurso({ onVoltar }) {
   const inputFile = useRef(null);
   const [colado, setColado] = useState("");
   const [previa, setPrevia] = useState(null);
+  const [previaMesAno, setPreviaMesAno] = useState(null);
   const [erroParse, setErroParse] = useState("");
   const impressaoRef = useRef(null);
 
@@ -748,13 +793,21 @@ function TelaDiscurso({ onVoltar }) {
   function escolherOutra(e) { const file = e.target.files && e.target.files[0]; if (!file) return; const r = new FileReader(); r.onload = (ev) => { setFoto(ev.target.result); setFotoOriginalAtiva(false); }; r.readAsDataURL(file); }
   function processar() {
     setErroParse("");
-    const b = processarTexto(colado);
-    if (b.length === 0) { setErroParse("Não reconheci nenhuma data no texto. Verifique se cada data está numa linha e o tema na linha seguinte."); setPrevia(null); return; }
-    if (b.length > MAX_TEMAS) { setErroParse(`Encontrei ${b.length} discursos, mas a página só comporta ${MAX_TEMAS}. Mostrando apenas os ${MAX_TEMAS} primeiros — remova os demais do texto colado se quiser escolher outros.`); setPrevia(b.slice(0, MAX_TEMAS)); return; }
+    const { blocos: b, mesAno: mesInfo } = processarTexto(colado);
+    if (b.length === 0) { setErroParse("Não reconheci nenhuma data no texto. Verifique se cada data está numa linha e o tema na linha seguinte."); setPrevia(null); setPreviaMesAno(null); return; }
+    if (b.length > MAX_TEMAS) { setErroParse(`Encontrei ${b.length} discursos, mas a página só comporta ${MAX_TEMAS}. Mostrando apenas os ${MAX_TEMAS} primeiros — remova os demais do texto colado se quiser escolher outros.`); setPrevia(b.slice(0, MAX_TEMAS)); setPreviaMesAno(mesInfo); return; }
     setPrevia(b);
+    setPreviaMesAno(mesInfo);
   }
-  function aplicarPrevia() { setDados((d) => ({ ...d, linhas: previa.map((b, i) => ({ ...b, id: i + 1 })) })); setPrevia(null); setColado(""); }
-  function cancelarPrevia() { setPrevia(null); }
+  function aplicarPrevia() {
+    setDados((d) => ({
+      ...d,
+      linhas: previa.map((b, i) => ({ ...b, id: i + 1 })),
+      mesAno: previaMesAno ? formatarMesAno(previaMesAno.mes, previaMesAno.ano, d.mesAno) : d.mesAno,
+    }));
+    setPrevia(null); setPreviaMesAno(null); setColado("");
+  }
+  function cancelarPrevia() { setPrevia(null); setPreviaMesAno(null); }
   function editaLinha(id, campo, valor) {
     setDados((d) => ({ ...d, linhas: d.linhas.map((l) => (l.id === id ? { ...l, [campo]: valor } : l)) }));
     const enc = achaPalavrasChave(valor); const linha = dados.linhas.find((l) => l.id === id);
@@ -815,6 +868,11 @@ function TelaDiscurso({ onVoltar }) {
             {previa && (
               <div style={S.previaBox}>
                 <div style={S.previaTitulo}>Reconheci {previa.length} discurso(s). Isto vai substituir os quadros atuais.</div>
+                {previaMesAno && (
+                  <div style={{ fontSize: 12, color: "#555", marginBottom: 8 }}>
+                    Mês / Ano detectado: <strong>{formatarMesAno(previaMesAno.mes, previaMesAno.ano, dados.mesAno)}</strong>
+                  </div>
+                )}
                 <table style={S.previaTable}><thead><tr><th style={S.previaTh}>Data</th><th style={S.previaTh}>Tema</th><th style={S.previaTh}>Realce</th></tr></thead>
                   <tbody>{previa.map((b, i) => (<tr key={i}><td style={S.previaTd}>{b.data}</td><td style={S.previaTd}>{b.tema}{b.subtema ? <div style={{ color: "#777", fontSize: 11 }}>{b.subtema}</div> : null}</td><td style={S.previaTd}>{b.realce === "nenhum" ? "—" : b.realce}</td></tr>))}</tbody>
                 </table>
