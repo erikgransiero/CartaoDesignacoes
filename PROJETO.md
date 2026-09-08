@@ -117,10 +117,13 @@ Fonte padrão dos documentos: Arial.
   observações editáveis, foto do orador (original ou importada).
 - **Colar do WhatsApp + Processar**: interpreta texto colado
   (data → tema → subtítulo opcional), mostra prévia, substitui os quadros.
-  Reconhece datas em `DD/MM`, `DD/MM/AAAA`, `DD de <mês>`, dia ordinal
-  (`1º de setembro`), separador por ponto (`13.09`) e prefixo de dia da
-  semana (`Domingo, 06/09`) — corrigido em set/2026 (antes perdia talks
-  nesses formatos).
+  Reconhece datas em `DD/MM`, `DD/MM/AAAA` (ano é descartado, fica só
+  `DD/MM`), `DD de <mês>`, dia ordinal (`1º de setembro`), separador por
+  ponto (`13.09`, sem confundir com um ponto final de frase tipo
+  `23/08/2026.`) e prefixo de dia da semana (`Domingo, 06/09`). Remove o
+  rótulo "Tema" (qualquer caixa) e os símbolos `*`/`:` de qualquer parte
+  do tema/subtítulo (negrito e pontuação do WhatsApp). Preenche sozinho o
+  campo "Mês / Ano" a partir da primeira data reconhecida.
 - **Exportar PDF**: botão no cabeçalho, imprime apenas a pré-visualização.
 
 ### 5.2 Reunião A Sentinela
@@ -203,15 +206,35 @@ Fonte padrão dos documentos: Arial.
      vazio embaixo.
    - Foto do orador aumentada (agora 7,85cm × 5,56cm, `object-fit: cover`).
 
+3. ~~Colar do WhatsApp: rótulo "Tema" e símbolos `*`/`:` vazando no tema~~
+   — **corrigido**, em produção (08-09/2026):
+   - Rótulo "Tema" (qualquer caixa, com ou sem `*`/`:`) é removido, seja
+     como prefixo na mesma linha ou como linha isolada antes do texto.
+   - Símbolos `*` (negrito do WhatsApp) e `:` são removidos de qualquer
+     posição no tema/subtítulo — não só ao redor do rótulo "Tema".
+   - Bug real encontrado no meio da correção: o WhatsApp permite negritar
+     como `*Tema:*` (asterisco depois dos dois-pontos) **ou** `*Tema*:`
+     (asterisco antes) — a regra inicial só reconhecia a segunda forma, e
+     com `*Tema:*` (a mais comum) o rótulo não era descartado, empurrando
+     o tema real para o campo de subtítulo. Correção definitiva: remover
+     todos os `*`/`:` da linha primeiro, só depois checar se sobrou o
+     rótulo "tema" — evita ter que prever cada ordem possível.
+   - Datas `DD/MM/AAAA` viram `DD/MM` (ano descartado do campo); ponto
+     final na data (`23/08/2026.`) é ignorado sem afetar o ponto usado
+     como separador alternativo (`13.09`).
+   - Campo "Mês / Ano" é preenchido automaticamente a partir do mês/ano da
+     primeira data reconhecida (ex.: `09/2026` → "Setembro/2026"),
+     mostrado na prévia antes de aplicar.
+
 *(Publicado em produção em 08/09/2026. Próxima tela da revisão: Reunião A
 Sentinela.)*
 
-**Nota técnica:** durante essa correção, `package.json`/`package-lock.json`
-haviam divergido entre `main` e a branch de trabalho (o usuário atualizou
-Vite 5→6 e `@vitejs/plugin-react` 4→5 direto pelo GitHub, e um
-`package-lock.json` chegou a ser apagado em `main`). Foi feito merge de
-`main` na branch de trabalho, lockfile regenerado e todas as telas
-validadas antes de promover — branches sincronizadas novamente.
+**Nota técnica:** durante a correção do item 2, `package.json`/
+`package-lock.json` haviam divergido entre `main` e a branch de trabalho
+(o usuário atualizou Vite 5→6 e `@vitejs/plugin-react` 4→5 direto pelo
+GitHub, e um `package-lock.json` chegou a ser apagado em `main`). Foi
+feito merge de `main` na branch de trabalho, lockfile regenerado e todas
+as telas validadas antes de promover — branches sincronizadas novamente.
 
 ---
 
