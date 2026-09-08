@@ -682,6 +682,8 @@ function ehData(linha) {
   return false;
 }
 function realceSugerido(texto) { const t = normaliza(texto); if (t.includes("superintendente") || t.includes("visita")) return "amarelo"; if (t.includes("congresso") || t.includes("assembleia")) return "rosa"; return "nenhum"; }
+const MAX_TEMAS = 6;
+const MAX_OBSERVACOES = 4;
 function processarTexto(texto) {
   const linhas = texto.split(/\r?\n/).map((l) => l.trim()); const blocos = []; let i = 0;
   while (i < linhas.length) {
@@ -744,7 +746,13 @@ function TelaDiscurso({ onVoltar }) {
 
   function usarOriginal() { setFoto(FOTO_ORIGINAL); setFotoOriginalAtiva(true); }
   function escolherOutra(e) { const file = e.target.files && e.target.files[0]; if (!file) return; const r = new FileReader(); r.onload = (ev) => { setFoto(ev.target.result); setFotoOriginalAtiva(false); }; r.readAsDataURL(file); }
-  function processar() { setErroParse(""); const b = processarTexto(colado); if (b.length === 0) { setErroParse("Não reconheci nenhuma data no texto. Verifique se cada data está numa linha e o tema na linha seguinte."); setPrevia(null); return; } setPrevia(b); }
+  function processar() {
+    setErroParse("");
+    const b = processarTexto(colado);
+    if (b.length === 0) { setErroParse("Não reconheci nenhuma data no texto. Verifique se cada data está numa linha e o tema na linha seguinte."); setPrevia(null); return; }
+    if (b.length > MAX_TEMAS) { setErroParse(`Encontrei ${b.length} discursos, mas a página só comporta ${MAX_TEMAS}. Mostrando apenas os ${MAX_TEMAS} primeiros — remova os demais do texto colado se quiser escolher outros.`); setPrevia(b.slice(0, MAX_TEMAS)); return; }
+    setPrevia(b);
+  }
   function aplicarPrevia() { setDados((d) => ({ ...d, linhas: previa.map((b, i) => ({ ...b, id: i + 1 })) })); setPrevia(null); setColado(""); }
   function cancelarPrevia() { setPrevia(null); }
   function editaLinha(id, campo, valor) {
@@ -757,10 +765,10 @@ function TelaDiscurso({ onVoltar }) {
   function capturaSelLinha(linhaId, campo, e) { const { selectionStart: ini, selectionEnd: fim } = e.target; setSelLinha(fim > ini ? { linhaId, campo, ini, fim } : null); }
   function destacaTrechoLinha() { if (!selLinha) return; const { linhaId, campo, ini, fim } = selLinha; setDados((d) => ({ ...d, linhas: d.linhas.map((l) => { if (l.id !== linhaId) return l; const v = l[campo] || ""; return { ...l, [campo]: v.slice(0, ini) + "⟦" + v.slice(ini, fim) + "⟧" + v.slice(fim) }; }) })); setSelLinha(null); }
   function limpaTrechosLinha(id) { setDados((d) => ({ ...d, linhas: d.linhas.map((l) => (l.id === id ? { ...l, tema: (l.tema || "").replace(/[⟦⟧]/g, ""), subtema: (l.subtema || "").replace(/[⟦⟧]/g, "") } : l)) })); }
-  function addTema() { setDados((d) => ({ ...d, linhas: [...d.linhas, { id: Date.now(), data: "", tema: "", subtema: "", realce: "nenhum" }] })); }
+  function addTema() { if (dados.linhas.length >= MAX_TEMAS) return; setDados((d) => ({ ...d, linhas: [...d.linhas, { id: Date.now(), data: "", tema: "", subtema: "", realce: "nenhum" }] })); }
   function removeTema(id) { setDados((d) => ({ ...d, linhas: d.linhas.filter((l) => l.id !== id) })); }
   function editaObs(id, valor) { setDados((d) => ({ ...d, observacoes: d.observacoes.map((o) => (o.id === id ? { ...o, texto: valor } : o)) })); }
-  function addObs() { setDados((d) => ({ ...d, observacoes: [...d.observacoes, { id: Date.now(), texto: "" }] })); }
+  function addObs() { if (dados.observacoes.length >= MAX_OBSERVACOES) return; setDados((d) => ({ ...d, observacoes: [...d.observacoes, { id: Date.now(), texto: "" }] })); }
   function removeObs(id) { setDados((d) => ({ ...d, observacoes: d.observacoes.filter((o) => o.id !== id) })); }
   function capturaSelObs(obsId, e) { const { selectionStart: ini, selectionEnd: fim } = e.target; setSelObs(fim > ini ? { obsId, ini, fim } : null); }
   function destacaObs() { if (!selObs) return; const { obsId, ini, fim } = selObs; setDados((d) => ({ ...d, observacoes: d.observacoes.map((o) => { if (o.id !== obsId) return o; const v = o.texto || ""; return { ...o, texto: v.slice(0, ini) + "⟦" + v.slice(ini, fim) + "⟧" + v.slice(fim) }; }) })); setSelObs(null); }
@@ -846,10 +854,14 @@ function TelaDiscurso({ onVoltar }) {
               </div>
             );
           })}
-          <button style={S.btnAdd} onClick={addTema}>+ Adicionar tema</button>
+          {dados.linhas.length < MAX_TEMAS ? (
+            <button style={S.btnAdd} onClick={addTema}>+ Adicionar tema</button>
+          ) : (
+            <p style={S.hint}>Limite de {MAX_TEMAS} discursos por página atingido.</p>
+          )}
 
           <h3 style={S.h3}>Observações importantes</h3>
-          <p style={S.hint}>Escreva as mudanças do mês. Selecione o início da informação e use <em>Destacar em vinho</em> para dar ênfase.</p>
+          <p style={S.hint}>Escreva as mudanças do mês. Selecione o início da informação e use <em>Destacar em vinho</em> para dar ênfase. Máximo de {MAX_OBSERVACOES} observações, para caber na folha A4.</p>
           {dados.observacoes.map((o) => (
             <div key={o.id} style={S.obsCard}>
               <textarea style={S.obsArea} rows={3} value={o.texto} placeholder="Digite a observação…" onSelect={(e) => capturaSelObs(o.id, e)} onChange={(e) => editaObs(o.id, e.target.value)} />
@@ -860,7 +872,9 @@ function TelaDiscurso({ onVoltar }) {
               </div>
             </div>
           ))}
-          <button style={S.btnAdd} onClick={addObs}>+ Adicionar observação</button>
+          {dados.observacoes.length < MAX_OBSERVACOES && (
+            <button style={S.btnAdd} onClick={addObs}>+ Adicionar observação</button>
+          )}
         </section>
 
         <section className="secao-impressao" style={S.previewWrap}><h2 className="oculta-impressao" style={S.h2}>Pré-visualização</h2><div id="area-impressao"><div ref={impressaoRef}><Preview dados={dados} foto={foto} /></div></div></section>
@@ -877,15 +891,21 @@ function estiloSub(realce) { if (realce === "amarelo") return { color: TEMPLATE.
 function Preview({ dados, foto }) {
   return (
     <div className="pv-moldura" style={PV.frameOuter}><div className="pv-moldura-interna" style={PV.frameInner}>
-      <div style={PV.foto}>{foto ? <img src={foto} alt="Orador" style={PV.fotoImg} /> : <div style={PV.fotoPlaceholder}>sem foto</div>}</div>
-      <div style={PV.titulo}>{dados.titulo}</div><div style={PV.titulo}>{dados.mesAno}</div><div style={PV.sub}>{dados.congregacao}</div>
-      <table style={PV.table}><thead><tr><th style={{ ...PV.th, width: "24%" }}>Data</th><th style={PV.th}>Tema</th></tr></thead>
-        <tbody>{dados.linhas.map((l) => { const bg = l.realce === "amarelo" ? TEMPLATE.amareloBg : l.realce === "rosa" ? TEMPLATE.rosaClaro : "#fff"; return (
-          <tr key={l.id} style={{ background: bg }}><td style={{ ...PV.tdData, color: l.realce !== "nenhum" ? TEMPLATE.vinho : "#222" }}>{l.data}</td>
-            <td style={PV.tdTema}><div style={estiloTema(l.realce)}>{comMarcaTexto(l.tema)}</div>{l.subtema ? <div style={estiloSub(l.realce)}>{comMarcaTexto(l.subtema)}</div> : null}</td></tr>); })}</tbody>
-      </table>
-      <div style={PV.obsTitulo}>OBSERVAÇÕES IMPORTANTES</div><div style={PV.regua} />
-      {dados.observacoes.map((o) => (<div key={o.id} style={PV.obsItem}><span style={PV.bullet}>•</span><span>{comVinho(o.texto)}</span></div>))}
+      <div className="pv-bloco">
+        <div style={PV.foto}>{foto ? <img src={foto} alt="Orador" style={PV.fotoImg} /> : <div style={PV.fotoPlaceholder}>sem foto</div>}</div>
+        <div style={PV.titulo}>{dados.titulo}</div><div style={PV.titulo}>{dados.mesAno}</div><div style={PV.sub}>{dados.congregacao}</div>
+      </div>
+      <div className="pv-bloco">
+        <table style={PV.table}><thead><tr><th style={{ ...PV.th, width: "24%" }}>Data</th><th style={PV.th}>Tema</th></tr></thead>
+          <tbody>{dados.linhas.map((l) => { const bg = l.realce === "amarelo" ? TEMPLATE.amareloBg : l.realce === "rosa" ? TEMPLATE.rosaClaro : "#fff"; return (
+            <tr key={l.id} style={{ background: bg }}><td style={{ ...PV.tdData, color: l.realce !== "nenhum" ? TEMPLATE.vinho : "#222" }}>{l.data}</td>
+              <td style={PV.tdTema}><div style={estiloTema(l.realce)}>{comMarcaTexto(l.tema)}</div>{l.subtema ? <div style={estiloSub(l.realce)}>{comMarcaTexto(l.subtema)}</div> : null}</td></tr>); })}</tbody>
+        </table>
+      </div>
+      <div className="pv-bloco">
+        <div style={PV.obsTitulo}>OBSERVAÇÕES IMPORTANTES</div><div style={PV.regua} />
+        {dados.observacoes.map((o) => (<div key={o.id} style={PV.obsItem}><span style={PV.bullet}>•</span><span>{comVinho(o.texto)}</span></div>))}
+      </div>
     </div></div>
   );
 }
@@ -2940,7 +2960,7 @@ const PV = {
   frameOuter: { background: "#fff", border: "2px solid " + TEMPLATE.vinho, borderRadius: 2, padding: 4 },
   frameInner: { border: "1px solid " + TEMPLATE.vinho, padding: "18px 20px" },
   foto: { display: "flex", justifyContent: "center", marginBottom: 10 },
-  fotoImg: { width: 200, height: "auto", borderRadius: 2 },
+  fotoImg: { width: 240, height: "auto", borderRadius: 2 },
   fotoPlaceholder: { width: 190, height: 120, background: "#eee", border: "1px solid #ddd", display: "flex", alignItems: "center", justifyContent: "center", color: "#999", fontSize: 12, fontStyle: "italic" },
   titulo: { textAlign: "center", color: TEMPLATE.vinho, fontWeight: 800, fontSize: 22, lineHeight: 1.15 },
   sub: { textAlign: "center", color: TEMPLATE.azul, fontWeight: 700, fontSize: 12, margin: "6px 0 12px" },
@@ -3069,6 +3089,6 @@ const CSS = `
     #area-impressao { display: flex; justify-content: center; margin: 0; padding: 0; box-shadow: none !important; }
     #area-impressao > * { width: 186mm; transform-origin: top center; }
     #area-impressao .pv-moldura { min-height: 270mm; display: flex; flex-direction: column; }
-    #area-impressao .pv-moldura-interna { flex: 1; display: flex; flex-direction: column; }
+    #area-impressao .pv-moldura-interna { flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; }
   }
 `;
