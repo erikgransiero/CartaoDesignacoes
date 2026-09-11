@@ -777,13 +777,13 @@ function TelaDiscurso({ onVoltar }) {
     function ajustarParaUmaPagina() {
       const el = impressaoRef.current;
       if (!el) return;
-      el.style.transform = "none";
+      el.style.zoom = "1";
       const altura = el.scrollHeight;
       const largura = el.scrollWidth;
       const fator = Math.min(1, larguraDisponivel / largura, alturaDisponivel / altura);
-      el.style.transform = `scale(${fator})`;
+      el.style.zoom = String(fator);
     }
-    function restaurar() { const el = impressaoRef.current; if (el) el.style.transform = "none"; }
+    function restaurar() { const el = impressaoRef.current; if (el) el.style.zoom = "1"; }
     window.addEventListener("beforeprint", ajustarParaUmaPagina);
     window.addEventListener("afterprint", restaurar);
     return () => { window.removeEventListener("beforeprint", ajustarParaUmaPagina); window.removeEventListener("afterprint", restaurar); };
@@ -991,16 +991,46 @@ function achaCampoS(rotulo) {
   for (const k in CAMPOS_S) { if (r.startsWith(k.slice(0, 12))) return CAMPOS_S[k]; }
   return null;
 }
+function extraiDiaMesTexto(linha) {
+  const t = normaliza((linha || "").trim());
+  const m = t.match(/^dia\s+(\d{1,2})\s+([a-z]+)/);
+  if (!m) return null;
+  const idx = MESES_S.findIndex((mes) => normaliza(mes) === m[2]);
+  if (idx < 0) return null;
+  return { dia: parseInt(m[1], 10), mes: idx + 1 };
+}
+function achaCampoSemDoisPontos(linha) {
+  const m = (linha || "").trim().match(/^(\S+)\s+(.+)$/);
+  if (!m) return null;
+  const rotulo = normaliza(m[1]);
+  const valor = m[2].trim();
+  if (rotulo === "presidente") return { campo: "presidente", valor };
+  if (rotulo === "estudo" || rotulo === "tudo") return { campo: "estudo", valor };
+  if (rotulo === "leitor" || rotulo === "leito") return { campo: "leitor", valor };
+  if (rotulo === "oracao") return { campo: "oracaoFinal", valor };
+  return null;
+}
 function processarSentinela(texto) {
+  const anoAtual = new Date().getFullYear();
   const linhas = texto.split(/\r?\n/).map((l) => l.trim()).filter((x) => x !== "");
-  const blocos = []; let atual = null;
+  const blocos = []; let atual = null; let mesAnoDetectado = null;
   for (const linha of linhas) {
+    const diaMes = extraiDiaMesTexto(linha);
+    if (diaMes) {
+      if (!mesAnoDetectado) mesAnoDetectado = { mes: diaMes.mes, ano: anoAtual };
+      atual = { data: `${String(diaMes.dia).padStart(2, "0")} – ${MESES_NOME[diaMes.mes - 1]} – ${anoAtual}`, campos: {} };
+      blocos.push(atual);
+      continue;
+    }
     if (ehDataCabecalhoS(linha)) { atual = { data: linha, campos: {} }; blocos.push(atual); continue; }
     if (!atual) continue;
     const partes = linha.split(/:\s*/);
-    if (partes.length >= 2) { const campo = achaCampoS(partes[0]); if (campo) atual.campos[campo] = partes.slice(1).join(": "); }
+    if (partes.length >= 2) { const campo = achaCampoS(partes[0]); if (campo) { atual.campos[campo] = partes.slice(1).join(": "); continue; } }
+    const semDoisPontos = achaCampoSemDoisPontos(linha);
+    if (semDoisPontos) atual.campos[semDoisPontos.campo] = semDoisPontos.valor;
   }
-  return blocos;
+  for (const b of blocos) { if (b.campos.presidente && !b.campos.oracaoInicial) b.campos.oracaoInicial = b.campos.presidente; }
+  return { blocos, mesAno: mesAnoDetectado };
 }
 function tipoBlocoPorData(data, campos) {
   const t = normaliza(data + " " + Object.values(campos || {}).join(" "));
@@ -1025,51 +1055,92 @@ const SENTINELA_INICIAL = {
   ],
 };
 
+const MAX_SEMANAS = 5;
+const MAX_OBS_SENTINELA = 3;
 function TelaSentinela({ onVoltar }) {
   const [dados, setDados] = useEstadoSalvo("sentinela", SENTINELA_INICIAL);
   const [selObs, setSelObs] = React.useState(null);
   const [colado, setColado] = React.useState("");
   const [previa, setPrevia] = React.useState(null);
+  const [previaMesAno, setPreviaMesAno] = React.useState(null);
   const [erroParse, setErroParse] = React.useState("");
+  const impressaoRef = useRef(null);
+
+  useEffect(() => {
+    const PX_POR_MM = 96 / 25.4;
+    const larguraDisponivel = 170 * PX_POR_MM;
+    const alturaDisponivel = 220 * PX_POR_MM;
+    function ajustarParaUmaPagina() {
+      const el = impressaoRef.current;
+      if (!el) return;
+      el.style.zoom = "1";
+      const altura = el.scrollHeight;
+      const largura = el.scrollWidth;
+      const fator = Math.min(1, larguraDisponivel / largura, alturaDisponivel / altura);
+      el.style.zoom = String(fator);
+    }
+    function restaurar() { const el = impressaoRef.current; if (el) el.style.zoom = "1"; }
+    window.addEventListener("beforeprint", ajustarParaUmaPagina);
+    window.addEventListener("afterprint", restaurar);
+    return () => { window.removeEventListener("beforeprint", ajustarParaUmaPagina); window.removeEventListener("afterprint", restaurar); };
+  }, []);
+
+  function exportarPDF() {
+    const tituloOriginal = document.title;
+    document.title = `${dados.titulo} - ${dados.mesAno}`;
+    const restaura = () => { document.title = tituloOriginal; window.removeEventListener("afterprint", restaura); };
+    window.addEventListener("afterprint", restaura);
+    window.print();
+  }
 
   function editaBloco(id, campo, valor) { setDados((d) => ({ ...d, blocos: d.blocos.map((b) => (b.id === id ? { ...b, [campo]: valor } : b)) })); }
   function mudaTipo(id, novoTipo) { setDados((d) => ({ ...d, blocos: d.blocos.map((b) => (b.id === id ? { ...b, tipo: novoTipo } : b)) })); }
-  function addSemana() { setDados((d) => ({ ...d, blocos: [...d.blocos, { id: Date.now(), tipo: "normal", data: "", presidente: "", oracaoInicial: "", estudo: "", leitor: "", oracaoFinal: "" }] })); }
+  function addSemana() { if (dados.blocos.length >= MAX_SEMANAS) return; setDados((d) => ({ ...d, blocos: [...d.blocos, { id: Date.now(), tipo: "normal", data: "", presidente: "", oracaoInicial: "", estudo: "", leitor: "", oracaoFinal: "" }] })); }
   function removeSemana(id) { setDados((d) => ({ ...d, blocos: d.blocos.filter((b) => b.id !== id) })); }
   function editaObs(id, valor) { setDados((d) => ({ ...d, observacoes: d.observacoes.map((o) => (o.id === id ? { ...o, texto: valor } : o)) })); }
-  function addObs() { setDados((d) => ({ ...d, observacoes: [...d.observacoes, { id: Date.now(), texto: "" }] })); }
+  function addObs() { if (dados.observacoes.length >= MAX_OBS_SENTINELA) return; setDados((d) => ({ ...d, observacoes: [...d.observacoes, { id: Date.now(), texto: "" }] })); }
   function removeObs(id) { setDados((d) => ({ ...d, observacoes: d.observacoes.filter((o) => o.id !== id) })); }
   function capturaSelObs(obsId, e) { const { selectionStart: ini, selectionEnd: fim } = e.target; setSelObs(fim > ini ? { obsId, ini, fim } : null); }
   function destacaObs() { if (!selObs) return; const { obsId, ini, fim } = selObs; setDados((d) => ({ ...d, observacoes: d.observacoes.map((o) => { if (o.id !== obsId) return o; const v = o.texto || ""; return { ...o, texto: v.slice(0, ini) + "⟦" + v.slice(ini, fim) + "⟧" + v.slice(fim) }; }) })); setSelObs(null); }
 
   function processar() {
     setErroParse("");
-    const brutos = processarSentinela(colado);
-    if (brutos.length === 0) { setErroParse("Não reconheci nenhum bloco. Verifique se cada semana começa com a data (ex.: 01 – Agosto – 2026) e as designações no formato \"Presidente: Nome\"."); setPrevia(null); return; }
+    const { blocos: brutos, mesAno: mesInfo } = processarSentinela(colado);
+    if (brutos.length === 0) { setErroParse("Não reconheci nenhum bloco. Verifique se cada semana começa com a data (ex.: \"Dia 06 setembro\" ou 01 – Agosto – 2026) e as designações (Presidente, Estudo, Leitor, Oração)."); setPrevia(null); setPreviaMesAno(null); return; }
     const blocos = brutos.map((b, i) => {
       const tipo = tipoBlocoPorData(b.data, b.campos);
       return { id: i + 1, tipo, data: b.data, ...b.campos };
     });
+    if (blocos.length > MAX_SEMANAS) { setErroParse(`Encontrei ${blocos.length} semanas, mas a página só comporta ${MAX_SEMANAS}. Mostrando apenas as ${MAX_SEMANAS} primeiras.`); setPrevia(blocos.slice(0, MAX_SEMANAS)); setPreviaMesAno(mesInfo); return; }
     setPrevia(blocos);
+    setPreviaMesAno(mesInfo);
   }
-  function aplicarPrevia() { setDados((d) => ({ ...d, blocos: previa })); setPrevia(null); setColado(""); }
+  function aplicarPrevia() {
+    setDados((d) => ({
+      ...d,
+      blocos: previa,
+      mesAno: previaMesAno ? formatarMesAno(previaMesAno.mes, previaMesAno.ano, d.mesAno) : d.mesAno,
+    }));
+    setPrevia(null); setPreviaMesAno(null); setColado("");
+  }
 
   return (
-    <div style={S.page}>
-      <header style={S.appbar}>
+    <div className="pagina-com-impressao" style={S.page}>
+      <header className="oculta-impressao" style={S.appbar}>
         <button style={S.voltar} onClick={onVoltar}><Icone nome="voltar" size={18} color="#fff" /> Voltar ao menu principal</button>
         <div style={{ marginLeft: 14 }}>
           <div style={S.brandTitle}>Reunião A Sentinela</div>
           <div style={S.brandSub}>Congregação Parque Scaffid</div>
         </div>
         <div style={S.appbarTag}>Validação</div>
+        <button style={S.btnFoto} onClick={exportarPDF}><Icone nome="pdf" size={16} color={UI.azul} /> Exportar PDF</button>
       </header>
 
       <div style={S.grid} className="grid">
-        <section style={S.editor}>
+        <section className="oculta-impressao" style={S.editor}>
           <div style={S.wpp}>
-            <div style={S.wppHead}><span style={S.wppTitulo}>Colar do WhatsApp</span><span style={S.wppDica}>Cole o texto: cada semana começa com a data e as designações no formato "Presidente: Nome".</span></div>
-            <textarea style={S.wppArea} rows={6} value={colado} placeholder={"01 – Agosto – 2026\nPresidente: Ricardo Nery\nOração Inicial: Ricardo Nery\nEstudo da Revista A Sentinela: Ademir\nLeitor do Estudo da Revista: Lucas Soares\nOração Final: Erik"} onChange={(e) => setColado(e.target.value)} />
+            <div style={S.wppHead}><span style={S.wppTitulo}>Colar do WhatsApp</span><span style={S.wppDica}>Cole o texto: cada semana começa com "Dia DD mês" e as designações (Presidente, Estudo, Leitor, Oração).</span></div>
+            <textarea style={S.wppArea} rows={6} value={colado} placeholder={"Dia 06 setembro\nPresidente Wellington\nEstudo Ademir\nLeitor Anderson\nOração Anderson"} onChange={(e) => setColado(e.target.value)} />
             <div style={S.wppFooter}>
               <button style={S.btnProcessar} onClick={processar} disabled={!colado.trim()}>Processar</button>
               {colado && <button style={S.btnGhostAlt} onClick={() => { setColado(""); setPrevia(null); setErroParse(""); }}>Limpar</button>}
@@ -1078,10 +1149,15 @@ function TelaSentinela({ onVoltar }) {
             {previa && (
               <div style={S.previaBox}>
                 <div style={S.previaTitulo}>Reconheci {previa.length} semana(s). Isto vai substituir os blocos atuais.</div>
+                {previaMesAno && (
+                  <div style={{ fontSize: 12, color: "#555", marginBottom: 8 }}>
+                    Mês / Ano detectado: <strong>{formatarMesAno(previaMesAno.mes, previaMesAno.ano, dados.mesAno)}</strong>
+                  </div>
+                )}
                 <table style={S.previaTable}><thead><tr><th style={S.previaTh}>Data</th><th style={S.previaTh}>Tipo</th><th style={S.previaTh}>Presidente</th></tr></thead>
                   <tbody>{previa.map((b, i) => (<tr key={i}><td style={S.previaTd}>{b.data}</td><td style={S.previaTd}>{b.tipo}</td><td style={S.previaTd}>{b.presidente || "—"}</td></tr>))}</tbody>
                 </table>
-                <div style={S.previaBtns}><button style={S.btnSim} onClick={aplicarPrevia}>Substituir blocos</button><button style={S.btnNao} onClick={() => setPrevia(null)}>Cancelar</button></div>
+                <div style={S.previaBtns}><button style={S.btnSim} onClick={aplicarPrevia}>Substituir blocos</button><button style={S.btnNao} onClick={() => { setPrevia(null); setPreviaMesAno(null); }}>Cancelar</button></div>
               </div>
             )}
           </div>
@@ -1134,10 +1210,14 @@ function TelaSentinela({ onVoltar }) {
               )}
             </div>
           ))}
-          <button style={S.btnAdd} onClick={addSemana}>+ Adicionar semana</button>
+          {dados.blocos.length < MAX_SEMANAS ? (
+            <button style={S.btnAdd} onClick={addSemana}>+ Adicionar semana</button>
+          ) : (
+            <p style={S.hint}>Limite de {MAX_SEMANAS} semanas por página atingido.</p>
+          )}
 
           <h3 style={S.h3}>Observações</h3>
-          <p style={S.hint}>Selecione o início da informação e use <em>Destacar em vinho</em> para dar ênfase.</p>
+          <p style={S.hint}>Selecione o início da informação e use <em>Destacar em vinho</em> para dar ênfase. Máximo de {MAX_OBS_SENTINELA} observações, para caber na folha A4.</p>
           {dados.observacoes.map((o) => (
             <div key={o.id} style={S.obsCard}>
               <textarea style={S.obsArea} rows={2} value={o.texto} placeholder="Digite a observação…" onSelect={(e) => capturaSelObs(o.id, e)} onChange={(e) => editaObs(o.id, e.target.value)} />
@@ -1148,10 +1228,12 @@ function TelaSentinela({ onVoltar }) {
               </div>
             </div>
           ))}
-          <button style={S.btnAdd} onClick={addObs}>+ Adicionar observação</button>
+          {dados.observacoes.length < MAX_OBS_SENTINELA && (
+            <button style={S.btnAdd} onClick={addObs}>+ Adicionar observação</button>
+          )}
         </section>
 
-        <section style={S.previewWrap}><h2 style={S.h2}>Pré-visualização</h2><PreviewSentinela dados={dados} /></section>
+        <section className="secao-impressao" style={S.previewWrap}><h2 className="oculta-impressao" style={S.h2}>Pré-visualização</h2><div id="area-impressao"><div ref={impressaoRef}><PreviewSentinela dados={dados} /></div></div></section>
       </div>
     </div>
   );
@@ -1168,11 +1250,14 @@ function CampoS({ label, v, on, destaque }) {
 
 function PreviewSentinela({ dados }) {
   return (
-    <div style={PV.frameOuter}><div style={PV.frameInner}>
-      <div style={{ textAlign: "center", color: TEMPLATE.vinho, fontWeight: 800, fontSize: 20 }}>{dados.titulo}</div>
-      <div style={{ textAlign: "center", color: TEMPLATE.azul, fontWeight: 700, fontSize: 12, margin: "4px 0 6px" }}>{dados.congregacao} • {dados.mesAno}</div>
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%", margin: "8px 0 14px" }}><img src={IMG_SENTINELA} alt="A Sentinela — Anunciando o Reino de Jeová" style={{ height: 46, width: "auto", display: "block" }} /></div>
+    <div className="pv-moldura" style={PV.frameOuter}><div className="pv-moldura-interna" style={PV.frameInner}>
+      <div className="pv-bloco">
+        <div style={{ textAlign: "center", color: TEMPLATE.vinho, fontWeight: 800, fontSize: 20 }}>{dados.titulo}</div>
+        <div style={{ textAlign: "center", color: TEMPLATE.azul, fontWeight: 700, fontSize: 12, margin: "4px 0 6px" }}>{dados.congregacao} • {dados.mesAno}</div>
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%", margin: "8px 0 14px" }}><img src={IMG_SENTINELA} alt="A Sentinela — Anunciando o Reino de Jeová" style={{ height: 46, width: "auto", display: "block" }} /></div>
+      </div>
 
+      <div className="pv-bloco">
       {dados.blocos.map((b) => {
         if (b.tipo === "congresso" || b.tipo === "assembleia") return (
           <div key={b.id} style={SP.bloco}>
@@ -1206,9 +1291,12 @@ function PreviewSentinela({ dados }) {
           </div>
         );
       })}
+      </div>
 
-      <div style={PV.obsTitulo}>OBSERVAÇÕES</div><div style={PV.regua} />
-      {dados.observacoes.map((o) => (<div key={o.id} style={PV.obsItem}><span style={PV.bullet}>•</span><span>{comVinho(o.texto)}</span></div>))}
+      <div className="pv-bloco">
+        <div style={PV.obsTitulo}>OBSERVAÇÕES</div><div style={PV.regua} />
+        {dados.observacoes.map((o) => (<div key={o.id} style={PV.obsItem}><span style={PV.bullet}>•</span><span>{comVinho(o.texto)}</span></div>))}
+      </div>
     </div></div>
   );
 }
@@ -3148,7 +3236,7 @@ const CSS = `
     #area-impressao, #area-impressao * { -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
     #area-impressao { display: flex; justify-content: center; margin: 0; padding: 0; box-shadow: none !important; }
     #area-impressao > * { width: 170mm; transform-origin: top center; }
-    #area-impressao .pv-moldura { min-height: 200mm; max-height: 220mm; overflow: hidden; display: flex; flex-direction: column; }
+    #area-impressao .pv-moldura { min-height: 200mm; display: flex; flex-direction: column; }
     #area-impressao .pv-moldura-interna { flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; }
   }
 `;
