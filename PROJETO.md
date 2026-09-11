@@ -35,8 +35,8 @@ imprimir, corrigir bugs de parsing) antes de partir para backend/integrações.
 |---|---|
 | Login | Concluída e em produção |
 | Menu principal | Concluída e em produção |
-| Discurso Público | Construída · **em revisão** (ver §6) |
-| Reunião A Sentinela | Construída · revisão ainda não iniciada |
+| Discurso Público | Construída e revisada · em produção (ver §6) |
+| Reunião A Sentinela | Construída · **em revisão** (ver §6), publicada em `preview` |
 | Cartão de Designações | Construída · revisão ainda não iniciada |
 | Calendário de Pregação | Construída · revisão ainda não iniciada |
 | Bastidores | Construída · revisão ainda não iniciada |
@@ -129,10 +129,18 @@ Fonte padrão dos documentos: Arial.
 ### 5.2 Reunião A Sentinela
 - Blocos semanais com campos que mudam conforme o tipo: Semana Normal,
   Assembleia, Congresso, Visita do SC.
-- Colar do WhatsApp + Processar (reconhece cabeçalho de data e pares
-  "Rótulo: Nome"), observações editáveis com destaque em vinho.
-- Ainda **não revisado** no ciclo atual — pendências desconhecidas até a
-  simulação de uso real.
+- Colar do WhatsApp + Processar: reconhece tanto o formato antigo
+  ("Rótulo: Nome" com dois-pontos) quanto o **formato real do WhatsApp
+  do usuário** — cabeçalho "Dia DD mês" (ex.: "Dia 27 setembro", vira
+  "27 – Setembro – 2026" com o ano corrente do sistema) e designações sem
+  dois-pontos ("Presidente Nome", "Estudo Nome", "Leitor Nome", "Oração
+  Nome"), com tolerância a erros de digitação comuns ("Tudo"→Estudo,
+  "Leito"→Leitor). "Oração Inicial" é preenchida automaticamente com o
+  mesmo nome do Presidente. Campo "Mês / Ano" detectado automaticamente.
+  Limite de 5 semanas / 3 observações por página.
+- **Exportar PDF**: mesmo layout de página única A4 do Discurso Público.
+- Em **revisão** no ciclo atual (item 1 concluído, publicado em `preview`
+  — ver §6).
 
 ### 5.3 Cartão de Designações
 - Import automático a partir do PDF anotado do apostilado (FreeText
@@ -248,8 +256,7 @@ Fonte padrão dos documentos: Arial.
    próximas telas com exportar PDF:** replicar esse reset completo da
    cadeia de containers desde o início, não só o container da tela.
 
-*(Publicado em produção em 08/09/2026. Próxima tela da revisão: Reunião A
-Sentinela.)*
+*(Publicado em produção em 08/09/2026.)*
 
 **Nota técnica:** durante a correção do item 2, `package.json`/
 `package-lock.json` haviam divergido entre `main` e a branch de trabalho
@@ -258,13 +265,52 @@ GitHub, e um `package-lock.json` chegou a ser apagado em `main`). Foi
 feito merge de `main` na branch de trabalho, lockfile regenerado e todas
 as telas validadas antes de promover — branches sincronizadas novamente.
 
+### Reunião A Sentinela (item 1 — publicado em `preview`, 11/09/2026)
+1. ~~Parser do "Colar do WhatsApp" não reconhecia o formato real do
+   usuário (sem dois-pontos, cabeçalho "Dia DD mês")~~ — **corrigido**:
+   novo reconhecimento de "Dia DD mês" → "DD – Mês – AAAA" (ano corrente
+   do sistema), designações sem dois-pontos ("Presidente Nome" etc.) com
+   tolerância a typos comuns ("Tudo"/"Leito"), "Oração Inicial" auto-
+   preenchida a partir do Presidente, e "Mês / Ano" detectado
+   automaticamente. Limite de 5 semanas / 3 observações.
+2. ~~Adicionar botão "Exportar PDF"~~ — **feito**, reaproveitando 100% da
+   infraestrutura de impressão já global (classes `oculta-impressao`,
+   `pagina-com-impressao`, `secao-impressao`, `#area-impressao`,
+   `pv-moldura`/`pv-moldura-interna`).
+
+**Bug real descoberto e corrigido durante este desenvolvimento — relevante
+para QUALQUER tela futura com exportar PDF:** o mecanismo de "encolher
+para caber em 1 página" usava `el.style.transform = "scale(...)"`. Isso é
+**visual apenas** — não influencia o cálculo de paginação do navegador,
+que decide quantas páginas usar a partir do layout **antes** do transform
+ser aplicado. Para conteúdo que cabia naturalmente em uma página (caso do
+Discurso Público, sempre ≤6 temas/3 obs), isso nunca dava problema porque
+o "scale" quase nunca precisava reduzir de verdade. Mas a Reunião A
+Sentinela tem blocos bem maiores por semana, e com 4-5 semanas o conteúdo
+natural passa de uma página — revelando dois problemas ao mesmo tempo:
+(a) mesmo com o fator de escala calculado corretamente, o `transform`
+não evitava a segunda página; (b) o corte rígido (`overflow: hidden` +
+`max-height: 220mm`) que existia como proteção extra para o Discurso
+Público **descartava silenciosamente** o conteúdo que excedia o limite
+(as observações somem sem nenhum aviso, sem erro no console). Corrigido
+trocando `transform: scale()` por `zoom` (que realmente redimensiona o
+layout antes da paginação) e removendo o corte rígido, mantendo só
+`min-height: 200mm` como piso decorativo. Testado até o limite de 5
+semanas + 3 observações, com e sem o evento `beforeprint` disparado, e em
+papel Carta/Letter com margem de 1 polegada — sempre 1 página, sempre com
+todo o conteúdo visível. **Essa correção está no CSS global
+compartilhado, então o Discurso Público também se beneficia dela.**
+
+*(Publicado em `preview`. Aguardando validação do usuário antes de
+avançar para a próxima tela: Cartão de Designações.)*
+
 ---
 
 ## 7. Roteiro (próximas etapas, nesta ordem)
 
-1. **Finalizar revisão do Discurso Público** (aguardando validação do
+1. ~~Revisão do Discurso Público~~ — concluída, em produção.
+2. **Finalizar revisão da Reunião A Sentinela** (aguardando validação do
    usuário no `preview`).
-2. Revisar **Reunião A Sentinela** (simulação de uso + lista de ajustes).
 3. Revisar **Cartão de Designações**.
 4. Revisar **Calendário de Pregação**.
 5. Revisar **Bastidores**.
