@@ -1283,11 +1283,11 @@ function PreviewSentinela({ dados }) {
         return (
           <div key={b.id} style={SP.bloco}>
             <div style={{ ...SP.cabecalho, background: TEMPLATE.azul }}>{b.data}</div>
-            <LinhaSP rotulo="Presidente" valor={b.presidente} zebra={0} />
-            <LinhaSP rotulo="Oração Inicial" valor={b.oracaoInicial} zebra={1} />
-            <LinhaSP rotulo="Estudo da Revista A Sentinela" valor={b.estudo} zebra={0} />
-            <LinhaSP rotulo="Leitor do Estudo da Revista" valor={b.leitor} zebra={1} />
-            <LinhaSP rotulo="Oração Final (CASO O ORADOR NÃO FIQUE)" valor={b.oracaoFinal} zebra={0} corRotulo={TEMPLATE.vinho} negrito />
+            <LinhaSP rotulo="Presidente" valor={b.presidente} zebra={0} compacto />
+            <LinhaSP rotulo="Oração Inicial" valor={b.oracaoInicial} zebra={1} compacto />
+            <LinhaSP rotulo="Estudo da Revista A Sentinela" valor={b.estudo} zebra={0} compacto />
+            <LinhaSP rotulo="Leitor do Estudo da Revista" valor={b.leitor} zebra={1} compacto />
+            <LinhaSP rotulo="Oração Final (CASO O ORADOR NÃO FIQUE)" valor={b.oracaoFinal} zebra={0} corRotulo={TEMPLATE.vinho} negrito compacto />
           </div>
         );
       })}
@@ -1300,9 +1300,9 @@ function PreviewSentinela({ dados }) {
     </div></div>
   );
 }
-function LinhaSP({ rotulo, valor, zebra, corRotulo, negrito, italicoValor }) {
+function LinhaSP({ rotulo, valor, zebra, corRotulo, negrito, italicoValor, compacto }) {
   return (
-    <div style={{ display: "flex", background: zebra ? "#eef1f6" : "#fff", fontSize: 11, borderBottom: "1px solid #e3e7ee" }}>
+    <div className={compacto ? "pv-linha-compacta" : undefined} style={{ display: "flex", background: zebra ? "#eef1f6" : "#fff", fontSize: 11, borderBottom: "1px solid #e3e7ee" }}>
       <div style={{ flex: 1, padding: "6px 8px", color: corRotulo || "#333", fontWeight: negrito ? 700 : 400 }}>{rotulo}</div>
       <div style={{ width: "42%", padding: "6px 8px", textAlign: "center", fontWeight: 700, fontStyle: italicoValor ? "italic" : "normal" }}>{valor}</div>
     </div>
@@ -3238,5 +3238,7 @@ const CSS = `
     #area-impressao > * { width: 170mm; transform-origin: top center; }
     #area-impressao .pv-moldura { min-height: 200mm; display: flex; flex-direction: column; }
     #area-impressao .pv-moldura-interna { flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; }
+    #area-impressao .pv-linha-compacta { font-size: 8px !important; }
+    #area-impressao .pv-linha-compacta > div { padding: 2px 6px !important; }
   }
 `;
