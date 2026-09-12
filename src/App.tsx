@@ -1934,6 +1934,14 @@ function TelaCartao({ onVoltar }) {
   function addObs() { setDados((d) => ({ ...d, observacoes: [...d.observacoes, { id: novoIdCartao(), texto: "" }] })); }
   function removeObs(id) { setDados((d) => ({ ...d, observacoes: d.observacoes.filter((o) => o.id !== id) })); }
 
+  function exportarPDF() {
+    const tituloOriginal = document.title;
+    document.title = `${dados.titulo} - ${dados.mesAno}`;
+    const restaura = () => { document.title = tituloOriginal; window.removeEventListener("afterprint", restaura); };
+    window.addEventListener("afterprint", restaura);
+    window.print();
+  }
+
   async function processarPDF(e) {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
@@ -1955,18 +1963,19 @@ function TelaCartao({ onVoltar }) {
   function cancelarPdfPrevia() { setPdfPrevia(null); }
 
   return (
-    <div style={S.page}>
-      <header style={S.appbar}>
+    <div className="pagina-com-impressao" style={S.page}>
+      <header className="oculta-impressao" style={S.appbar}>
         <button style={S.voltar} onClick={onVoltar}><Icone nome="voltar" size={18} color="#fff" /> Voltar ao menu principal</button>
         <div style={{ marginLeft: 14 }}>
           <div style={S.brandTitle}>Cartão de Designações</div>
           <div style={S.brandSub}>{dados.congregacao}</div>
         </div>
         <div style={S.appbarTag}>Validação</div>
+        <button style={S.btnFoto} onClick={exportarPDF}><Icone nome="pdf" size={16} color={UI.azul} /> Exportar PDF</button>
       </header>
 
       <div style={S.grid} className="grid">
-        <section style={S.editor}>
+        <section className="oculta-impressao" style={S.editor}>
           <div style={S.wpp}>
             <div style={S.wppHead}>
               <span style={S.wppTitulo}>Importar rascunho em PDF</span>
@@ -2017,7 +2026,11 @@ function TelaCartao({ onVoltar }) {
           <button style={S.btnAdd} onClick={addObs}>+ Adicionar observação</button>
         </section>
 
-        <section style={S.previewWrap}><h2 style={S.h2}>Pré-visualização</h2><PreviewCartao dados={dados} /></section>
+        <section className="secao-impressao" style={S.previewWrap}>
+          <h2 className="oculta-impressao" style={S.h2}>Pré-visualização</h2>
+          <div className="oculta-impressao"><PreviewCartao dados={dados} /></div>
+          <div id="area-impressao" className="somente-impressao"><PreviewCartaoImpressao dados={dados} /></div>
+        </section>
       </div>
     </div>
   );
@@ -2106,6 +2119,47 @@ function ItemLinhaCartao({ numero, titulo, detalhe, nome, zebra }) {
   );
 }
 
+function BlocoSemanaCartao({ s, compacto }) {
+  return (
+    <div style={PVC.semana} className={compacto ? "pvc-semana-print" : undefined}>
+      <div style={PVC.semanaHeader}>{s.dataLabel || "—"}{s.leituraBiblica ? " • " + s.leituraBiblica : ""}</div>
+      {s.semReuniao ? (
+        <div style={PVC.semReuniao}>
+          <div style={PVC.semReuniaoTitulo}>SEM REUNIÃO DE MEIO DE SEMANA</div>
+          <div style={PVC.semReuniaoMotivo}>{s.motivo}</div>
+        </div>
+      ) : (
+        <>
+          <div style={PVC.semanaLinha2}>
+            <span><strong>Presidente:</strong> {s.presidente}</span>
+            <span><strong>Cântico:</strong> {s.canticoInicial}</span>
+            <span><strong>Oração:</strong> {s.oracaoInicial}</span>
+          </div>
+          <div style={PVC.comentario}>Comentários iniciais (1 minuto)</div>
+
+          <div style={{ ...PVC.secaoBar, background: TEMPLATE.teal }}>TESOUROS DA PALAVRA DE DEUS</div>
+          <ItemLinhaCartao numero={1} titulo={s.tema1Titulo} nome={s.tema1Designado} />
+          <ItemLinhaCartao numero={2} titulo="Joias Espirituais" nome={s.joiasDesignado} zebra />
+          <ItemLinhaCartao numero={3} titulo="Leitura da Bíblia" detalhe={s.leituraLicao} nome={s.leituraDesignado} />
+
+          <div style={{ ...PVC.secaoBar, background: TEMPLATE.dourado }}>FAÇA SEU MELHOR NO MINISTÉRIO</div>
+          {s.ministerio.map((p, i) => (
+            <ItemLinhaCartao key={p.id} numero={4 + i} titulo={p.titulo} detalhe={p.detalhe} nome={p.designado} zebra={i % 2 === 1} />
+          ))}
+
+          {s.canticoMeio && <div style={PVC.canticoMeio}>Cântico {s.canticoMeio}</div>}
+
+          <div style={{ ...PVC.secaoBar, background: TEMPLATE.vinho }}>NOSSA VIDA CRISTÃ</div>
+          {s.vidaCrista.map((p, i) => (
+            <ItemLinhaCartao key={p.id} numero={4 + s.ministerio.length + i} titulo={p.titulo} detalhe={p.detalhe} nome={p.designado} zebra={i % 2 === 1} />
+          ))}
+
+          <div style={PVC.comentario}>Comentários finais e anúncios (3 min) — Cântico: {s.canticoFinal} • Oração: {s.oracaoFinal}</div>
+        </>
+      )}
+    </div>
+  );
+}
 function PreviewCartao({ dados }) {
   return (
     <div style={PVC.frameOuter}>
@@ -2113,49 +2167,39 @@ function PreviewCartao({ dados }) {
       <div style={PVC.headerSub}>{dados.subtitulo}</div>
       <div style={PVC.headerInfo}>{dados.congregacao} • {dados.mesAno}</div>
 
-      {dados.semanas.map((s) => (
-        <div key={s.id} style={PVC.semana}>
-          <div style={PVC.semanaHeader}>{s.dataLabel || "—"}{s.leituraBiblica ? " • " + s.leituraBiblica : ""}</div>
-          {s.semReuniao ? (
-            <div style={PVC.semReuniao}>
-              <div style={PVC.semReuniaoTitulo}>SEM REUNIÃO DE MEIO DE SEMANA</div>
-              <div style={PVC.semReuniaoMotivo}>{s.motivo}</div>
-            </div>
-          ) : (
-            <>
-              <div style={PVC.semanaLinha2}>
-                <span><strong>Presidente:</strong> {s.presidente}</span>
-                <span><strong>Cântico:</strong> {s.canticoInicial}</span>
-                <span><strong>Oração:</strong> {s.oracaoInicial}</span>
-              </div>
-              <div style={PVC.comentario}>Comentários iniciais (1 minuto)</div>
-
-              <div style={{ ...PVC.secaoBar, background: TEMPLATE.teal }}>TESOUROS DA PALAVRA DE DEUS</div>
-              <ItemLinhaCartao numero={1} titulo={s.tema1Titulo} nome={s.tema1Designado} />
-              <ItemLinhaCartao numero={2} titulo="Joias Espirituais" nome={s.joiasDesignado} zebra />
-              <ItemLinhaCartao numero={3} titulo="Leitura da Bíblia" detalhe={s.leituraLicao} nome={s.leituraDesignado} />
-
-              <div style={{ ...PVC.secaoBar, background: TEMPLATE.dourado }}>FAÇA SEU MELHOR NO MINISTÉRIO</div>
-              {s.ministerio.map((p, i) => (
-                <ItemLinhaCartao key={p.id} numero={4 + i} titulo={p.titulo} detalhe={p.detalhe} nome={p.designado} zebra={i % 2 === 1} />
-              ))}
-
-              {s.canticoMeio && <div style={PVC.canticoMeio}>Cântico {s.canticoMeio}</div>}
-
-              <div style={{ ...PVC.secaoBar, background: TEMPLATE.vinho }}>NOSSA VIDA CRISTÃ</div>
-              {s.vidaCrista.map((p, i) => (
-                <ItemLinhaCartao key={p.id} numero={4 + s.ministerio.length + i} titulo={p.titulo} detalhe={p.detalhe} nome={p.designado} zebra={i % 2 === 1} />
-              ))}
-
-              <div style={PVC.comentario}>Comentários finais e anúncios (3 min) — Cântico: {s.canticoFinal} • Oração: {s.oracaoFinal}</div>
-            </>
-          )}
-        </div>
-      ))}
+      {dados.semanas.map((s) => <BlocoSemanaCartao key={s.id} s={s} />)}
 
       <div style={PV.obsTitulo}>OBSERVAÇÕES</div>
       <div style={PV.regua} />
       {dados.observacoes.map((o) => (<div key={o.id} style={PV.obsItem}><span style={PV.bullet}>•</span><span>{o.texto}</span></div>))}
+    </div>
+  );
+}
+// Layout de impressão: cada página física traz até 2 semanas, com o
+// cabeçalho do cartão repetido no topo de cada página.
+function PreviewCartaoImpressao({ dados }) {
+  const grupos = [];
+  for (let i = 0; i < dados.semanas.length; i += 2) grupos.push(dados.semanas.slice(i, i + 2));
+  if (grupos.length === 0) grupos.push([]);
+  return (
+    <div>
+      {grupos.map((grupo, gi) => (
+        <div key={gi} className="cartao-pagina" style={PVC.frameOuter}>
+          <div style={PVC.headerTitulo}>{dados.titulo}</div>
+          <div style={PVC.headerSub}>{dados.subtitulo}</div>
+          <div style={PVC.headerInfo}>{dados.congregacao} • {dados.mesAno}</div>
+
+          {grupo.map((s) => <BlocoSemanaCartao key={s.id} s={s} compacto />)}
+
+          {gi === grupos.length - 1 && (
+            <>
+              <div style={PV.obsTitulo}>OBSERVAÇÕES</div>
+              <div style={PV.regua} />
+              {dados.observacoes.map((o) => (<div key={o.id} style={PV.obsItem}><span style={PV.bullet}>•</span><span>{o.texto}</span></div>))}
+            </>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -3224,6 +3268,7 @@ const CSS = `
     div[style*="repeat(5, 1fr)"] { grid-template-columns: repeat(2, 1fr) !important; }
   }
   @media (max-width: 860px) { .grid { grid-template-columns: 1fr !important; } }
+  .somente-impressao { display: none; }
   @page { size: A4 portrait; margin: 12mm; }
   @media print {
     html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; height: auto !important; min-height: 0 !important; }
@@ -3231,6 +3276,7 @@ const CSS = `
     .app-shell { min-height: 0 !important; height: auto !important; }
     .pagina-com-impressao { min-height: 0 !important; height: auto !important; background: #fff !important; }
     .oculta-impressao { display: none !important; }
+    .somente-impressao { display: block !important; }
     .secao-impressao { position: static !important; top: auto !important; }
     .pagina-com-impressao .grid { padding: 0 !important; grid-template-columns: 1fr !important; gap: 0 !important; }
     #area-impressao, #area-impressao * { -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
@@ -3240,5 +3286,8 @@ const CSS = `
     #area-impressao .pv-moldura-interna { flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; }
     #area-impressao .pv-linha-compacta { font-size: 8px !important; }
     #area-impressao .pv-linha-compacta > div { padding: 2px 6px !important; }
+    #area-impressao .cartao-pagina { break-after: page; page-break-after: always; }
+    #area-impressao .cartao-pagina:last-child { break-after: auto; page-break-after: auto; }
+    #area-impressao .pvc-semana-print { break-inside: avoid; page-break-inside: avoid; }
   }
 `;
