@@ -39,8 +39,8 @@ const DOCUMENTOS = [
 // tela própria, por isso não entram em DOCUMENTOS (não geram cartão no menu
 // principal nem participam da navegação por enquanto).
 const MENU_LATERAL_EXTRA = [
-  { id: "enviar-cartao", titulo: "Enviar Cartão de Designação", icone: "pdf" },
-  { id: "cadastro-publicadores", titulo: "Cadastro Publicadores", icone: "usuario-mais" },
+  { id: "enviar-cartao", titulo: "Enviar Cartão de Designação", icone: "pdf", pronto: false },
+  { id: "cadastro-publicadores", titulo: "Cadastro Publicadores", icone: "usuario-mais", pronto: true },
 ];
 
 /* ---------------- persistência no navegador ---------------- */
@@ -94,6 +94,11 @@ function Icone({ nome, size = 40, color = TEMPLATE.azul }) {
     case "lixeira": return (<svg {...p}><polyline points="3 6 5 6 21 6" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>);
     case "check-circle": return (<svg {...p}><circle cx="12" cy="12" r="9" /><polyline points="8.5 12 11 14.5 15.5 9.5" /></svg>);
     case "pdf": return (<svg {...p}><path d="M6 2h8l4 4v16H6Z" /><polyline points="14 2 14 6 18 6" /><line x1="9" y1="13" x2="9" y2="18" /><line x1="12" y1="13" x2="12" y2="18" /><line x1="15" y1="13" x2="15" y2="18" /></svg>);
+    case "telefone": return (<svg {...p}><path d="M6.5 3h3l1.5 4-2 1.5a13 13 0 0 0 6 6l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A18 18 0 0 1 4.5 5.2 2 2 0 0 1 6.5 3Z" /></svg>);
+    case "editar": return (<svg {...p}><path d="M4 16.5V20h3.5L18.5 9 15 5.5 4 16.5Z" /><path d="M13.5 7 17 10.5" /></svg>);
+    case "buscar": return (<svg {...p}><circle cx="10.5" cy="10.5" r="6.5" /><line x1="21" y1="21" x2="15.5" y2="15.5" /></svg>);
+    case "chevron-esquerda": return (<svg {...p}><polyline points="14.5 5 8 12 14.5 19" /></svg>);
+    case "chevron-direita": return (<svg {...p}><polyline points="9.5 5 16 12 9.5 19" /></svg>);
     default: return null;
   }
 }
@@ -113,7 +118,7 @@ export default function App() {
   const [tela, setTela] = useState("menu");
 
   function navega(destino) {
-    if (destino === "menu" || destino === "usuarios") { setTela(destino); return; }
+    if (destino === "menu" || destino === "usuarios" || destino === "cadastro-publicadores") { setTela(destino); return; }
     const doc = DOCUMENTOS.find((d) => d.id === destino);
     if (doc && doc.pronto) setTela(destino);
   }
@@ -142,6 +147,7 @@ export default function App() {
       {tela === "cartao" && <TelaCartao onVoltar={() => setTela("menu")} />}
       {tela === "bastidores" && <TelaBastidores onVoltar={() => setTela("menu")} />}
       {tela === "usuarios" && <TelaUsuarios onNavega={navega} sessao={sessao} onSair={sair} />}
+      {tela === "cadastro-publicadores" && <TelaPublicadores onNavega={navega} sessao={sessao} onSair={sair} />}
     </div>
   );
 }
@@ -163,12 +169,16 @@ function Sidebar({ atual, onNavega, sessao, onSair }) {
           );
         })}
         <div style={M.navSeparador} />
-        {MENU_LATERAL_EXTRA.map((d) => (
-          <button key={d.id} style={{ ...M.navItem, opacity: 0.5 }} onClick={() => onNavega(d.id)} title="Em construção">
-            <Icone nome={d.icone} size={22} color="#5b6472" />
-            <span style={M.navLabel}>{d.titulo}</span>
-          </button>
-        ))}
+        {MENU_LATERAL_EXTRA.map((d) => {
+          const ativo = d.id === atual;
+          return (
+            <button key={d.id} style={{ ...M.navItem, ...(ativo ? M.navItemAtivo : {}), ...(d.pronto ? {} : { opacity: 0.5 }) }}
+              onClick={() => onNavega(d.id)} title={d.pronto ? "" : "Em construção"}>
+              <Icone nome={d.icone} size={22} color={ativo ? TEMPLATE.azul : "#5b6472"} />
+              <span style={M.navLabel}>{d.titulo}</span>
+            </button>
+          );
+        })}
       </nav>
       <div style={M.sidebarFooter}>
         <button style={{ ...M.navItem, ...(atual === "usuarios" ? M.navItemAtivo : {}) }} onClick={() => onNavega("usuarios")}>
@@ -679,6 +689,179 @@ function IlustracaoAcesso() {
         </g>
       ))}
     </svg>
+  );
+}
+
+/* ====================== TELA CADASTRO DE PUBLICADORES ====================== */
+
+const PUBLICADORES_INICIAL = {
+  publicadores: [
+    { id: 1, nome: "André Souza", telefone: "(11) 91234-5678" },
+    { id: 2, nome: "Beatriz Lima", telefone: "(11) 98765-4321" },
+    { id: 3, nome: "Carlos Mendes", telefone: "(21) 99876-5432" },
+    { id: 4, nome: "Daniela Alves", telefone: "(11) 96666-7777" },
+    { id: 5, nome: "Felipe Rocha", telefone: "(31) 91234-0000" },
+  ],
+};
+
+const TAM_PAGINA_PUBLICADORES = 5;
+
+// Formata progressivamente enquanto o usuário digita: (DD) DDDDD-DDDD.
+function formataTelefoneParcial(v) {
+  const d = (v || "").replace(/\D/g, "").slice(0, 11);
+  if (d.length === 0) return "";
+  if (d.length <= 2) return "(" + d;
+  if (d.length <= 7) return "(" + d.slice(0, 2) + ") " + d.slice(2);
+  return "(" + d.slice(0, 2) + ") " + d.slice(2, 7) + "-" + d.slice(7);
+}
+
+function TelaPublicadores({ onNavega, sessao, onSair }) {
+  const [dados, setDados] = useEstadoSalvo("publicadores", PUBLICADORES_INICIAL);
+  const [nome, setNome] = useState("");
+  const [telefone, setTelefone] = useState("");
+  const [editandoId, setEditandoId] = useState(null);
+  const [erro, setErro] = useState("");
+  const [busca, setBusca] = useState("");
+  const [pagina, setPagina] = useState(1);
+
+  function limpar() { setNome(""); setTelefone(""); setEditandoId(null); setErro(""); }
+
+  function cadastrar() {
+    const nomeOk = nome.trim();
+    const digitos = telefone.replace(/\D/g, "");
+    if (!nomeOk) { setErro("Informe o nome do publicador."); return; }
+    if (digitos.length !== 11) { setErro("Informe o DDD e o número do celular com 9 dígitos."); return; }
+    if (editandoId) {
+      setDados((d) => ({ ...d, publicadores: d.publicadores.map((p) => (p.id === editandoId ? { ...p, nome: nomeOk, telefone } : p)) }));
+    } else {
+      setDados((d) => ({ ...d, publicadores: [...d.publicadores, { id: novoIdCartao(), nome: nomeOk, telefone }] }));
+    }
+    limpar();
+  }
+
+  function iniciarEdicao(p) { setNome(p.nome); setTelefone(p.telefone); setEditandoId(p.id); setErro(""); }
+  function remover(id) { setDados((d) => ({ ...d, publicadores: d.publicadores.filter((p) => p.id !== id) })); if (editandoId === id) limpar(); }
+  function mudaBusca(v) { setBusca(v); setPagina(1); }
+
+  const filtrados = React.useMemo(() => {
+    const termo = normaliza(busca.trim());
+    if (!termo) return dados.publicadores;
+    const digitosBusca = busca.replace(/\D/g, "");
+    return dados.publicadores.filter((p) =>
+      normaliza(p.nome).includes(termo) || (digitosBusca && p.telefone.replace(/\D/g, "").includes(digitosBusca))
+    );
+  }, [dados.publicadores, busca]);
+
+  const totalPaginas = Math.max(1, Math.ceil(filtrados.length / TAM_PAGINA_PUBLICADORES));
+  const paginaAtual = Math.min(pagina, totalPaginas);
+  const inicio = (paginaAtual - 1) * TAM_PAGINA_PUBLICADORES;
+  const paginaItens = filtrados.slice(inicio, inicio + TAM_PAGINA_PUBLICADORES);
+
+  return (
+    <div style={M.layout}>
+      <Sidebar atual="cadastro-publicadores" onNavega={onNavega} sessao={sessao} onSair={onSair} />
+
+      <main style={M.main}>
+        <div style={M.topbar}>
+          <div />
+          <div style={M.topbarIcons}>
+            <span style={M.iconBtn}><Icone nome="sino" size={22} color="#5b6472" /></span>
+            <span style={M.avatar} />
+          </div>
+        </div>
+
+        <div style={M.hero}>
+          <div style={M.heroText}>
+            <h1 style={M.h1}>Cadastro de Publicadores</h1>
+            <p style={M.heroSub}>Adicione os publicadores para facilitar a organização das atividades.</p>
+          </div>
+          <div style={M.heroArt}><img src={IMG_HERO} alt="Irmãos no ministério em frente ao Salão do Reino" style={M.heroImg} /></div>
+        </div>
+
+        <div style={PUB.card}>
+          <div style={PUB.cardHead}>
+            <span style={PUB.cardHeadIcone}><Icone nome="pessoas" size={22} color={PUB.azul} /></span>
+            <h2 style={PUB.cardTitulo}>Novo publicador</h2>
+          </div>
+
+          <div style={PUB.formGrid}>
+            <div style={PUB.campo}>
+              <label style={PUB.label}>Nome do publicador <span style={PUB.req}>*</span></label>
+              <div style={PUB.inputWrap}>
+                <span style={PUB.inputIcone}><Icone nome="usuario" size={18} color="#8a93a3" /></span>
+                <input style={{ ...PUB.input, paddingLeft: 40 }} placeholder="Digite o nome do publicador" value={nome} onChange={(e) => setNome(e.target.value)} />
+              </div>
+            </div>
+            <div style={PUB.campo}>
+              <label style={PUB.label}>Telefone (celular) <span style={PUB.req}>*</span></label>
+              <div style={PUB.inputWrap}>
+                <span style={PUB.inputIcone}><Icone nome="telefone" size={18} color="#8a93a3" /></span>
+                <input style={{ ...PUB.input, paddingLeft: 40 }} placeholder="(00) 00000-0000" value={telefone} onChange={(e) => setTelefone(formataTelefoneParcial(e.target.value))} />
+              </div>
+              <div style={PUB.ajuda}>Informe o DDD e o número do celular com 9 dígitos.</div>
+            </div>
+          </div>
+
+          {erro && <div style={PUB.erro}>{erro}</div>}
+
+          <div style={PUB.formFooter}>
+            <button style={PUB.btnLimpar} onClick={limpar} type="button">Limpar</button>
+            <button style={PUB.btnCadastrar} onClick={cadastrar} type="button">+ {editandoId ? "Salvar alterações" : "Cadastrar"}</button>
+          </div>
+        </div>
+
+        <div style={PUB.card}>
+          <div style={PUB.listaHead}>
+            <div style={PUB.cardHead}>
+              <span style={PUB.cardHeadIcone}><Icone nome="pessoas" size={22} color={PUB.azul} /></span>
+              <h2 style={PUB.cardTitulo}>Publicadores cadastrados</h2>
+              <span style={PUB.contador}>{dados.publicadores.length}</span>
+            </div>
+            <div style={PUB.buscaWrap}>
+              <span style={PUB.buscaIcone}><Icone nome="buscar" size={16} color="#8a93a3" /></span>
+              <input style={PUB.buscaInput} placeholder="Buscar por nome ou telefone…" value={busca} onChange={(e) => mudaBusca(e.target.value)} />
+            </div>
+          </div>
+
+          <div style={PUB.tabelaScroll}>
+            <table style={PUB.tabela}>
+              <thead>
+                <tr><th style={PUB.th}>Nome do publicador</th><th style={PUB.th}>Telefone</th><th style={{ ...PUB.th, textAlign: "right" }}>Ações</th></tr>
+              </thead>
+              <tbody>
+                {paginaItens.length === 0 ? (
+                  <tr><td style={PUB.tdVazio} colSpan={3}>{busca ? "Nenhum publicador encontrado." : "Nenhum publicador cadastrado ainda."}</td></tr>
+                ) : paginaItens.map((p) => (
+                  <tr key={p.id}>
+                    <td style={PUB.td}>{p.nome}</td>
+                    <td style={{ ...PUB.td, color: UI.cinza }}>{p.telefone}</td>
+                    <td style={{ ...PUB.td, textAlign: "right" }}>
+                      <div style={PUB.acoes}>
+                        <button style={PUB.btnAcao} onClick={() => iniciarEdicao(p)} title="Editar"><Icone nome="editar" size={16} color="#5b6472" /></button>
+                        <button style={PUB.btnAcao} onClick={() => remover(p.id)} title="Remover"><Icone nome="lixeira" size={16} color="#9a3b3b" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div style={PUB.paginacao}>
+            <span style={PUB.paginacaoTexto}>Mostrando {paginaItens.length} de {filtrados.length} publicadores</span>
+            {totalPaginas > 1 && (
+              <div style={PUB.paginacaoBtns}>
+                <button style={PUB.pagBtn} onClick={() => setPagina((p) => Math.max(1, p - 1))} disabled={paginaAtual === 1}><Icone nome="chevron-esquerda" size={16} color="#5b6472" /></button>
+                {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((n) => (
+                  <button key={n} style={{ ...PUB.pagBtn, ...(n === paginaAtual ? PUB.pagBtnAtivo : {}) }} onClick={() => setPagina(n)}>{n}</button>
+                ))}
+                <button style={PUB.pagBtn} onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))} disabled={paginaAtual === totalPaginas}><Icone nome="chevron-direita" size={16} color="#5b6472" /></button>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
   );
 }
 
@@ -3111,6 +3294,48 @@ const USU = (() => {
     perfilEditor: { background: "#eef2fb", color: azul, borderColor: "#c9d6ee" },
     perfilVisualizador: { background: "#f4f6f9", color: "#5b6472", borderColor: "#dfe2e8" },
     btnRemover: { background: "#fff", border: "1px solid #e3c2c2", borderRadius: 8, padding: "7px 9px", cursor: "pointer", display: "inline-flex" },
+  };
+})();
+
+const PUB = (() => {
+  const azul = "#3E5AA6";
+  const tituloNavy = "#243B6B";
+  const borda = "#E3E7EF";
+  return {
+    azul,
+    card: { background: "#fff", border: "1px solid " + borda, borderRadius: 16, padding: 26, boxShadow: "0 1px 3px rgba(20,40,80,.04)", marginBottom: 20 },
+    cardHead: { display: "flex", alignItems: "center", gap: 12 },
+    cardHeadIcone: { width: 38, height: 38, borderRadius: 10, background: "#eef2fb", display: "inline-flex", alignItems: "center", justifyContent: "center" },
+    cardTitulo: { fontSize: 18, fontWeight: 700, color: tituloNavy, margin: 0 },
+    contador: { marginLeft: 8, fontSize: 13, fontWeight: 700, color: azul, background: "#eef2fb", borderRadius: 20, padding: "2px 11px" },
+    formGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginTop: 22 },
+    campo: {},
+    label: { display: "block", fontSize: 14, fontWeight: 600, color: "#2b3542", marginBottom: 7 },
+    req: { color: "#e0663a" },
+    inputWrap: { position: "relative" },
+    inputIcone: { position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", display: "inline-flex", pointerEvents: "none" },
+    input: { width: "100%", padding: "13px 14px", border: "1px solid " + borda, borderRadius: 10, fontSize: 15, color: "#2b3542", boxSizing: "border-box", background: "#fff" },
+    ajuda: { fontSize: 12.5, color: "#8a93a3", marginTop: 6 },
+    erro: { fontSize: 13, color: "#9a3b3b", background: "#fbeaea", border: "1px solid #e3c2c2", padding: "10px 12px", borderRadius: 8, marginTop: 16 },
+    formFooter: { display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 22 },
+    btnLimpar: { background: "#fff", border: "1px solid " + borda, color: "#2b3542", fontSize: 15, padding: "11px 20px", borderRadius: 10, cursor: "pointer" },
+    btnCadastrar: { display: "inline-flex", alignItems: "center", gap: 6, background: azul, border: "none", color: "#fff", fontSize: 15, fontWeight: 600, padding: "11px 22px", borderRadius: 10, cursor: "pointer", boxShadow: "0 2px 6px rgba(62,90,166,.28)" },
+    listaHead: { display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 18 },
+    buscaWrap: { position: "relative" },
+    buscaIcone: { position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", display: "inline-flex", pointerEvents: "none" },
+    buscaInput: { width: 260, maxWidth: "100%", padding: "10px 12px 10px 38px", border: "1px solid " + borda, borderRadius: 10, fontSize: 14, color: "#2b3542", boxSizing: "border-box", background: "#fff" },
+    tabelaScroll: { overflowX: "auto", border: "1px solid " + borda, borderRadius: 12 },
+    tabela: { width: "100%", borderCollapse: "collapse", minWidth: 480 },
+    th: { textAlign: "left", fontSize: 12.5, fontWeight: 700, color: UI.cinza, textTransform: "uppercase", letterSpacing: 0.3, padding: "12px 14px", background: "#f7f9fc", borderBottom: "1px solid " + borda, whiteSpace: "nowrap" },
+    td: { fontSize: 14, color: "#2b3542", padding: "12px 14px", borderBottom: "1px solid #f0f2f6", verticalAlign: "middle" },
+    tdVazio: { fontSize: 14, color: UI.cinza, fontStyle: "italic", padding: "24px 14px", textAlign: "center" },
+    acoes: { display: "flex", gap: 6, justifyContent: "flex-end" },
+    btnAcao: { background: "#fff", border: "1px solid " + borda, borderRadius: 8, padding: "7px 9px", cursor: "pointer", display: "inline-flex" },
+    paginacao: { display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginTop: 16 },
+    paginacaoTexto: { fontSize: 13, color: UI.cinza },
+    paginacaoBtns: { display: "flex", gap: 6 },
+    pagBtn: { minWidth: 34, height: 34, padding: "0 8px", border: "1px solid " + borda, borderRadius: 8, background: "#fff", color: "#2b3542", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" },
+    pagBtnAtivo: { background: azul, borderColor: azul, color: "#fff" },
   };
 })();
 
