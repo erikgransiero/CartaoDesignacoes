@@ -35,6 +35,14 @@ const DOCUMENTOS = [
   { id: "bastidores", titulo: "Bastidores", desc: "Áudio, volantes, indicadores e limpeza", icone: "pessoas", pronto: true },
 ];
 
+// Itens extras do menu lateral, abaixo da linha separadora. Ainda não têm
+// tela própria, por isso não entram em DOCUMENTOS (não geram cartão no menu
+// principal nem participam da navegação por enquanto).
+const MENU_LATERAL_EXTRA = [
+  { id: "enviar-cartao", titulo: "Enviar Cartão de Designação", icone: "pdf" },
+  { id: "cadastro-publicadores", titulo: "Cadastro Publicadores", icone: "usuario-mais" },
+];
+
 /* ---------------- persistência no navegador ---------------- */
 // Cada tela guarda o que foi preenchido no próprio navegador. Além de não
 // perder o trabalho ao voltar para o menu, é isso que permite os Bastidores
@@ -154,6 +162,13 @@ function Sidebar({ atual, onNavega, sessao, onSair }) {
             </button>
           );
         })}
+        <div style={M.navSeparador} />
+        {MENU_LATERAL_EXTRA.map((d) => (
+          <button key={d.id} style={{ ...M.navItem, opacity: 0.5 }} onClick={() => onNavega(d.id)} title="Em construção">
+            <Icone nome={d.icone} size={22} color="#5b6472" />
+            <span style={M.navLabel}>{d.titulo}</span>
+          </button>
+        ))}
       </nav>
       <div style={M.sidebarFooter}>
         <button style={{ ...M.navItem, ...(atual === "usuarios" ? M.navItemAtivo : {}) }} onClick={() => onNavega("usuarios")}>
@@ -3002,6 +3017,7 @@ const M = {
   navItem: { display: "flex", alignItems: "center", gap: 12, padding: "12px 12px", border: "none", background: "transparent", borderRadius: 10, cursor: "pointer", textAlign: "left", color: UI.tinta, fontSize: 14, width: "100%" },
   navItemAtivo: { background: UI.azulClaro, color: UI.azul, fontWeight: 700 },
   navLabel: { lineHeight: 1.25 },
+  navSeparador: { height: 1, background: UI.borda, margin: "10px 12px" },
   sidebarFooter: { marginTop: "auto", borderTop: "1px solid " + UI.borda, paddingTop: 12 },
   sessaoBox: { marginTop: 10, padding: "10px 12px", background: "#f6f8fd", border: "1px solid " + UI.borda, borderRadius: 10 },
   sessaoInfo: { display: "flex", alignItems: "center", gap: 10, marginBottom: 8 },
