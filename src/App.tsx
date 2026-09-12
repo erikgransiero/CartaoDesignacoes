@@ -1361,6 +1361,34 @@ function TelaCalendario({ onVoltar }) {
   const [selDia, setSelDia] = React.useState(null); // {numero, ini, fim}
   const [corFonte, setCorFonte] = React.useState("#c0392b");
   const inputFileCal = React.useRef(null);
+  const impressaoRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const PX_POR_MM = 96 / 25.4;
+    const larguraDisponivel = 170 * PX_POR_MM;
+    const alturaDisponivel = 220 * PX_POR_MM;
+    function ajustarParaUmaPagina() {
+      const el = impressaoRef.current;
+      if (!el) return;
+      el.style.zoom = "1";
+      const altura = el.scrollHeight;
+      const largura = el.scrollWidth;
+      const fator = Math.min(1, larguraDisponivel / largura, alturaDisponivel / altura);
+      el.style.zoom = String(fator);
+    }
+    function restaurar() { const el = impressaoRef.current; if (el) el.style.zoom = "1"; }
+    window.addEventListener("beforeprint", ajustarParaUmaPagina);
+    window.addEventListener("afterprint", restaurar);
+    return () => { window.removeEventListener("beforeprint", ajustarParaUmaPagina); window.removeEventListener("afterprint", restaurar); };
+  }, []);
+
+  function exportarPDF() {
+    const tituloOriginal = document.title;
+    document.title = `Calendário de Pregação - ${dados.mesAno}`;
+    const restaura = () => { document.title = tituloOriginal; window.removeEventListener("afterprint", restaura); };
+    window.addEventListener("afterprint", restaura);
+    window.print();
+  }
 
   function usarFotoOriginal() { setFoto(IMG_CALENDARIO); setFotoOriginalAtiva(true); }
   function escolherFotoCal(e) { const f = e.target.files && e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = (ev) => { setFoto(ev.target.result); setFotoOriginalAtiva(false); }; r.readAsDataURL(f); }
@@ -1400,18 +1428,19 @@ function TelaCalendario({ onVoltar }) {
   for (let i = 0; i < dados.dias.length; i += 7) linhas.push(dados.dias.slice(i, i + 7));
 
   return (
-    <div style={S.page}>
-      <header style={S.appbar}>
+    <div className="pagina-com-impressao" style={S.page}>
+      <header className="oculta-impressao" style={S.appbar}>
         <button style={S.voltar} onClick={onVoltar}><Icone nome="voltar" size={18} color="#fff" /> Voltar ao menu principal</button>
         <div style={{ marginLeft: 14 }}>
           <div style={S.brandTitle}>Calendário de Pregação</div>
           <div style={S.brandSub}>Congregação Parque Scaffid</div>
         </div>
         <div style={S.appbarTag}>Validação</div>
+        <button style={S.btnFoto} onClick={exportarPDF}><Icone nome="pdf" size={16} color={UI.azul} /> Exportar PDF</button>
       </header>
 
       <div style={S.grid} className="grid">
-        <section style={S.editor}>
+        <section className="oculta-impressao" style={S.editor}>
           <h2 style={S.h2}>Cabeçalho</h2>
           <div style={S.field}><label style={S.lab}>Mês / Ano</label><input style={S.input} value={dados.mesAno} onChange={(e) => editaCampo("mesAno", e.target.value)} /></div>
 
@@ -1505,7 +1534,7 @@ function TelaCalendario({ onVoltar }) {
           <button style={S.btnAdd} onClick={addNota}>+ Adicionar nota</button>
         </section>
 
-        <section style={S.previewWrap}><h2 style={S.h2}>Pré-visualização</h2><PreviewCalendario dados={dados} linhas={linhas} foto={foto} /></section>
+        <section className="secao-impressao" style={S.previewWrap}><h2 className="oculta-impressao" style={S.h2}>Pré-visualização</h2><div id="area-impressao"><div ref={impressaoRef}><PreviewCalendario dados={dados} linhas={linhas} foto={foto} /></div></div></section>
       </div>
     </div>
   );
@@ -1527,8 +1556,8 @@ function renderTextoDia(texto) {
 
 function PreviewCalendario({ dados, linhas, foto }) {
   return (
-    <div style={{ ...PV.frameOuter, borderColor: "#7a1122" }}>
-      <div style={{ padding: 12 }}>
+    <div className="pv-moldura" style={{ ...PV.frameOuter, borderColor: "#7a1122" }}>
+      <div className="pv-moldura-interna" style={{ padding: 12 }}>
         <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 8 }}>
           <img src={foto} alt="Ilustração" style={{ width: 120, borderRadius: 4 }} />
           <div style={{ flex: 1, textAlign: "right" }}>
@@ -2529,6 +2558,34 @@ function TelaBastidores({ onVoltar }) {
     () => conflitosPorLinha(dados.linhas, cartao, sentinela),
     [dados.linhas, cartao, sentinela]
   );
+  const impressaoRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const PX_POR_MM = 96 / 25.4;
+    const larguraDisponivel = 170 * PX_POR_MM;
+    const alturaDisponivel = 220 * PX_POR_MM;
+    function ajustarParaUmaPagina() {
+      const el = impressaoRef.current;
+      if (!el) return;
+      el.style.zoom = "1";
+      const altura = el.scrollHeight;
+      const largura = el.scrollWidth;
+      const fator = Math.min(1, larguraDisponivel / largura, alturaDisponivel / altura);
+      el.style.zoom = String(fator);
+    }
+    function restaurar() { const el = impressaoRef.current; if (el) el.style.zoom = "1"; }
+    window.addEventListener("beforeprint", ajustarParaUmaPagina);
+    window.addEventListener("afterprint", restaurar);
+    return () => { window.removeEventListener("beforeprint", ajustarParaUmaPagina); window.removeEventListener("afterprint", restaurar); };
+  }, []);
+
+  function exportarPDF() {
+    const tituloOriginal = document.title;
+    document.title = `Bastidores - ${MESES_NOME[dados.mes - 1]}/${dados.ano}`;
+    const restaura = () => { document.title = tituloOriginal; window.removeEventListener("afterprint", restaura); };
+    window.addEventListener("afterprint", restaura);
+    window.print();
+  }
 
   function editaCampo(campo, valor) { setDados((d) => ({ ...d, [campo]: valor })); }
 
@@ -2617,18 +2674,19 @@ function TelaBastidores({ onVoltar }) {
     ir.nome && ir.nome.trim() && !resumo.some((r) => mesmoIrmao(r.nome, ir.nome)));
 
   return (
-    <div style={S.page}>
-      <header style={S.appbar}>
+    <div className="pagina-com-impressao" style={S.page}>
+      <header className="oculta-impressao" style={S.appbar}>
         <button style={S.voltar} onClick={onVoltar}><Icone nome="voltar" size={18} color="#fff" /> Voltar ao menu principal</button>
         <div style={{ marginLeft: 14 }}>
           <div style={S.brandTitle}>Bastidores</div>
           <div style={S.brandSub}>{dados.congregacao}</div>
         </div>
         <div style={S.appbarTag}>Validação</div>
+        <button style={S.btnFoto} onClick={exportarPDF}><Icone nome="pdf" size={16} color={UI.azul} /> Exportar PDF</button>
       </header>
 
       <div style={S.grid} className="grid">
-        <section style={S.editor}>
+        <section className="oculta-impressao" style={S.editor}>
           <h2 style={S.h2}>Mês da programação</h2>
           <div style={SC.linha3}>
             <div style={S.field}>
@@ -2828,8 +2886,8 @@ function TelaBastidores({ onVoltar }) {
           <button style={S.btnAdd} onClick={addObs}>+ Adicionar observação</button>
         </section>
 
-        <section style={S.previewWrap}><h2 style={S.h2}>Pré-visualização</h2>
-          <PreviewBastidores dados={dados} conflitos={conflitos} />
+        <section className="secao-impressao" style={S.previewWrap}><h2 className="oculta-impressao" style={S.h2}>Pré-visualização</h2>
+          <div id="area-impressao"><div ref={impressaoRef}><PreviewBastidores dados={dados} conflitos={conflitos} /></div></div>
         </section>
       </div>
     </div>
@@ -2838,7 +2896,8 @@ function TelaBastidores({ onVoltar }) {
 
 function PreviewBastidores({ dados, conflitos }) {
   return (
-    <div style={PVB.frame}>
+    <div className="pv-moldura" style={PVB.frame}>
+    <div className="pv-moldura-interna">
       <div style={PVB.titulo}>{dados.titulo}</div>
       <div style={PVB.subtitulo}>{dados.subtitulo}</div>
       <div style={PVB.info}>{dados.congregacao} • {MESES_NOME[dados.mes - 1]}/{dados.ano}</div>
@@ -2910,6 +2969,7 @@ function PreviewBastidores({ dados, conflitos }) {
       {dados.observacoes.map((o) => (
         <div key={o.id} style={PVB.observacao}>* {o.texto}</div>
       ))}
+    </div>
     </div>
   );
 }
