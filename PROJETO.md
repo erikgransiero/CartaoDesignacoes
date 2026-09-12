@@ -36,8 +36,8 @@ imprimir, corrigir bugs de parsing) antes de partir para backend/integrações.
 | Login | Concluída e em produção |
 | Menu principal | Concluída e em produção |
 | Discurso Público | Construída e revisada · em produção (ver §6) |
-| Reunião A Sentinela | Construída · **em revisão** (ver §6), publicada em `preview` |
-| Cartão de Designações | Construída · revisão ainda não iniciada |
+| Reunião A Sentinela | Construída e revisada · em produção (ver §6) |
+| Cartão de Designações | Construída · **em revisão** (ver §6), item 1 em produção |
 | Calendário de Pregação | Construída · revisão ainda não iniciada |
 | Bastidores | Construída · revisão ainda não iniciada |
 | Configurações → Usuários | Concluída e em produção |
@@ -150,7 +150,11 @@ Fonte padrão dos documentos: Arial.
   import.
 - Usado como referência cruzada pela validação de conflitos do Bastidores
   (mesmo nome na mesma semana).
-- Ainda **não revisado** no ciclo atual.
+- **Exportar PDF**: layout próprio, diferente das telas anteriores — em
+  vez de forçar 1 página sempre, pagina de verdade com **até 2 semanas
+  por página física** (cabeçalho do cartão repetido em cada página,
+  observações na última). Ver §6.
+- Em **revisão** no ciclo atual (item 1 concluído, em produção).
 
 ### 5.4 Calendário de Pregação
 - Grade automática de 7 colunas a partir do mês/ano.
@@ -301,17 +305,44 @@ papel Carta/Letter com margem de 1 polegada — sempre 1 página, sempre com
 todo o conteúdo visível. **Essa correção está no CSS global
 compartilhado, então o Discurso Público também se beneficia dela.**
 
-*(Publicado em `preview`. Aguardando validação do usuário antes de
-avançar para a próxima tela: Cartão de Designações.)*
+3. ~~Linhas de designação muito altas no PDF~~ — **corrigido**: nas
+   semanas normais, as 5 linhas (Presidente, Oração Inicial, Estudo da
+   Revista A Sentinela, Leitor do Estudo da Revista, Oração Final) ficam
+   compactas (padding menor + fonte 8px) só na impressão — a tela de
+   edição não muda. Reduz a altura natural de ~270mm para ~210mm com 4
+   semanas, então o PDF quase não precisa mais reduzir escala.
+
+*(Concluída e publicada em produção em 12/09/2026.)*
+
+### Cartão de Designações (item 1 — publicado em produção, 12/09/2026)
+1. ~~Adicionar botão "Exportar PDF"~~ — **feito**, com layout de impressão
+   **diferente** das telas anteriores: em vez de forçar 1 página sempre
+   (conteúdo por semana é longo demais para isso), pagina de verdade com
+   **até 2 semanas por página física**, cabeçalho do cartão (título,
+   subtítulo, congregação, mês/ano) repetido no topo de cada página, e
+   observações na última página. Implementado com quebra de página via
+   CSS (`break-after`/`page-break-after` a cada par de semanas,
+   `break-inside: avoid` em cada semana) — sem precisar de zoom/escala,
+   já que aqui múltiplas páginas são o comportamento desejado, não uma
+   exceção a evitar. Nova classe global reutilizável
+   `.somente-impressao` (o inverso de `.oculta-impressao`: escondida na
+   tela, visível só na impressão), útil para futuras telas que também
+   precisem de uma versão de impressão estruturalmente diferente da
+   pré-visualização em tela. Testado com as 5 semanas padrão → 3 páginas
+   (2+2+1), tela de edição/pré-visualização contínua inalteradas.
+
+*(Publicado em produção em 12/09/2026. Usuário indicou que enviará mais
+pontos de ajuste para esta tela após validar este layout — aguardando.)*
 
 ---
 
 ## 7. Roteiro (próximas etapas, nesta ordem)
 
 1. ~~Revisão do Discurso Público~~ — concluída, em produção.
-2. **Finalizar revisão da Reunião A Sentinela** (aguardando validação do
-   usuário no `preview`).
-3. Revisar **Cartão de Designações**.
+2. ~~Revisão da Reunião A Sentinela~~ — concluída, em produção.
+3. **Continuar revisão do Cartão de Designações** (item 1 — Exportar PDF
+   com 2 semanas por página — em produção; aguardando próximos pontos do
+   usuário).
 4. Revisar **Calendário de Pregação**.
 5. Revisar **Bastidores**.
 6. Somente depois da revisão completa: **backend/banco de dados**
