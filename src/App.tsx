@@ -39,7 +39,7 @@ const DOCUMENTOS = [
 // tela própria, por isso não entram em DOCUMENTOS (não geram cartão no menu
 // principal nem participam da navegação por enquanto).
 const MENU_LATERAL_EXTRA = [
-  { id: "enviar-cartao", titulo: "Enviar Cartão de Designação", icone: "pdf", pronto: false },
+  { id: "enviar-cartao", titulo: "Enviar Cartão de Designação", icone: "pdf", pronto: true },
   { id: "cadastro-publicadores", titulo: "Cadastro Publicadores", icone: "usuario-mais", pronto: true },
 ];
 
@@ -99,6 +99,7 @@ function Icone({ nome, size = 40, color = TEMPLATE.azul }) {
     case "buscar": return (<svg {...p}><circle cx="10.5" cy="10.5" r="6.5" /><line x1="21" y1="21" x2="15.5" y2="15.5" /></svg>);
     case "chevron-esquerda": return (<svg {...p}><polyline points="14.5 5 8 12 14.5 19" /></svg>);
     case "chevron-direita": return (<svg {...p}><polyline points="9.5 5 16 12 9.5 19" /></svg>);
+    case "enviar": return (<svg {...p}><line x1="21" y1="3" x2="10" y2="14" /><path d="M21 3 14 21l-3-7-7-3Z" /></svg>);
     default: return null;
   }
 }
@@ -118,7 +119,7 @@ export default function App() {
   const [tela, setTela] = useState("menu");
 
   function navega(destino) {
-    if (destino === "menu" || destino === "usuarios" || destino === "cadastro-publicadores") { setTela(destino); return; }
+    if (destino === "menu" || destino === "usuarios" || destino === "cadastro-publicadores" || destino === "enviar-cartao") { setTela(destino); return; }
     const doc = DOCUMENTOS.find((d) => d.id === destino);
     if (doc && doc.pronto) setTela(destino);
   }
@@ -148,6 +149,7 @@ export default function App() {
       {tela === "bastidores" && <TelaBastidores onVoltar={() => setTela("menu")} />}
       {tela === "usuarios" && <TelaUsuarios onNavega={navega} sessao={sessao} onSair={sair} />}
       {tela === "cadastro-publicadores" && <TelaPublicadores onNavega={navega} sessao={sessao} onSair={sair} />}
+      {tela === "enviar-cartao" && <TelaEnviarCartao onNavega={navega} sessao={sessao} onSair={sair} />}
     </div>
   );
 }
@@ -856,6 +858,360 @@ function TelaPublicadores({ onNavega, sessao, onSair }) {
                   <button key={n} style={{ ...PUB.pagBtn, ...(n === paginaAtual ? PUB.pagBtnAtivo : {}) }} onClick={() => setPagina(n)}>{n}</button>
                 ))}
                 <button style={PUB.pagBtn} onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))} disabled={paginaAtual === totalPaginas}><Icone nome="chevron-direita" size={16} color="#5b6472" /></button>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+/* ====================== TELA ENVIAR CARTÃO DE DESIGNAÇÃO ====================== */
+
+const OBSERVACAO_PADRAO_ESTUDANTE =
+  "A lição e a fonte de matéria para a sua designação estão na Apostila da Reunião Vida e Ministério. Veja as instruções para a parte que estão nas Instruções para a Reunião Nossa Vida e Ministério Cristão (S-38).";
+
+const LOCAIS_CARTAO = [
+  { id: "salao", titulo: "Salão principal" },
+  { id: "salaB", titulo: "Sala B" },
+  { id: "salaC", titulo: "Sala C" },
+];
+
+// Lê o mês/ano exibido no Cartão de Designações ("Agosto/2026") e devolve
+// {mes, ano} numéricos, ou null se o texto não bater com nenhum mês conhecido.
+function parseMesAno(mesAnoStr) {
+  const m = (mesAnoStr || "").trim().match(/^([A-Za-zçÇ]+)\s*\/\s*(\d{4})$/);
+  if (!m) return null;
+  const idx = MESES_NOME.findIndex((n) => normaliza(n) === normaliza(m[1]));
+  if (idx < 0) return null;
+  return { mes: idx + 1, ano: Number(m[2]) };
+}
+
+// A partir das semanas do Cartão de Designações, extrai só a Leitura da
+// Bíblia e as designações da sessão "Faça seu melhor no Ministério" —
+// nada de Presidente, Tesouros, Vida Cristã ou cânticos/orações. Quando o
+// campo de designado traz dois nomes ("Fulano / Beltrano"), o primeiro vira
+// o titular e o segundo o ajudante.
+function gerarDesignacoesMinisterio(dadosCartao) {
+  const linhas = [];
+  (dadosCartao.semanas || []).forEach((s) => {
+    if (s.semReuniao) return;
+    if (s.leituraDesignado && s.leituraDesignado.trim()) {
+      const [nomeL, ajudanteL] = s.leituraDesignado.split("/").map((x) => x.trim());
+      linhas.push({
+        id: `${s.id}-leitura`,
+        semanaLabel: s.dataLabel,
+        nome: nomeL || "",
+        ajudante: ajudanteL || "",
+        designacaoTitulo: "Leitura da Bíblia",
+        designacaoDetalhe: s.leituraBiblica || s.leituraLicao || "",
+        ordem: 1,
+      });
+    }
+    (s.ministerio || []).forEach((it) => {
+      if (!it.designado || !it.designado.trim()) return;
+      const [nomeM, ajudanteM] = it.designado.split("/").map((x) => x.trim());
+      linhas.push({
+        id: `${s.id}-min-${it.id}`,
+        semanaLabel: s.dataLabel,
+        nome: nomeM || "",
+        ajudante: ajudanteM || "",
+        designacaoTitulo: it.titulo || "Designação",
+        designacaoDetalhe: it.detalhe || "",
+        ordem: linhas.filter((l) => l.semanaLabel === s.dataLabel).length + 1,
+      });
+    });
+  });
+  return linhas;
+}
+
+// Popup do calendário: mostra o mês do Cartão de Designações e destaca em
+// vermelho as datas que caem no dia da semana escolhido em "Dia da Reunião".
+function CalendarioDestaquePopup({ mes, ano, diaSemanaAlvo, onEscolher, onFechar }) {
+  if (!mes || !ano) {
+    return (
+      <div style={ENV.calendarioPopup}>
+        <div style={ENV.calendarioAviso}>Não foi possível reconhecer o mês/ano do Cartão de Designações.</div>
+        <button type="button" style={ENV.calendarioFechar} onClick={onFechar}>Fechar</button>
+      </div>
+    );
+  }
+  const totalDias = new Date(ano, mes, 0).getDate();
+  const primeiroDow = new Date(ano, mes - 1, 1).getDay();
+  const celulas = [];
+  for (let i = 0; i < primeiroDow; i++) celulas.push(null);
+  for (let d = 1; d <= totalDias; d++) celulas.push(d);
+
+  return (
+    <div style={ENV.calendarioPopup}>
+      <div style={ENV.calendarioHead}>{MESES_NOME[mes - 1]} de {ano}</div>
+      {diaSemanaAlvo === "" && <div style={ENV.calendarioAviso}>Selecione o "Dia da Reunião" para destacar as datas.</div>}
+      <div style={ENV.calendarioGrade}>
+        {DIAS_ABREV.map((d, i) => <div key={i} style={ENV.calendarioDiaSemana}>{d}</div>)}
+        {celulas.map((d, i) => {
+          if (d === null) return <div key={"vazio" + i} />;
+          const dow = new Date(ano, mes - 1, d).getDay();
+          const destaque = diaSemanaAlvo !== "" && dow === Number(diaSemanaAlvo);
+          return (
+            <button key={d} type="button" style={{ ...ENV.calendarioDia, ...(destaque ? ENV.calendarioDiaDestaque : {}) }}
+              onClick={() => onEscolher(isoData(ano, mes, d))}>
+              {d}
+            </button>
+          );
+        })}
+      </div>
+      <button type="button" style={ENV.calendarioFechar} onClick={onFechar}>Fechar</button>
+    </div>
+  );
+}
+
+function TelaEnviarCartao({ onNavega, sessao, onSair }) {
+  const cartaoDados = React.useMemo(() => leSalvo("cartao", CARTAO_INICIAL), []);
+  const designacoes = React.useMemo(() => gerarDesignacoesMinisterio(cartaoDados), [cartaoDados]);
+  const mesAnoInfo = React.useMemo(() => parseMesAno(cartaoDados.mesAno), [cartaoDados.mesAno]);
+
+  const [busca, setBusca] = useState("");
+  const [selecionadoId, setSelecionadoId] = useState(null);
+  const [nome, setNome] = useState("");
+  const [ajudante, setAjudante] = useState("");
+  const [diaReuniao, setDiaReuniao] = useState("");
+  const [data, setData] = useState("");
+  const [numeroParte, setNumeroParte] = useState("");
+  const [local, setLocal] = useState("salao");
+  const [observacao, setObservacao] = useState(OBSERVACAO_PADRAO_ESTUDANTE);
+  const [calendarioAberto, setCalendarioAberto] = useState(false);
+  const [avisoEnvio, setAvisoEnvio] = useState("");
+
+  const filtradas = React.useMemo(() => {
+    const termo = normaliza(busca.trim());
+    if (!termo) return designacoes;
+    return designacoes.filter((d) =>
+      normaliza(d.nome).includes(termo) || normaliza(d.ajudante).includes(termo) || normaliza(d.designacaoTitulo).includes(termo)
+    );
+  }, [designacoes, busca]);
+
+  React.useEffect(() => {
+    if (filtradas.length === 0) { if (selecionadoId !== null) setSelecionadoId(null); return; }
+    if (!filtradas.some((d) => d.id === selecionadoId)) setSelecionadoId(filtradas[0].id);
+  }, [filtradas, selecionadoId]);
+
+  const selecionada = designacoes.find((d) => d.id === selecionadoId) || null;
+
+  React.useEffect(() => {
+    if (!selecionada) return;
+    setNome(selecionada.nome);
+    setAjudante(selecionada.ajudante);
+    setDiaReuniao("");
+    setData("");
+    setNumeroParte(String(selecionada.ordem));
+    setLocal("salao");
+    setObservacao(OBSERVACAO_PADRAO_ESTUDANTE);
+    setCalendarioAberto(false);
+    setAvisoEnvio("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selecionadoId]);
+
+  function escolherData(iso) {
+    const { dia, mes, ano } = partesData(iso);
+    setData(`${String(dia).padStart(2, "0")}/${String(mes).padStart(2, "0")}/${ano}`);
+    setCalendarioAberto(false);
+  }
+
+  function enviar(tipo) {
+    setAvisoEnvio(tipo === "whatsapp" ? "O envio pelo WhatsApp será implementado em uma próxima etapa." : "O envio por e-mail será implementado em uma próxima etapa.");
+  }
+
+  return (
+    <div style={M.layout}>
+      <Sidebar atual="enviar-cartao" onNavega={onNavega} sessao={sessao} onSair={onSair} />
+
+      <main style={M.main}>
+        <div style={M.topbar}>
+          <div style={USU.breadcrumb}>
+            <span style={USU.bcLink} onClick={() => onNavega("cartao")}>Cartão de designações</span>
+            <span style={USU.bcSep}>›</span>
+            <span style={USU.bcAtual}>Enviar Cartão de designações</span>
+          </div>
+          <div style={M.topbarIcons}>
+            <span style={{ ...M.iconBtn, position: "relative" }}><Icone nome="sino" size={22} color="#5b6472" /><span style={USU.sinoDot} /></span>
+            <span style={USU.avatar}><Icone nome="usuario" size={20} color="#fff" /></span>
+          </div>
+        </div>
+
+        <div style={M.hero}>
+          <div style={M.heroText}>
+            <h1 style={M.h1}>Enviar Cartão de designações</h1>
+            <p style={M.heroSub}>Selecione o mês da reunião e escolha um participante para gerar e enviar o cartão.</p>
+          </div>
+          <div style={M.heroArt}><img src={IMG_HERO} alt="Irmãos no ministério em frente ao Salão do Reino" style={M.heroImg} /></div>
+        </div>
+
+        <div style={ENV.mesCard}>
+          <label style={ENV.label}>Mês da reunião</label>
+          <div style={ENV.mesSelectWrap}>
+            <span style={ENV.mesSelectIcone}><Icone nome="calendario" size={18} color={ENV.azul} /></span>
+            <select style={ENV.mesSelect} value={cartaoDados.mesAno} onChange={() => {}}>
+              <option value={cartaoDados.mesAno}>{cartaoDados.mesAno}</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid3">
+          {/* Coluna 1: participantes e designações */}
+          <div style={ENV.card}>
+            <div style={ENV.cardHead}>
+              <span style={ENV.cardHeadIcone}><Icone nome="pessoas" size={20} color={ENV.azul} /></span>
+              <h2 style={ENV.cardTitulo}>Participantes e designações</h2>
+            </div>
+            <div style={ENV.buscaWrap}>
+              <span style={ENV.buscaIcone}><Icone nome="buscar" size={16} color="#8a93a3" /></span>
+              <input style={ENV.buscaInput} placeholder="Buscar por nome ou estudo…" value={busca} onChange={(e) => setBusca(e.target.value)} />
+            </div>
+            <div style={ENV.lista}>
+              {filtradas.length === 0 ? (
+                <div style={ENV.listaVazia}>
+                  {designacoes.length === 0
+                    ? "Nenhuma designação de Leitura da Bíblia ou Faça seu melhor no Ministério encontrada no Cartão de Designações deste mês."
+                    : "Nenhuma designação encontrada para essa busca."}
+                </div>
+              ) : filtradas.map((d) => {
+                const ativo = d.id === selecionadoId;
+                return (
+                  <button key={d.id} type="button" style={{ ...ENV.linha, ...(ativo ? ENV.linhaAtiva : {}) }} onClick={() => setSelecionadoId(d.id)}>
+                    <div style={ENV.linhaTextos}>
+                      <div style={ENV.linhaNome}>{d.nome}{d.ajudante ? <span style={ENV.linhaAjudante}> + {d.ajudante}</span> : null}</div>
+                      <div style={ENV.linhaDesc}>{d.designacaoTitulo} — {d.semanaLabel}</div>
+                    </div>
+                    <Icone nome="chevron-direita" size={18} color={ativo ? ENV.azul : "#b7c0d0"} />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Coluna 2: dados da designação selecionada */}
+          <div style={ENV.card}>
+            <div style={ENV.cardHead}>
+              <span style={ENV.cardHeadIcone}><Icone nome="usuario" size={20} color={ENV.azul} /></span>
+              <h2 style={ENV.cardTitulo}>Dados da designação selecionada</h2>
+            </div>
+
+            {!selecionada ? (
+              <div style={ENV.listaVazia}>Selecione uma designação na lista ao lado.</div>
+            ) : (
+              <>
+                <div style={ENV.campo}>
+                  <label style={ENV.label}>Nome</label>
+                  <input style={ENV.input} value={nome} onChange={(e) => setNome(e.target.value)} />
+                </div>
+                <div style={ENV.campo}>
+                  <label style={ENV.label}>Ajudante</label>
+                  <input style={ENV.input} placeholder="Nenhum" value={ajudante} onChange={(e) => setAjudante(e.target.value)} />
+                </div>
+                <div style={ENV.campo}>
+                  <label style={ENV.label}>Dia da Reunião</label>
+                  <select style={ENV.input} value={diaReuniao} onChange={(e) => setDiaReuniao(e.target.value)}>
+                    <option value="">Selecione…</option>
+                    {ORDEM_DIAS.map((dnum) => <option key={dnum} value={dnum}>{DIAS_NOME[dnum]}</option>)}
+                  </select>
+                </div>
+                <div style={ENV.linha2Campos}>
+                  <div style={{ ...ENV.campo, position: "relative" }}>
+                    <label style={ENV.label}>Data</label>
+                    <div style={ENV.inputComBotaoWrap}>
+                      <input style={{ ...ENV.input, paddingRight: 40 }} placeholder="DD/MM/AAAA" value={data} onChange={(e) => setData(e.target.value)} />
+                      <button type="button" style={ENV.btnCalendario} title="Pesquisar data" onClick={() => setCalendarioAberto((v) => !v)}>
+                        <Icone nome="calendario" size={16} color={ENV.azul} />
+                      </button>
+                    </div>
+                    {calendarioAberto && (
+                      <CalendarioDestaquePopup
+                        mes={mesAnoInfo && mesAnoInfo.mes}
+                        ano={mesAnoInfo && mesAnoInfo.ano}
+                        diaSemanaAlvo={diaReuniao}
+                        onEscolher={escolherData}
+                        onFechar={() => setCalendarioAberto(false)}
+                      />
+                    )}
+                  </div>
+                  <div style={ENV.campo}>
+                    <label style={ENV.label}>Número da parte</label>
+                    <input style={ENV.input} value={numeroParte} onChange={(e) => setNumeroParte(e.target.value)} />
+                  </div>
+                </div>
+
+                <div style={ENV.campo}>
+                  <label style={ENV.label}>Local</label>
+                  <div style={ENV.locaisGrupo}>
+                    {LOCAIS_CARTAO.map((l) => (
+                      <label key={l.id} style={ENV.radioLabel}>
+                        <input type="radio" name="local-cartao" checked={local === l.id} onChange={() => setLocal(l.id)} /> {l.titulo}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={ENV.obsBox}>
+                  <span style={ENV.obsIcone}>i</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={ENV.obsTitulo}>Observação para o estudante</div>
+                    <textarea style={ENV.obsTexto} rows={4} value={observacao} onChange={(e) => setObservacao(e.target.value)} />
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Coluna 3: pré-visualização e envio */}
+          <div>
+            <div style={ENV.card}>
+              <div style={ENV.cardHead}>
+                <span style={ENV.cardHeadIcone}><Icone nome="pdf" size={20} color={ENV.azul} /></span>
+                <h2 style={ENV.cardTitulo}>Pré-visualização do cartão</h2>
+              </div>
+              {!selecionada ? (
+                <div style={ENV.listaVazia}>Selecione uma designação para ver o cartão.</div>
+              ) : (
+                <div style={ENV.cartaoPreview}>
+                  <div style={ENV.cartaoTitulo}>DESIGNAÇÃO PARA A REUNIÃO<br />NOSSA VIDA E MINISTÉRIO CRISTÃO</div>
+                  <div style={ENV.cartaoCampo}><strong>Nome:</strong> {nome || "—"}</div>
+                  {ajudante && <div style={ENV.cartaoCampo}><strong>Ajudante:</strong> {ajudante}</div>}
+                  <div style={ENV.cartaoCampo}><strong>Data:</strong> {data || "—"}</div>
+                  <div style={ENV.cartaoCampo}><strong>Número da parte:</strong> {numeroParte || "—"}</div>
+                  <div style={ENV.cartaoLocalLinha}>
+                    <strong>Local:</strong>
+                    <div>
+                      {LOCAIS_CARTAO.map((l) => (
+                        <div key={l.id} style={ENV.cartaoLocalItem}>
+                          <span style={ENV.cartaoCheckbox}>{local === l.id ? "☑" : "☐"}</span> {l.titulo}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={ENV.cartaoRegua} />
+                  <div style={ENV.cartaoObsTitulo}>Observação para o estudante:</div>
+                  <div style={ENV.cartaoObsTexto}>{observacao}</div>
+                  <div style={ENV.cartaoRodape}>
+                    S-89-T {mesAnoInfo ? `${String(mesAnoInfo.mes).padStart(2, "0")}/${String(mesAnoInfo.ano).slice(2)}` : ""}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {selecionada && (
+              <div style={ENV.card}>
+                <div style={ENV.cardHead}>
+                  <span style={ENV.cardHeadIcone}><Icone nome="enviar" size={20} color={ENV.azul} /></span>
+                  <h2 style={ENV.cardTitulo}>Enviar cartão</h2>
+                </div>
+                <button type="button" style={ENV.btnWhatsapp} onClick={() => enviar("whatsapp")}>
+                  <Icone nome="telefone" size={18} color="#fff" /> Enviar pelo WhatsApp
+                </button>
+                <button type="button" style={ENV.btnEmail} onClick={() => enviar("email")}>
+                  <Icone nome="enviar" size={18} color={ENV.azul} /> Enviar por e-mail
+                </button>
+                {avisoEnvio && <div style={ENV.avisoEnvio}>{avisoEnvio}</div>}
               </div>
             )}
           </div>
@@ -3339,6 +3695,67 @@ const PUB = (() => {
   };
 })();
 
+const ENV = (() => {
+  const azul = "#3E5AA6";
+  const tituloNavy = "#243B6B";
+  const borda = "#E3E7EF";
+  return {
+    azul,
+    mesCard: { background: "#fff", border: "1px solid " + borda, borderRadius: 16, padding: "18px 22px", boxShadow: "0 1px 3px rgba(20,40,80,.04)", marginBottom: 20 },
+    label: { display: "block", fontSize: 13, fontWeight: 600, color: "#2b3542", marginBottom: 7 },
+    mesSelectWrap: { position: "relative", maxWidth: 320 },
+    mesSelectIcone: { position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", display: "inline-flex", pointerEvents: "none" },
+    mesSelect: { width: "100%", padding: "11px 14px 11px 40px", border: "1px solid " + borda, borderRadius: 10, fontSize: 15, fontWeight: 600, color: tituloNavy, background: "#fff", boxSizing: "border-box", cursor: "pointer" },
+    card: { background: "#fff", border: "1px solid " + borda, borderRadius: 16, padding: 20, boxShadow: "0 1px 3px rgba(20,40,80,.04)", marginBottom: 20 },
+    cardHead: { display: "flex", alignItems: "center", gap: 10, marginBottom: 16 },
+    cardHeadIcone: { width: 34, height: 34, borderRadius: 9, background: "#eef2fb", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+    cardTitulo: { fontSize: 15.5, fontWeight: 700, color: tituloNavy, margin: 0 },
+    buscaWrap: { position: "relative", marginBottom: 12 },
+    buscaIcone: { position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", display: "inline-flex", pointerEvents: "none" },
+    buscaInput: { width: "100%", padding: "10px 12px 10px 38px", border: "1px solid " + borda, borderRadius: 10, fontSize: 13.5, color: "#2b3542", boxSizing: "border-box", background: "#fff" },
+    lista: { display: "flex", flexDirection: "column", maxHeight: 520, overflowY: "auto" },
+    listaVazia: { fontSize: 13, color: UI.cinza, fontStyle: "italic", padding: "18px 4px", lineHeight: 1.5 },
+    linha: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, width: "100%", padding: "12px 10px", border: "none", borderBottom: "1px solid #f0f2f6", background: "transparent", borderLeft: "3px solid transparent", cursor: "pointer", textAlign: "left" },
+    linhaAtiva: { background: "#eef2fb", borderLeft: "3px solid " + azul },
+    linhaTextos: { minWidth: 0 },
+    linhaNome: { fontSize: 14, fontWeight: 700, color: "#2b3542" },
+    linhaAjudante: { fontWeight: 400, color: UI.cinza },
+    linhaDesc: { fontSize: 12, color: UI.cinza, marginTop: 2 },
+    campo: { marginBottom: 16 },
+    input: { width: "100%", padding: "10px 12px", border: "1px solid " + borda, borderRadius: 10, fontSize: 14, color: "#2b3542", boxSizing: "border-box", background: "#fff" },
+    linha2Campos: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 },
+    inputComBotaoWrap: { position: "relative" },
+    btnCalendario: { position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", background: "transparent", border: "none", cursor: "pointer", padding: 6, display: "inline-flex" },
+    calendarioPopup: { position: "absolute", zIndex: 20, top: "calc(100% + 6px)", left: 0, background: "#fff", border: "1px solid " + borda, borderRadius: 12, boxShadow: "0 8px 24px rgba(20,40,80,.14)", padding: 14, width: 260 },
+    calendarioHead: { fontSize: 13, fontWeight: 700, color: tituloNavy, marginBottom: 8, textAlign: "center" },
+    calendarioAviso: { fontSize: 11.5, color: "#9a3b3b", background: "#fbeaea", borderRadius: 6, padding: "6px 8px", marginBottom: 8, lineHeight: 1.4 },
+    calendarioGrade: { display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 3 },
+    calendarioDiaSemana: { fontSize: 10, fontWeight: 700, color: UI.cinza, textAlign: "center", padding: "2px 0" },
+    calendarioDia: { border: "none", background: "transparent", borderRadius: 6, padding: "6px 0", fontSize: 12, color: "#2b3542", cursor: "pointer" },
+    calendarioDiaDestaque: { background: "#fbeaea", color: "#c0392b", fontWeight: 700 },
+    calendarioFechar: { marginTop: 10, width: "100%", padding: "7px 0", border: "1px solid " + borda, borderRadius: 8, background: "#fff", color: "#2b3542", fontSize: 12.5, cursor: "pointer" },
+    locaisGrupo: { display: "flex", flexDirection: "column", gap: 8 },
+    radioLabel: { display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: "#2b3542", cursor: "pointer" },
+    obsBox: { display: "flex", gap: 10, background: "#eef2fb", border: "1px solid #d8e0f2", borderRadius: 12, padding: 14, marginTop: 4 },
+    obsIcone: { width: 22, height: 22, borderRadius: "50%", background: azul, color: "#fff", fontSize: 12, fontWeight: 700, fontStyle: "italic", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+    obsTitulo: { fontSize: 13, fontWeight: 700, color: tituloNavy, marginBottom: 4 },
+    obsTexto: { width: "100%", border: "none", background: "transparent", resize: "vertical", fontFamily: "inherit", fontSize: 12.5, color: "#3a4250", lineHeight: 1.5, padding: 0, boxSizing: "border-box" },
+    cartaoPreview: { border: "1px solid " + borda, borderRadius: 10, padding: 16 },
+    cartaoTitulo: { textAlign: "center", fontSize: 13, fontWeight: 800, color: tituloNavy, lineHeight: 1.4, marginBottom: 12 },
+    cartaoCampo: { fontSize: 13, color: "#2b3542", marginBottom: 6 },
+    cartaoLocalLinha: { display: "flex", gap: 8, fontSize: 13, color: "#2b3542", marginBottom: 6 },
+    cartaoLocalItem: { fontSize: 12.5, color: "#2b3542", marginTop: 2 },
+    cartaoCheckbox: { display: "inline-block", width: 14 },
+    cartaoRegua: { borderBottom: "1px solid " + borda, margin: "10px 0" },
+    cartaoObsTitulo: { fontSize: 12.5, fontWeight: 700, color: "#2b3542", marginBottom: 4 },
+    cartaoObsTexto: { fontSize: 11.5, color: "#5b6472", lineHeight: 1.5 },
+    cartaoRodape: { textAlign: "right", fontSize: 10, color: "#b0b7c3", marginTop: 10 },
+    btnWhatsapp: { width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: azul, border: "none", color: "#fff", fontSize: 14, fontWeight: 600, padding: "12px 16px", borderRadius: 10, cursor: "pointer", marginBottom: 10, boxShadow: "0 2px 6px rgba(62,90,166,.28)" },
+    btnEmail: { width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#fff", border: "1px solid " + borda, color: azul, fontSize: 14, fontWeight: 600, padding: "12px 16px", borderRadius: 10, cursor: "pointer" },
+    avisoEnvio: { fontSize: 12, color: "#5b6472", background: "#f4f6f9", borderRadius: 8, padding: "8px 10px", marginTop: 12, lineHeight: 1.4 },
+  };
+})();
+
 const LG = (() => {
   const azul = "#243B6B";
   const azulBtn = "#2D4CA0";
@@ -3569,6 +3986,8 @@ const CSS = `
     div[style*="repeat(5, 1fr)"] { grid-template-columns: repeat(2, 1fr) !important; }
   }
   @media (max-width: 860px) { .grid { grid-template-columns: 1fr !important; } }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 1150px) { .grid3 { grid-template-columns: 1fr; } }
   .somente-impressao { display: none; }
   @page { size: A4 portrait; margin: 12mm; }
   @media print {
