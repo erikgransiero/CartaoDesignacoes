@@ -906,10 +906,10 @@ function gerarDesignacoesMinisterio(dadosCartao) {
         ajudante: ajudanteL || "",
         designacaoTitulo: "Leitura da Bíblia",
         designacaoDetalhe: s.leituraBiblica || s.leituraLicao || "",
-        ordem: 1,
+        ordem: 3,
       });
     }
-    (s.ministerio || []).forEach((it) => {
+    (s.ministerio || []).forEach((it, i) => {
       if (!it.designado || !it.designado.trim()) return;
       const [nomeM, ajudanteM] = it.designado.split("/").map((x) => x.trim());
       linhas.push({
@@ -919,7 +919,9 @@ function gerarDesignacoesMinisterio(dadosCartao) {
         ajudante: ajudanteM || "",
         designacaoTitulo: it.titulo || "Designação",
         designacaoDetalhe: it.detalhe || "",
-        ordem: linhas.filter((l) => l.semanaLabel === s.dataLabel).length + 1,
+        // A Leitura da Bíblia é sempre o item 3; as partes do Ministério
+        // seguem a sequência a partir do 4, na ordem em que aparecem na semana.
+        ordem: i + 4,
       });
     });
   });
@@ -1002,9 +1004,8 @@ function TelaEnviarCartao({ onNavega, sessao, onSair }) {
     if (!selecionada) return;
     setNome(selecionada.nome);
     setAjudante(selecionada.ajudante);
-    setDiaReuniao("");
     setData("");
-    setNumeroParte(String(selecionada.ordem));
+    setNumeroParte(`${selecionada.ordem} - ${selecionada.designacaoTitulo}`);
     setLocal("salao");
     setObservacao(OBSERVACAO_PADRAO_ESTUDANTE);
     setCalendarioAberto(false);
@@ -1048,12 +1049,26 @@ function TelaEnviarCartao({ onNavega, sessao, onSair }) {
         </div>
 
         <div style={ENV.mesCard}>
-          <label style={ENV.label}>Mês da reunião</label>
-          <div style={ENV.mesSelectWrap}>
-            <span style={ENV.mesSelectIcone}><Icone nome="calendario" size={18} color={ENV.azul} /></span>
-            <select style={ENV.mesSelect} value={cartaoDados.mesAno} onChange={() => {}}>
-              <option value={cartaoDados.mesAno}>{cartaoDados.mesAno}</option>
-            </select>
+          <div style={ENV.mesLinha}>
+            <div style={ENV.mesCampo}>
+              <label style={ENV.label}>Mês da reunião</label>
+              <div style={ENV.mesSelectWrap}>
+                <span style={ENV.mesSelectIcone}><Icone nome="calendario" size={18} color={ENV.azul} /></span>
+                <select style={ENV.mesSelect} value={cartaoDados.mesAno} onChange={() => {}}>
+                  <option value={cartaoDados.mesAno}>{cartaoDados.mesAno}</option>
+                </select>
+              </div>
+            </div>
+            <div style={ENV.mesCampo}>
+              <label style={ENV.label}>Dia da Reunião</label>
+              <div style={ENV.mesSelectWrap}>
+                <span style={ENV.mesSelectIcone}><Icone nome="calendario" size={18} color={ENV.azul} /></span>
+                <select style={ENV.mesSelect} value={diaReuniao} onChange={(e) => setDiaReuniao(e.target.value)}>
+                  <option value="">Selecione…</option>
+                  {ORDEM_DIAS.map((dnum) => <option key={dnum} value={dnum}>{DIAS_NOME[dnum]}</option>)}
+                </select>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1108,13 +1123,6 @@ function TelaEnviarCartao({ onNavega, sessao, onSair }) {
                 <div style={ENV.campo}>
                   <label style={ENV.label}>Ajudante</label>
                   <input style={ENV.input} placeholder="Nenhum" value={ajudante} onChange={(e) => setAjudante(e.target.value)} />
-                </div>
-                <div style={ENV.campo}>
-                  <label style={ENV.label}>Dia da Reunião</label>
-                  <select style={ENV.input} value={diaReuniao} onChange={(e) => setDiaReuniao(e.target.value)}>
-                    <option value="">Selecione…</option>
-                    {ORDEM_DIAS.map((dnum) => <option key={dnum} value={dnum}>{DIAS_NOME[dnum]}</option>)}
-                  </select>
                 </div>
                 <div style={ENV.linha2Campos}>
                   <div style={{ ...ENV.campo, position: "relative" }}>
@@ -3702,8 +3710,10 @@ const ENV = (() => {
   return {
     azul,
     mesCard: { background: "#fff", border: "1px solid " + borda, borderRadius: 16, padding: "18px 22px", boxShadow: "0 1px 3px rgba(20,40,80,.04)", marginBottom: 20 },
+    mesLinha: { display: "flex", gap: 20, flexWrap: "wrap" },
+    mesCampo: { flex: "1 1 260px", maxWidth: 320 },
     label: { display: "block", fontSize: 13, fontWeight: 600, color: "#2b3542", marginBottom: 7 },
-    mesSelectWrap: { position: "relative", maxWidth: 320 },
+    mesSelectWrap: { position: "relative" },
     mesSelectIcone: { position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", display: "inline-flex", pointerEvents: "none" },
     mesSelect: { width: "100%", padding: "11px 14px 11px 40px", border: "1px solid " + borda, borderRadius: 10, fontSize: 15, fontWeight: 600, color: tituloNavy, background: "#fff", boxSizing: "border-box", cursor: "pointer" },
     card: { background: "#fff", border: "1px solid " + borda, borderRadius: 16, padding: 20, boxShadow: "0 1px 3px rgba(20,40,80,.04)", marginBottom: 20 },
@@ -3723,7 +3733,7 @@ const ENV = (() => {
     linhaDesc: { fontSize: 12, color: UI.cinza, marginTop: 2 },
     campo: { marginBottom: 16 },
     input: { width: "100%", padding: "10px 12px", border: "1px solid " + borda, borderRadius: 10, fontSize: 14, color: "#2b3542", boxSizing: "border-box", background: "#fff" },
-    linha2Campos: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 },
+    linha2Campos: { display: "grid", gridTemplateColumns: "0.8fr 1.2fr", gap: 14 },
     inputComBotaoWrap: { position: "relative" },
     btnCalendario: { position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", background: "transparent", border: "none", cursor: "pointer", padding: 6, display: "inline-flex" },
     calendarioPopup: { position: "absolute", zIndex: 20, top: "calc(100% + 6px)", left: 0, background: "#fff", border: "1px solid " + borda, borderRadius: 12, boxShadow: "0 8px 24px rgba(20,40,80,.14)", padding: 14, width: 260 },
