@@ -1,7 +1,7 @@
 # Gerenciador de Documentos — Congregação Parque Scaffid
 
 Documento de registro do projeto (memória técnica e funcional).
-Última atualização: setembro/2026.
+Última atualização: 13/09/2026.
 
 > **Como usar este arquivo:** no início de qualquer sessão nova (ou quando a
 > conversa for compactada), leia este arquivo primeiro. Ele evita ter que reler
@@ -27,9 +27,11 @@ Princípio central: **separar os dados (nomes, datas, temas) do estilo
 ## 2. Estado atual — visão geral
 
 **Todas as 5 telas de documento + Login + Usuários estão construídas e em
-produção.** O projeto entrou na fase de **revisão tela-por-tela**, simulando
+produção.** O projeto está na fase de **revisão tela-por-tela**, simulando
 o uso real mensal, para adicionar funcionalidades que faltam (exportar PDF,
 imprimir, corrigir bugs de parsing) antes de partir para backend/integrações.
+Em paralelo, abriu-se uma **segunda frente**: novas telas de "Publicadores"
+que vão alimentar dados para o futuro envio de cartões (ver §5.8/5.9).
 
 | Tela | Situação |
 |---|---|
@@ -38,15 +40,19 @@ imprimir, corrigir bugs de parsing) antes de partir para backend/integrações.
 | Discurso Público | Construída e revisada · em produção (ver §6) |
 | Reunião A Sentinela | Construída e revisada · em produção (ver §6) |
 | Cartão de Designações | Construída · **em revisão** (ver §6), item 1 em produção |
-| Calendário de Pregação | Construída · revisão ainda não iniciada |
-| Bastidores | Construída · revisão ainda não iniciada |
+| Calendário de Pregação | Construída · Exportar PDF (1 página) em produção; revisão completa (lista de ajustes) ainda não iniciada |
+| Bastidores | Construída · Exportar PDF (1 página) em produção; revisão completa (lista de ajustes) ainda não iniciada |
 | Configurações → Usuários | Concluída e em produção |
+| Cadastro de Publicadores | Construída e em produção (nova, ver §5.8) |
+| Enviar Cartão de Designação | Construída e em produção · **em desenvolvimento incremental** (ver §5.9/§6) |
 
 **Ordem da revisão escolhida pelo usuário:** Discurso Público → Reunião A
 Sentinela → Cartão de Designações → Calendário de Pregação → Bastidores.
 Para cada tela: o usuário simula o dia a dia, envia uma lista numerada de
 ajustes, eu implemento, valido em `preview`, e só então avançamos para a
-próxima tela.
+próxima tela. O botão "Exportar PDF" do Calendário e do Bastidores foi
+adiantado a pedido do usuário, fora dessa ordem — a revisão completa
+(lista numerada de ajustes) dessas duas telas continua pendente.
 
 ---
 
@@ -88,6 +94,26 @@ próxima tela.
 - **Testes:** Playwright headless (Chromium em `/opt/pw-browsers/chromium`,
   rodar com `NODE_PATH=$(npm root -g) node script.mjs`). Screenshots
   enviados ao usuário antes de decisões de layout, sempre que houver dúvida.
+- **Dois "estilos" de tela na aplicação:**
+  1. **Telas de documento** (Discurso, Sentinela, Cartão, Calendário,
+     Bastidores) — layout próprio `S.page`, com `<header>` interno e botão
+     "Voltar ao menu principal"; não usam a barra lateral.
+  2. **Telas "de sistema"** (Menu principal, Configurações → Usuários,
+     Cadastro de Publicadores, Enviar Cartão de Designação) — usam
+     `M.layout` (grid `260px 1fr`) com a `<Sidebar>` compartilhada à
+     esquerda e `<main style={M.main}>` à direita; cabeçalho com breadcrumb
+     opcional + ícones (sino/avatar) e, quando fizer sentido, uma faixa
+     "hero" (`M.hero`/`M.heroText`/`M.heroArt`, título+subtítulo ao lado de
+     uma ilustração). Ao criar uma tela nova desse tipo, reaproveitar esse
+     padrão em vez do `S.page`.
+- **Itens do menu lateral sem card no menu principal:** a constante
+  `MENU_LATERAL_EXTRA` (separada de `DOCUMENTOS`) guarda itens que só
+  aparecem na barra lateral, abaixo de uma linha separadora — usada para
+  "Cadastro Publicadores" e "Enviar Cartão de Designação". Cada item tem
+  `pronto: true/false`; quando `false`, fica esmaecido e o clique não navega
+  (mesmo padrão visual dos itens "em construção" de `DOCUMENTOS`). Um item
+  desses só ganha um card na área principal do menu se for explicitamente
+  pedido — por padrão, fica só na lateral.
 
 ---
 
@@ -160,7 +186,9 @@ Fonte padrão dos documentos: Arial.
 - Grade automática de 7 colunas a partir do mês/ano.
 - Célula = texto livre, cor de fundo por dia, formatação de trecho
   (cor/negrito), notas de rodapé (Nota/Título), imagem do topo editável.
-- Ainda **não revisado** no ciclo atual.
+- **Exportar PDF**: mesmo padrão de página única (zoom-to-fit) do Discurso
+  Público/Sentinela — adiantado a pedido do usuário; revisão completa
+  (lista numerada de ajustes) ainda **não iniciada**.
 
 ### 5.5 Bastidores
 - Tabela por data: Áudio/Vídeo, Volantes, Indicadores, Limpeza
@@ -176,7 +204,9 @@ Fonte padrão dos documentos: Arial.
   não escalados no mês.
 - **Realce de linha inteira**: Evento (amarelo, layout normal) ou Aviso
   (vermelho, mescla todas as colunas e abre campo de texto livre).
-- Ainda **não revisado** no ciclo atual.
+- **Exportar PDF**: mesmo padrão de página única (zoom-to-fit) das demais
+  telas — adiantado a pedido do usuário; revisão completa (lista numerada
+  de ajustes) ainda **não iniciada**.
 
 ### 5.6 Configurações → Usuários
 - Cadastro de usuários (nome, e-mail, senha com confirmação, perfil
@@ -189,6 +219,81 @@ Fonte padrão dos documentos: Arial.
 - Valida usuário+senha contra os cadastrados; `"super adm"` sempre entra
   como Editor sem validação (bypass intencional).
 - Sessão persistida conforme opção "lembrar".
+
+### 5.8 Cadastro de Publicadores (nova, 12/09/2026)
+- Tela "de sistema" (padrão Sidebar, sem breadcrumb — o usuário pediu para
+  desconsiderar o breadcrumb do layout de referência).
+- Cadastra **nome + telefone** (celular, DDD + 9 dígitos) de cada
+  publicador, com máscara automática `(DD) DDDDD-DDDD` aplicada durante a
+  digitação.
+- Edição inline: o lápis carrega o publicador no formulário do topo e o
+  botão vira "Salvar alterações"; a lixeira remove direto (sem confirmação,
+  mesmo padrão do resto do app).
+- Busca por nome ou telefone + paginação de 5 por página.
+- Guardado em `localStorage` (chave `publicadores`) — é a fonte de dados
+  que a tela **Enviar Cartão de Designação** deverá usar futuramente para
+  obter o telefone de cada designado na hora de enviar (essa ligação ainda
+  **não foi feita**; hoje as duas telas não conversam entre si).
+
+### 5.9 Enviar Cartão de Designação (nova, 12-13/09/2026 — em desenvolvimento incremental)
+- Tela "de sistema" (padrão Sidebar, **com** breadcrumb: "Cartão de
+  designações › Enviar Cartão de designações").
+- **Mês da reunião**: dropdown que hoje mostra só o único mês/ano que o
+  Cartão de Designações guarda (`leSalvo("cartao", ...)`, leitura pontual
+  ao abrir a tela, mesmo padrão já usado pelo Bastidores para cruzar dados
+  com outras telas). Múltiplos meses dependem de um histórico de cartões
+  por mês, que fica para quando o backend/banco de dados entrar no
+  projeto — decisão explícita do usuário.
+- **Dia da Reunião**: dropdown ao lado de "Mês da reunião" (mesma linha,
+  no topo da tela — não fica dentro do formulário da designação
+  selecionada). É estado da tela inteira, não da designação: **não reseta**
+  ao trocar de designação selecionada, fica fixo até o usuário mudar
+  manualmente ou sair da tela.
+- **Participantes e designações**: lista construída a partir do Cartão de
+  Designações do mês (`gerarDesignacoesMinisterio`), **somente** com a
+  Leitura da Bíblia e as partes da sessão "Faça seu melhor no Ministério"
+  — nunca Presidente, Tesouros ou Vida Cristã. Quando o campo de designado
+  do Cartão traz dois nomes separados por `/` (padrão comum nas partes de
+  ministério, ex.: "Giuliana / Helena"), o primeiro nome vira o titular e o
+  segundo o "Ajudante". Cada linha mostra nome (+ ajudante) e a semana
+  correspondente (`dataLabel` do Cartão, ex.: "03 – 09 DE AGOSTO"); busca
+  filtra por nome ou tipo de designação.
+- **Numeração das partes**: a Leitura da Bíblia é sempre o item **3**; as
+  partes de "Faça seu melhor no Ministério" seguem a partir do **4**, na
+  ordem em que aparecem no array `ministerio` daquela semana (índice do
+  array + 4) — reflete a estrutura real da reunião Vida e Ministério. O
+  campo "Número da parte" mostra o número concatenado com o tipo (ex.:
+  `"3 - Leitura da Bíblia"`, `"4 - Iniciando conversas"`), editável.
+- **Dados da designação selecionada**: Nome, Ajudante (editáveis), Data
+  (texto livre `DD/MM/AAAA` + botão de calendário), Número da parte, Local
+  (rádio: Salão principal/Sala B/Sala C, padrão "Salão principal"), e um
+  campo de observação (textarea dentro de um card informativo azul) que
+  vem pré-preenchido com o texto padrão do aviso ao estudante (igual ao
+  slip real S-89 da JW: "A lição e a fonte de matéria... (S-38)"), mas é
+  editável.
+- **Minicalendário de destaque** (botão de calendário ao lado do campo
+  Data): como o Cartão só guarda a semana como intervalo (ex.:
+  "03 – 09 DE AGOSTO"), não uma data exata, o popup mostra o mês inteiro e
+  destaca em vermelho **todas** as datas do mês que caem no dia da semana
+  escolhido em "Dia da Reunião" — o usuário clica na data certa dentro do
+  intervalo da semana. Implementado em `CalendarioDestaquePopup`,
+  independente da grade do Calendário de Pregação (usa `getDay()` direto,
+  não o `gerarDias`/`ORDEM_DIAS` daquela tela).
+- **Pré-visualização do cartão**: card com o cabeçalho fixo "DESIGNAÇÃO
+  PARA A REUNIÃO NOSSA VIDA E MINISTÉRIO CRISTÃO", os dados preenchidos,
+  os 3 checkboxes de Local (só o escolhido marcado) e a observação —
+  atualiza em tempo real conforme o formulário muda.
+- **Enviar cartão** (botões "Enviar pelo WhatsApp" / "Enviar por e-mail"):
+  presentes só **visualmente** por decisão explícita do usuário — ao
+  clicar, mostram um aviso de que o envio real fica para uma próxima
+  etapa. Ainda não puxam telefone do Cadastro de Publicadores nem montam
+  mensagem nenhuma.
+- **Pendências conhecidas / decisões explicitamente adiadas pelo usuário:**
+  ligação com Cadastro de Publicadores (por nome) para obter telefone;
+  envio real por WhatsApp (`wa.me`) e e-mail; múltiplos meses no dropdown
+  "Mês da reunião" (depende de backend). O usuário disse que vai continuar
+  mandando pontos de ajuste incrementalmente para esta tela — **não
+  considerar esta tela "fechada"**.
 
 ---
 
@@ -334,6 +439,59 @@ compartilhado, então o Discurso Público também se beneficia dela.**
 *(Publicado em produção em 12/09/2026. Usuário indicou que enviará mais
 pontos de ajuste para esta tela após validar este layout — aguardando.)*
 
+### Calendário de Pregação e Bastidores (Exportar PDF adiantado, 12/09/2026)
+1. ~~Adicionar botão "Exportar PDF" com garantia de 1 página~~ — **feito**
+   nas duas telas, reaproveitando 100% do padrão zoom-to-fit já global
+   (`impressaoRef` + `beforeprint`/`afterprint` ajustando `el.style.zoom`,
+   classes `pagina-com-impressao`/`oculta-impressao`/`secao-impressao`/
+   `#area-impressao`). No Calendário, `PreviewCalendario` ganhou as
+   classes `pv-moldura`/`pv-moldura-interna` (antes não tinha, porque a
+   tela não tinha impressão própria); no Bastidores, `PreviewBastidores`
+   idem. Testado com o conteúdo padrão de cada tela → 1 página, sem
+   conteúdo cortado, sem erros de console.
+2. **Isto não é a revisão completa dessas duas telas** — foi um pedido
+   pontual do usuário, fora da ordem de revisão combinada em §2/§7. A
+   lista numerada de ajustes (como recebida para Discurso/Sentinela/
+   Cartão) ainda não foi enviada pelo usuário para Calendário/Bastidores.
+
+*(Publicado em produção em 12/09/2026, no mesmo lote do item 1 do Cartão
+de Designações.)*
+
+### Menu lateral — novos itens (12/09/2026)
+1. ~~Linha separadora + "Enviar Cartão de Designação" + "Cadastro
+   Publicadores" abaixo de Bastidores~~ — **feito**. Nasceu a constante
+   `MENU_LATERAL_EXTRA` (ver §3) para itens de menu que não têm card na
+   área principal. Os dois começaram com `pronto: false` (esmaecidos,
+   clique não navega) e foram virando `pronto: true` conforme cada tela
+   foi construída (Publicadores no mesmo dia; Enviar Cartão logo em
+   seguida).
+
+### Cadastro de Publicadores e Enviar Cartão de Designação (12-13/09/2026)
+Ver §5.8 e §5.9 para a descrição funcional completa. Resumo do histórico:
+1. ~~Construir Cadastro de Publicadores~~ (12/09) — **feito e em
+   produção**, a partir de um exemplo de tela fornecido pelo usuário
+   (nome + telefone com máscara, busca, paginação, editar/excluir).
+2. ~~Construir Enviar Cartão de Designação — primeiro ponto~~ (12/09) —
+   **feito e em produção**, também a partir de um exemplo de tela.
+   Antes de implementar, 4 perguntas de arquitetura foram feitas ao
+   usuário (a pedido dele mesmo, "para não termos que refazer depois") e
+   todas as recomendações foram aceitas: (a) "Mês da reunião" mostra só o
+   mês único que o Cartão guarda hoje, múltiplos meses ficam para o
+   backend; (b) designação com 2 nomes ("Fulano / Beltrano") vira Nome +
+   Ajudante, não duas linhas; (c) botões de envio só visuais por enquanto;
+   (d) o par "Dia da Reunião" + minicalendário serve para achar a data
+   exata dentro da semana (intervalo) do Cartão.
+3. ~~Ajuste: mover "Dia da Reunião" para o topo (ao lado de "Mês da
+   reunião") e não resetar ao trocar de designação~~ (13/09) — **feito**.
+4. ~~Ajuste: "Número da parte" concatenado com o tipo da parte
+   ("3 - Leitura da Bíblia", "4 - Iniciando conversas", ...), com Leitura
+   da Bíblia sempre = 3 e Ministério a partir de 4~~ (13/09) — **feito**.
+
+*(Publicado em produção em 13/09/2026, junto com o restante do lote desta
+seção. Usuário confirmou que vai continuar mandando pontos de ajuste
+incrementais para "Enviar Cartão de Designação" — tratar como tela viva,
+não como capítulo fechado.)*
+
 ---
 
 ## 7. Roteiro (próximas etapas, nesta ordem)
@@ -343,13 +501,21 @@ pontos de ajuste para esta tela após validar este layout — aguardando.)*
 3. **Continuar revisão do Cartão de Designações** (item 1 — Exportar PDF
    com 2 semanas por página — em produção; aguardando próximos pontos do
    usuário).
-4. Revisar **Calendário de Pregação**.
-5. Revisar **Bastidores**.
-6. Somente depois da revisão completa: **backend/banco de dados**
+4. Revisar **Calendário de Pregação** (já tem Exportar PDF adiantado;
+   falta a revisão completa por lista numerada de ajustes).
+5. Revisar **Bastidores** (já tem Exportar PDF adiantado; falta a revisão
+   completa por lista numerada de ajustes).
+6. **Frente paralela em andamento:** continuar recebendo e implementando
+   pontos de ajuste incrementais para **Enviar Cartão de Designação** (ver
+   §5.9) — inclui, quando o usuário pedir, ligar essa tela ao Cadastro de
+   Publicadores (buscar telefone por nome) e implementar o envio real
+   (WhatsApp/e-mail).
+7. Somente depois da revisão completa: **backend/banco de dados**
    (o usuário já tem uma VM Ubuntu na Oracle Cloud com PostgreSQL
    configurado, falta liberar acesso externo — pode ser feito em paralelo,
    sem bloquear o front) + **integração WhatsApp API** + **integração
-   OneDrive API**, tudo via Git.
+   OneDrive API**, tudo via Git. É também quando "Mês da reunião" (Enviar
+   Cartão) passa a ter múltiplos meses de histórico.
 
 Decisão já tomada e confirmada pelo usuário: **front-end primeiro**, backend
 depois — revisão pode mudar requisitos, e as funcionalidades de
