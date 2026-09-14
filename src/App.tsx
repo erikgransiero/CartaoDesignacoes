@@ -2358,10 +2358,12 @@ function renderTextoDia(texto) {
 
 function PreviewCalendario({ dados, linhas, foto }) {
   return (
-    <div className="pv-moldura" style={{ ...PV.frameOuter, borderColor: "#7a1122" }}>
-      <div className="pv-moldura-interna" style={{ padding: 12 }}>
+    <div className="pv-moldura-cal" style={{ ...PV.frameOuter, borderColor: "#7a1122" }}>
+      <div style={{ padding: 12 }}>
         <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 8 }}>
-          <img src={foto} alt="Ilustração" style={{ width: 120, borderRadius: 4 }} />
+          <div style={{ width: 228, flexShrink: 0, padding: 3, borderRadius: 10, background: `linear-gradient(135deg, ${TEMPLATE.vinho}, ${TEMPLATE.dourado})` }}>
+            <img src={foto} alt="Ilustração" style={{ width: "100%", height: "auto", display: "block", borderRadius: 7 }} />
+          </div>
           <div style={{ flex: 1, textAlign: "right" }}>
             <div style={{ color: TEMPLATE.azul, fontWeight: 800, fontSize: 20, lineHeight: 1.1 }}>Calendário de pregação</div>
             <div style={{ color: TEMPLATE.azul, fontWeight: 700, fontSize: 12, marginTop: 6 }}>{dados.congregacao}</div>
@@ -4265,6 +4267,9 @@ const CSS = `
     #area-impressao > * { width: 170mm; transform-origin: top center; }
     #area-impressao .pv-moldura { min-height: 200mm; display: flex; flex-direction: column; }
     #area-impressao .pv-moldura-interna { flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; }
+    /* Calendário: mantém o fluxo compacto igual ao da tela (título/tabela
+       colados), sem os espaçamentos distribuídos usados nas outras telas. */
+    #area-impressao .pv-moldura-cal { min-height: 200mm; }
     #area-impressao .pv-linha-compacta { font-size: 8px !important; }
     #area-impressao .pv-linha-compacta > div { padding: 2px 6px !important; }
     #area-impressao .cartao-pagina { break-after: page; page-break-after: always; }
