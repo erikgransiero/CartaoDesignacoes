@@ -1,0 +1,16 @@
+{
+  "titulo": "Calendário de pregação",
+  "congregacao": "Congregação Parque Scaffid",
+  "mesAno": "Agosto / 2026",
+  "faixaTitulo": "CAMPANHA DE CONVITES • CONGRESSO REGIONAL 2026 • 21, 22 e 23 DE AGOSTO",
+  "faixaSub": "Distribuição dos convites: de 01 a 20 de agosto — “Venha!” (Apocalipse 22:17)",
+  "mostrarFaixa": true,
+  "qtdDias": 31,
+  "inicioSemana": 5,
+  "dias": [],
+  "notas": [
+    { "id": 1, "tipo": "nota", "texto": "*Domingo: Campo de casa em casa saindo dos locais indicados no calendário conforme seu grupo." },
+    { "id": 2, "tipo": "nota", "texto": "**Segunda-feira (“Não em casa” do dia anterior): Continuação do trabalho de campo de casa em casa, revisitando apenas as residências que não foram atendidas no dia anterior." },
+    { "id": 3, "tipo": "nota", "texto": "***Congresso Regional (21, 22 e 23 de agosto): Não haverá saídas de campo nesses três dias. Chegue com antecedência e esteja presente nos três dias, desde a canção de abertura." }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "publicadores": [
+    { "id": 1, "nome": "André Souza", "telefone": "(11) 91234-5678" },
+    { "id": 2, "nome": "Beatriz Lima", "telefone": "(11) 98765-4321" },
+    { "id": 3, "nome": "Carlos Mendes", "telefone": "(21) 99876-5432" },
+    { "id": 4, "nome": "Daniela Alves", "telefone": "(11) 96666-7777" },
+    { "id": 5, "nome": "Felipe Rocha", "telefone": "(31) 91234-0000" }
+  ]
+}

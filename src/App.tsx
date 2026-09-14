@@ -1,6 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+// Dados "de fábrica" versionados no repositório (ainda não há backend): são
+// o que o app carrega na primeira vez, em cada dispositivo/navegador. Uma
+// vez que a pessoa usa o app, as edições dela continuam salvas só no
+// localStorage do navegador dela — para atualizar o padrão que todo mundo
+// recebe, edite estes arquivos e publique uma nova versão.
+import PUBLICADORES_INICIAL from "./data/publicadores.json";
+import CALENDARIO_INICIAL from "./data/calendario.json";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl;
 
@@ -695,16 +702,8 @@ function IlustracaoAcesso() {
 }
 
 /* ====================== TELA CADASTRO DE PUBLICADORES ====================== */
-
-const PUBLICADORES_INICIAL = {
-  publicadores: [
-    { id: 1, nome: "André Souza", telefone: "(11) 91234-5678" },
-    { id: 2, nome: "Beatriz Lima", telefone: "(11) 98765-4321" },
-    { id: 3, nome: "Carlos Mendes", telefone: "(21) 99876-5432" },
-    { id: 4, nome: "Daniela Alves", telefone: "(11) 96666-7777" },
-    { id: 5, nome: "Felipe Rocha", telefone: "(31) 91234-0000" },
-  ],
-};
+// PUBLICADORES_INICIAL vem de ./data/publicadores.json (ver comentário no
+// topo do arquivo sobre o esquema "dados de fábrica" sem backend).
 
 const TAM_PAGINA_PUBLICADORES = 5;
 
@@ -2133,22 +2132,9 @@ function gerarDias(qtdDias, inicioSemana) {
   return dias;
 }
 
-const CALENDARIO_INICIAL = {
-  titulo: "Calendário de pregação",
-  congregacao: "Congregação Parque Scaffid",
-  mesAno: "Agosto / 2026",
-  faixaTitulo: "CAMPANHA DE CONVITES • CONGRESSO REGIONAL 2026 • 21, 22 e 23 DE AGOSTO",
-  faixaSub: "Distribuição dos convites: de 01 a 20 de agosto — “Venha!” (Apocalipse 22:17)",
-  mostrarFaixa: true,
-  qtdDias: 31,
-  inicioSemana: 5, // agosto/2026: o dia 1 cai num sábado (seg=0 ... dom=6)
-  dias: [],
-  notas: [
-    { id: 1, tipo: "nota", texto: "*Domingo: Campo de casa em casa saindo dos locais indicados no calendário conforme seu grupo." },
-    { id: 2, tipo: "nota", texto: "**Segunda-feira (“Não em casa” do dia anterior): Continuação do trabalho de campo de casa em casa, revisitando apenas as residências que não foram atendidas no dia anterior." },
-    { id: 3, tipo: "nota", texto: "***Congresso Regional (21, 22 e 23 de agosto): Não haverá saídas de campo nesses três dias. Chegue com antecedência e esteja presente nos três dias, desde a canção de abertura." },
-  ],
-};
+// CALENDARIO_INICIAL vem de ./data/calendario.json (ver comentário no topo
+// do arquivo sobre o esquema "dados de fábrica" sem backend). O campo "dias"
+// fica vazio no JSON e é gerado aqui mesmo, a partir de qtdDias/inicioSemana.
 
 function TelaCalendario({ onVoltar }) {
   const inicial = React.useMemo(() => {
