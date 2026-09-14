@@ -870,7 +870,7 @@ function TelaPublicadores({ onNavega, sessao, onSair }) {
 /* ====================== TELA ENVIAR CARTÃO DE DESIGNAÇÃO ====================== */
 
 const OBSERVACAO_PADRAO_ESTUDANTE =
-  "A lição e a fonte de matéria para a sua designação estão na Apostila da Reunião Vida e Ministério. Veja as instruções para a parte que estão nas Instruções para a Reunião Nossa Vida e Ministério Cristão (S-38).";
+  "A lição e a fonte de matéria para a sua designação estão na Apostila da Reunião Vida e Ministério. Veja as instruções para a parte que estão nas Instruções para a Reunião Nossa Vida e Ministério.";
 
 const LOCAIS_CARTAO = [
   { id: "salao", titulo: "Salão principal" },
@@ -1041,14 +1041,14 @@ function TelaEnviarCartao({ onNavega, sessao, onSair }) {
     const linhas = [
       `Olá, ${nomeAlvo}!`,
       "",
-      `Segue sua designação para a Reunião Vida e Ministério Cristão${cartaoDados.mesAno ? " — " + cartaoDados.mesAno : ""}:`,
+      `Segue sua designação para a Reunião Vida e Ministério${cartaoDados.mesAno ? " — " + cartaoDados.mesAno : ""}:`,
       "",
       `Parte: ${numeroParte || "—"}`,
       `Data: ${data || "—"}`,
       `Local: ${localInfo}`,
     ];
     if (ajudante) linhas.push(`Ajudante: ${ajudante}`);
-    linhas.push("", observacao);
+    linhas.push("", observacao, "", "Por favor, confirme que está ciente desta designação!");
     return linhas.join("\n");
   }
 
