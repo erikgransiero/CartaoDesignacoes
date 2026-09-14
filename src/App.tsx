@@ -942,6 +942,43 @@ function telefoneParaWhatsapp(telefoneFormatado) {
   return digitos ? "55" + digitos : "";
 }
 
+// O Cartão de Designações guarda a semana como intervalo em texto — no
+// mesmo mês ("10 – 16 DE AGOSTO") ou cruzando dois meses
+// ("31 DE AGOSTO – 06 DE SETEMBRO"). Aqui convertemos isso em datas reais
+// (dia/mês/ano) para poder achar o dia exato que cai num dia da semana.
+function parseIntervaloSemana(dataLabel, anoBase) {
+  const t = (dataLabel || "").trim();
+  let m = t.match(/^(\d{1,2})\s+DE\s+([A-ZÇÃÕ]+)\s*[–-]\s*(\d{1,2})\s+DE\s+([A-ZÇÃÕ]+)$/i);
+  if (m) {
+    const mesInicio = MESES_NOME.findIndex((n) => normaliza(n) === normaliza(m[2])) + 1;
+    const mesFim = MESES_NOME.findIndex((n) => normaliza(n) === normaliza(m[4])) + 1;
+    if (mesInicio > 0 && mesFim > 0) {
+      const anoFim = mesFim < mesInicio ? anoBase + 1 : anoBase;
+      return { inicio: { dia: Number(m[1]), mes: mesInicio, ano: anoBase }, fim: { dia: Number(m[3]), mes: mesFim, ano: anoFim } };
+    }
+  }
+  m = t.match(/^(\d{1,2})\s*[–-]\s*(\d{1,2})\s+DE\s+([A-ZÇÃÕ]+)$/i);
+  if (m) {
+    const mes = MESES_NOME.findIndex((n) => normaliza(n) === normaliza(m[3])) + 1;
+    if (mes > 0) return { inicio: { dia: Number(m[1]), mes, ano: anoBase }, fim: { dia: Number(m[2]), mes, ano: anoBase } };
+  }
+  return null;
+}
+
+// Percorre dia a dia o intervalo da semana e devolve (em ISO) a primeira
+// data que cai no dia da semana escolhido (0=domingo ... 6=sábado).
+function achaDataNaSemana(intervalo, diaSemanaAlvo) {
+  if (!intervalo || diaSemanaAlvo === "" || diaSemanaAlvo == null) return null;
+  const alvo = Number(diaSemanaAlvo);
+  const cursor = new Date(intervalo.inicio.ano, intervalo.inicio.mes - 1, intervalo.inicio.dia);
+  const fim = new Date(intervalo.fim.ano, intervalo.fim.mes - 1, intervalo.fim.dia);
+  while (cursor <= fim) {
+    if (cursor.getDay() === alvo) return isoData(cursor.getFullYear(), cursor.getMonth() + 1, cursor.getDate());
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return null;
+}
+
 // Popup do calendário: mostra o mês do Cartão de Designações e destaca em
 // vermelho as datas que caem no dia da semana escolhido em "Dia da Reunião".
 function CalendarioDestaquePopup({ mes, ano, diaSemanaAlvo, onEscolher, onFechar }) {
@@ -1017,11 +1054,24 @@ function TelaEnviarCartao({ onNavega, sessao, onSair }) {
 
   const selecionada = designacoes.find((d) => d.id === selecionadoId) || null;
 
+  // Cruza a semana da designação (ex.: "10 – 16 DE AGOSTO") com o dia da
+  // semana escolhido em "Dia da Reunião" e devolve a data exata (DD/MM/AAAA),
+  // ou "" se não der pra calcular (mês não reconhecido, dia não escolhido etc.).
+  function calcularDataAutomatica(designacao, diaSemanaAlvo) {
+    if (!designacao || diaSemanaAlvo === "" || diaSemanaAlvo == null) return "";
+    if (!mesAnoInfo) return "";
+    const intervalo = parseIntervaloSemana(designacao.semanaLabel, mesAnoInfo.ano);
+    const iso = intervalo && achaDataNaSemana(intervalo, diaSemanaAlvo);
+    if (!iso) return "";
+    const { dia, mes, ano } = partesData(iso);
+    return `${String(dia).padStart(2, "0")}/${String(mes).padStart(2, "0")}/${ano}`;
+  }
+
   React.useEffect(() => {
     if (!selecionada) return;
     setNome(selecionada.nome);
     setAjudante(selecionada.ajudante);
-    setData("");
+    setData(calcularDataAutomatica(selecionada, diaReuniao));
     setNumeroParte(`${selecionada.ordem} - ${selecionada.designacaoTitulo}`);
     setLocal("salao");
     setObservacao(OBSERVACAO_PADRAO_ESTUDANTE);
@@ -1029,6 +1079,15 @@ function TelaEnviarCartao({ onNavega, sessao, onSair }) {
     setAvisoEnvio("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selecionadoId]);
+
+  // Se o usuário mudar o "Dia da Reunião" com uma designação já selecionada,
+  // recalcula a data automaticamente (sem mexer nos outros campos).
+  React.useEffect(() => {
+    if (!selecionada) return;
+    const auto = calcularDataAutomatica(selecionada, diaReuniao);
+    if (auto) setData(auto);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [diaReuniao]);
 
   function escolherData(iso) {
     const { dia, mes, ano } = partesData(iso);
