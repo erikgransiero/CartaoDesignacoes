@@ -928,6 +928,20 @@ function gerarDesignacoesMinisterio(dadosCartao) {
   return linhas;
 }
 
+// Acha um publicador cadastrado pelo nome, ignorando maiúsculas/acentos.
+function encontraPublicadorPorNome(lista, nomeAlvo) {
+  const alvo = normaliza((nomeAlvo || "").trim());
+  if (!alvo) return null;
+  return (lista || []).find((p) => normaliza(p.nome || "") === alvo) || null;
+}
+
+// wa.me exige o número completo (código do país + DDD + celular), sem
+// símbolos. O Cadastro de Publicadores guarda só DDD + celular (BR).
+function telefoneParaWhatsapp(telefoneFormatado) {
+  const digitos = (telefoneFormatado || "").replace(/\D/g, "");
+  return digitos ? "55" + digitos : "";
+}
+
 // Popup do calendário: mostra o mês do Cartão de Designações e destaca em
 // vermelho as datas que caem no dia da semana escolhido em "Dia da Reunião".
 function CalendarioDestaquePopup({ mes, ano, diaSemanaAlvo, onEscolher, onFechar }) {
@@ -972,6 +986,7 @@ function TelaEnviarCartao({ onNavega, sessao, onSair }) {
   const cartaoDados = React.useMemo(() => leSalvo("cartao", CARTAO_INICIAL), []);
   const designacoes = React.useMemo(() => gerarDesignacoesMinisterio(cartaoDados), [cartaoDados]);
   const mesAnoInfo = React.useMemo(() => parseMesAno(cartaoDados.mesAno), [cartaoDados.mesAno]);
+  const [publicadores, setPublicadores] = useEstadoSalvo("publicadores", PUBLICADORES_INICIAL);
 
   const [busca, setBusca] = useState("");
   const [selecionadoId, setSelecionadoId] = useState(null);
@@ -984,6 +999,8 @@ function TelaEnviarCartao({ onNavega, sessao, onSair }) {
   const [observacao, setObservacao] = useState(OBSERVACAO_PADRAO_ESTUDANTE);
   const [calendarioAberto, setCalendarioAberto] = useState(false);
   const [avisoEnvio, setAvisoEnvio] = useState("");
+  const [modalTelefone, setModalTelefone] = useState(null); // { nome, telefone } | null
+  const [erroModal, setErroModal] = useState("");
 
   const filtradas = React.useMemo(() => {
     const termo = normaliza(busca.trim());
@@ -1019,8 +1036,61 @@ function TelaEnviarCartao({ onNavega, sessao, onSair }) {
     setCalendarioAberto(false);
   }
 
-  function enviar(tipo) {
-    setAvisoEnvio(tipo === "whatsapp" ? "O envio pelo WhatsApp será implementado em uma próxima etapa." : "O envio por e-mail será implementado em uma próxima etapa.");
+  function montarMensagemWhatsapp(nomeAlvo) {
+    const localInfo = (LOCAIS_CARTAO.find((l) => l.id === local) || LOCAIS_CARTAO[0]).titulo;
+    const linhas = [
+      `Olá, ${nomeAlvo}!`,
+      "",
+      `Segue sua designação para a Reunião Vida e Ministério Cristão${cartaoDados.mesAno ? " — " + cartaoDados.mesAno : ""}:`,
+      "",
+      `Parte: ${numeroParte || "—"}`,
+      `Data: ${data || "—"}`,
+      `Local: ${localInfo}`,
+    ];
+    if (ajudante) linhas.push(`Ajudante: ${ajudante}`);
+    linhas.push("", observacao);
+    return linhas.join("\n");
+  }
+
+  function abrirWhatsapp(telefoneFormatado, nomeAlvo) {
+    const numero = telefoneParaWhatsapp(telefoneFormatado);
+    if (!numero) return;
+    const url = `https://wa.me/${numero}?text=${encodeURIComponent(montarMensagemWhatsapp(nomeAlvo))}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  function enviarWhatsapp() {
+    const nomeAlvo = (nome || "").trim();
+    if (!nomeAlvo) { setAvisoEnvio("Selecione uma designação com nome preenchido."); return; }
+    const encontrado = encontraPublicadorPorNome(publicadores.publicadores, nomeAlvo);
+    if (encontrado && encontrado.telefone) {
+      abrirWhatsapp(encontrado.telefone, nomeAlvo);
+      setAvisoEnvio(`WhatsApp aberto para ${nomeAlvo}.`);
+      return;
+    }
+    setErroModal("");
+    setModalTelefone({ nome: nomeAlvo, telefone: "" });
+  }
+
+  function enviarEmail() {
+    setAvisoEnvio("O envio por e-mail será implementado em uma próxima etapa.");
+  }
+
+  function confirmarCadastroRapido() {
+    const digitos = (modalTelefone.telefone || "").replace(/\D/g, "");
+    if (digitos.length !== 11) { setErroModal("Informe o DDD e o número do celular com 9 dígitos."); return; }
+    const nomeAlvo = modalTelefone.nome;
+    const telefoneFormatado = modalTelefone.telefone;
+    setPublicadores((d) => ({ ...d, publicadores: [...d.publicadores, { id: novoIdCartao(), nome: nomeAlvo, telefone: telefoneFormatado }] }));
+    setModalTelefone(null);
+    setErroModal("");
+    abrirWhatsapp(telefoneFormatado, nomeAlvo);
+    setAvisoEnvio(`"${nomeAlvo}" cadastrado no Cadastro de Publicadores e WhatsApp aberto.`);
+  }
+
+  function cancelarCadastroRapido() {
+    setModalTelefone(null);
+    setErroModal("");
   }
 
   return (
@@ -1213,10 +1283,10 @@ function TelaEnviarCartao({ onNavega, sessao, onSair }) {
                   <span style={ENV.cardHeadIcone}><Icone nome="enviar" size={20} color={ENV.azul} /></span>
                   <h2 style={ENV.cardTitulo}>Enviar cartão</h2>
                 </div>
-                <button type="button" style={ENV.btnWhatsapp} onClick={() => enviar("whatsapp")}>
+                <button type="button" style={ENV.btnWhatsapp} onClick={enviarWhatsapp}>
                   <Icone nome="telefone" size={18} color="#fff" /> Enviar pelo WhatsApp
                 </button>
-                <button type="button" style={ENV.btnEmail} onClick={() => enviar("email")}>
+                <button type="button" style={ENV.btnEmail} onClick={enviarEmail}>
                   <Icone nome="enviar" size={18} color={ENV.azul} /> Enviar por e-mail
                 </button>
                 {avisoEnvio && <div style={ENV.avisoEnvio}>{avisoEnvio}</div>}
@@ -1224,6 +1294,40 @@ function TelaEnviarCartao({ onNavega, sessao, onSair }) {
             )}
           </div>
         </div>
+
+        {modalTelefone && (
+          <div style={ENV.modalOverlay} onClick={cancelarCadastroRapido}>
+            <div style={ENV.modalCard} onClick={(e) => e.stopPropagation()}>
+              <div style={ENV.modalTitulo}>Cadastrar telefone</div>
+              <p style={ENV.modalTexto}>
+                Não encontrei <strong>{modalTelefone.nome}</strong> no Cadastro de Publicadores.
+                Informe o telefone para cadastrar e continuar o envio pelo WhatsApp.
+              </p>
+              <div style={ENV.modalLinha}>
+                <div style={ENV.campo}>
+                  <label style={ENV.label}>Nome</label>
+                  <div style={ENV.modalNome}>{modalTelefone.nome}</div>
+                </div>
+                <div style={ENV.campo}>
+                  <label style={ENV.label}>Telefone (celular)</label>
+                  <input
+                    style={ENV.input}
+                    placeholder="(00) 00000-0000"
+                    value={modalTelefone.telefone}
+                    autoFocus
+                    onChange={(e) => setModalTelefone((m) => ({ ...m, telefone: formataTelefoneParcial(e.target.value) }))}
+                    onKeyDown={(e) => { if (e.key === "Enter") confirmarCadastroRapido(); }}
+                  />
+                </div>
+              </div>
+              {erroModal && <div style={ENV.erro}>{erroModal}</div>}
+              <div style={ENV.modalBotoes}>
+                <button type="button" style={ENV.btnLimparModal} onClick={cancelarCadastroRapido}>Cancelar</button>
+                <button type="button" style={ENV.btnOkModal} onClick={confirmarCadastroRapido}>OK</button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
@@ -3763,6 +3867,15 @@ const ENV = (() => {
     btnWhatsapp: { width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: azul, border: "none", color: "#fff", fontSize: 14, fontWeight: 600, padding: "12px 16px", borderRadius: 10, cursor: "pointer", marginBottom: 10, boxShadow: "0 2px 6px rgba(62,90,166,.28)" },
     btnEmail: { width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#fff", border: "1px solid " + borda, color: azul, fontSize: 14, fontWeight: 600, padding: "12px 16px", borderRadius: 10, cursor: "pointer" },
     avisoEnvio: { fontSize: 12, color: "#5b6472", background: "#f4f6f9", borderRadius: 8, padding: "8px 10px", marginTop: 12, lineHeight: 1.4 },
+    modalOverlay: { position: "fixed", inset: 0, background: "rgba(20,30,50,.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 16 },
+    modalCard: { background: "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 420, boxShadow: "0 12px 32px rgba(20,40,80,.22)" },
+    modalTitulo: { fontSize: 16, fontWeight: 700, color: tituloNavy, marginBottom: 8 },
+    modalTexto: { fontSize: 13, color: UI.cinza, lineHeight: 1.5, marginBottom: 16, marginTop: 0 },
+    modalLinha: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 },
+    modalNome: { padding: "10px 12px", background: "#f4f6f9", border: "1px solid " + borda, borderRadius: 10, fontSize: 14, fontWeight: 600, color: "#2b3542", boxSizing: "border-box" },
+    modalBotoes: { display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 6 },
+    btnLimparModal: { background: "#fff", border: "1px solid " + borda, color: "#2b3542", fontSize: 14, padding: "10px 18px", borderRadius: 10, cursor: "pointer" },
+    btnOkModal: { background: azul, border: "none", color: "#fff", fontSize: 14, fontWeight: 600, padding: "10px 20px", borderRadius: 10, cursor: "pointer" },
   };
 })();
 
