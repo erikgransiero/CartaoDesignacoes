@@ -878,6 +878,10 @@ const LOCAIS_CARTAO = [
   { id: "salaC", titulo: "Sala C" },
 ];
 
+// Memória de Irmão/Irmã por primeiro nome, para não perguntar de novo depois
+// que o usuário já respondeu uma vez (ou depois que adivinhamos com certeza).
+const GENEROS_INICIAL = { mapa: {} };
+
 // Lê o mês/ano exibido no Cartão de Designações ("Agosto/2026") e devolve
 // {mes, ano} numéricos, ou null se o texto não bater com nenhum mês conhecido.
 function parseMesAno(mesAnoStr) {
@@ -940,6 +944,32 @@ function encontraPublicadorPorNome(lista, nomeAlvo) {
 function telefoneParaWhatsapp(telefoneFormatado) {
   const digitos = (telefoneFormatado || "").replace(/\D/g, "");
   return digitos ? "55" + digitos : "";
+}
+
+function primeiroNome(nomeCompleto) {
+  return (nomeCompleto || "").trim().split(/\s+/)[0] || "";
+}
+
+// Tentativa de adivinhar Irmão/Irmã pelo primeiro nome. Cobre os nomes que já
+// aparecem nos exemplos do próprio app (bem confiável) e uma regra leve de
+// terminação (a/o) pros demais — terminações ambíguas (ex.: "e") não
+// arriscam palpite; ficam para o usuário confirmar na primeira vez.
+const NOMES_MASCULINOS_CONHECIDOS = ["filipe", "felipe", "dorival", "lucas", "roberto", "daniel", "wellington",
+  "anderson", "ricardo", "cesar", "césar", "vinicio", "vinicius", "jair", "valmir", "bryan", "orlando", "paulo",
+  "fernando", "erik", "rodrigo", "jose", "vicente", "rogerio", "rogério", "ademir", "andre", "andré", "carlos",
+  "gabriel", "valter", "walter", "joao", "joão", "pedro"];
+const NOMES_FEMININOS_CONHECIDOS = ["giuliana", "helena", "gisele", "priscilla", "vera", "jaqueline", "claudia",
+  "cláudia", "mariana", "layane", "luana", "sarah", "rebeca", "grazyele", "luciana", "daniela", "beatriz"];
+const EXCECOES_TERMINACAO_A_MASCULINO = ["josue", "josué", "joshua", "luca", "isaias", "isaías", "elias"];
+
+function adivinharGenero(primeiro) {
+  const n = normaliza(primeiro);
+  if (!n) return null;
+  if (NOMES_MASCULINOS_CONHECIDOS.includes(n)) return "M";
+  if (NOMES_FEMININOS_CONHECIDOS.includes(n)) return "F";
+  if (n.endsWith("a") && !EXCECOES_TERMINACAO_A_MASCULINO.includes(n)) return "F";
+  if (n.endsWith("o")) return "M";
+  return null;
 }
 
 // O Cartão de Designações guarda a semana como intervalo em texto — no
@@ -1024,6 +1054,7 @@ function TelaEnviarCartao({ onNavega, sessao, onSair }) {
   const designacoes = React.useMemo(() => gerarDesignacoesMinisterio(cartaoDados), [cartaoDados]);
   const mesAnoInfo = React.useMemo(() => parseMesAno(cartaoDados.mesAno), [cartaoDados.mesAno]);
   const [publicadores, setPublicadores] = useEstadoSalvo("publicadores", PUBLICADORES_INICIAL);
+  const [generos, setGeneros] = useEstadoSalvo("generos-publicadores", GENEROS_INICIAL);
 
   const [busca, setBusca] = useState("");
   const [selecionadoId, setSelecionadoId] = useState(null);
@@ -1036,8 +1067,9 @@ function TelaEnviarCartao({ onNavega, sessao, onSair }) {
   const [observacao, setObservacao] = useState(OBSERVACAO_PADRAO_ESTUDANTE);
   const [calendarioAberto, setCalendarioAberto] = useState(false);
   const [avisoEnvio, setAvisoEnvio] = useState("");
-  const [modalTelefone, setModalTelefone] = useState(null); // { nome, telefone } | null
+  const [modalTelefone, setModalTelefone] = useState(null); // { nome, telefone, genero } | null
   const [erroModal, setErroModal] = useState("");
+  const [modalGenero, setModalGenero] = useState(null); // { nomeCompleto, primeiroNome } | null
 
   const filtradas = React.useMemo(() => {
     const termo = normaliza(busca.trim());
@@ -1095,10 +1127,11 @@ function TelaEnviarCartao({ onNavega, sessao, onSair }) {
     setCalendarioAberto(false);
   }
 
-  function montarMensagemWhatsapp(nomeAlvo) {
+  function montarMensagemWhatsapp(nomeAlvo, genero) {
+    const tratamento = genero === "F" ? "Irmã" : "Irmão";
     const localInfo = (LOCAIS_CARTAO.find((l) => l.id === local) || LOCAIS_CARTAO[0]).titulo;
     const linhas = [
-      `Olá, ${nomeAlvo}!`,
+      `Olá, ${tratamento} ${primeiroNome(nomeAlvo)}!`,
       "",
       `Segue sua designação para a Reunião Vida e Ministério${cartaoDados.mesAno ? " — " + cartaoDados.mesAno : ""}:`,
       "",
@@ -1111,28 +1144,52 @@ function TelaEnviarCartao({ onNavega, sessao, onSair }) {
     return linhas.join("\n");
   }
 
-  function abrirWhatsapp(telefoneFormatado, nomeAlvo) {
+  function abrirWhatsapp(telefoneFormatado, nomeAlvo, genero) {
     const numero = telefoneParaWhatsapp(telefoneFormatado);
     if (!numero) return;
-    const url = `https://wa.me/${numero}?text=${encodeURIComponent(montarMensagemWhatsapp(nomeAlvo))}`;
+    const url = `https://wa.me/${numero}?text=${encodeURIComponent(montarMensagemWhatsapp(nomeAlvo, genero))}`;
     window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  // Segue o envio já sabendo o gênero (adivinhado ou confirmado pelo
+  // usuário): falta só achar/telefone do publicador antes de abrir o WhatsApp.
+  function prosseguirEnvioComGenero(nomeAlvo, genero) {
+    const encontrado = encontraPublicadorPorNome(publicadores.publicadores, nomeAlvo);
+    if (encontrado && encontrado.telefone) {
+      abrirWhatsapp(encontrado.telefone, nomeAlvo, genero);
+      setAvisoEnvio(`WhatsApp aberto para ${nomeAlvo}.`);
+      return;
+    }
+    setErroModal("");
+    setModalTelefone({ nome: nomeAlvo, telefone: "", genero });
   }
 
   function enviarWhatsapp() {
     const nomeAlvo = (nome || "").trim();
     if (!nomeAlvo) { setAvisoEnvio("Selecione uma designação com nome preenchido."); return; }
-    const encontrado = encontraPublicadorPorNome(publicadores.publicadores, nomeAlvo);
-    if (encontrado && encontrado.telefone) {
-      abrirWhatsapp(encontrado.telefone, nomeAlvo);
-      setAvisoEnvio(`WhatsApp aberto para ${nomeAlvo}.`);
+    const primeiro = primeiroNome(nomeAlvo);
+    const generoConhecido = generos.mapa[normaliza(primeiro)] || adivinharGenero(primeiro);
+    if (!generoConhecido) {
+      setModalGenero({ nomeCompleto: nomeAlvo, primeiroNome: primeiro });
       return;
     }
-    setErroModal("");
-    setModalTelefone({ nome: nomeAlvo, telefone: "" });
+    prosseguirEnvioComGenero(nomeAlvo, generoConhecido);
   }
 
   function enviarEmail() {
     setAvisoEnvio("O envio por e-mail será implementado em uma próxima etapa.");
+  }
+
+  function confirmarGenero(genero) {
+    if (!modalGenero) return;
+    const { nomeCompleto, primeiroNome: primeiro } = modalGenero;
+    setGeneros((g) => ({ ...g, mapa: { ...g.mapa, [normaliza(primeiro)]: genero } }));
+    setModalGenero(null);
+    prosseguirEnvioComGenero(nomeCompleto, genero);
+  }
+
+  function cancelarGenero() {
+    setModalGenero(null);
   }
 
   function confirmarCadastroRapido() {
@@ -1140,10 +1197,11 @@ function TelaEnviarCartao({ onNavega, sessao, onSair }) {
     if (digitos.length !== 11) { setErroModal("Informe o DDD e o número do celular com 9 dígitos."); return; }
     const nomeAlvo = modalTelefone.nome;
     const telefoneFormatado = modalTelefone.telefone;
+    const genero = modalTelefone.genero;
     setPublicadores((d) => ({ ...d, publicadores: [...d.publicadores, { id: novoIdCartao(), nome: nomeAlvo, telefone: telefoneFormatado }] }));
     setModalTelefone(null);
     setErroModal("");
-    abrirWhatsapp(telefoneFormatado, nomeAlvo);
+    abrirWhatsapp(telefoneFormatado, nomeAlvo, genero);
     setAvisoEnvio(`"${nomeAlvo}" cadastrado no Cadastro de Publicadores e WhatsApp aberto.`);
   }
 
@@ -1353,6 +1411,25 @@ function TelaEnviarCartao({ onNavega, sessao, onSair }) {
             )}
           </div>
         </div>
+
+        {modalGenero && (
+          <div style={ENV.modalOverlay} onClick={cancelarGenero}>
+            <div style={ENV.modalCard} onClick={(e) => e.stopPropagation()}>
+              <div style={ENV.modalTitulo}>Irmão ou Irmã?</div>
+              <p style={ENV.modalTexto}>
+                Não consegui identificar pelo nome <strong>{modalGenero.primeiroNome}</strong> se devo tratar como
+                Irmão ou Irmã. Escolha uma opção — vou lembrar disso da próxima vez que esse nome aparecer.
+              </p>
+              <div style={ENV.modalBotoesGenero}>
+                <button type="button" style={ENV.btnGenero} onClick={() => confirmarGenero("M")}>Irmão</button>
+                <button type="button" style={ENV.btnGenero} onClick={() => confirmarGenero("F")}>Irmã</button>
+              </div>
+              <div style={ENV.modalBotoes}>
+                <button type="button" style={ENV.btnLimparModal} onClick={cancelarGenero}>Cancelar</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {modalTelefone && (
           <div style={ENV.modalOverlay} onClick={cancelarCadastroRapido}>
@@ -3935,6 +4012,8 @@ const ENV = (() => {
     modalBotoes: { display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 6 },
     btnLimparModal: { background: "#fff", border: "1px solid " + borda, color: "#2b3542", fontSize: 14, padding: "10px 18px", borderRadius: 10, cursor: "pointer" },
     btnOkModal: { background: azul, border: "none", color: "#fff", fontSize: 14, fontWeight: 600, padding: "10px 20px", borderRadius: 10, cursor: "pointer" },
+    modalBotoesGenero: { display: "flex", gap: 12, marginBottom: 6 },
+    btnGenero: { flex: 1, background: "#eef2fb", border: "1px solid #c9d6ee", color: azul, fontSize: 15, fontWeight: 700, padding: "14px 10px", borderRadius: 10, cursor: "pointer" },
   };
 })();
 
