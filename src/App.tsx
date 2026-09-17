@@ -6,8 +6,6 @@ import React, { useState, useRef, useEffect } from "react";
 // recebe, edite estes arquivos e publique uma nova versão.
 import PUBLICADORES_INICIAL from "./data/publicadores.json";
 import CALENDARIO_INICIAL from "./data/calendario.json";
-import CARTAO_INICIAL from "./data/cartao.json";
-import TIPOS_PARTE_INICIAL from "./data/tiposParte.json";
 
 /**
  * Gerenciador de Documentos — Congregação Parque Scaffid
@@ -724,32 +722,8 @@ function TelaPublicadores({ onNavega, sessao, onSair }) {
   const [busca, setBusca] = useState("");
   const [pagina, setPagina] = useState(1);
   const [avisoExportar, setAvisoExportar] = useState("");
-  const [tiposParte, setTiposParte] = useEstadoSalvo("tipos-parte", TIPOS_PARTE_INICIAL);
-  const [novoTipo, setNovoTipo] = useState("");
 
   function limpar() { setNome(""); setTelefone(""); setEditandoId(null); setErro(""); }
-
-  function adicionarTipoParte() {
-    const titulo = novoTipo.trim();
-    if (!titulo) return;
-    setTiposParte((d) => ({ ...d, tipos: [...d.tipos, { id: novoIdCartao(), titulo }] }));
-    setNovoTipo("");
-  }
-  function removerTipoParte(id) { setTiposParte((d) => ({ ...d, tipos: d.tipos.filter((t) => t.id !== id) })); }
-
-  function exportarTiposParteJSON() {
-    const conteudo = JSON.stringify({ tipos: tiposParte.tipos }, null, 2);
-    const blob = new Blob([conteudo], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "tiposParte.json";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    setAvisoExportar("Arquivo tiposParte.json baixado. Envie para atualizar a lista no projeto.");
-  }
 
   // Ainda não há backend: o site não tem como gravar sozinho de volta no
   // arquivo publicadores.json do Git (exigiria expor uma credencial de
@@ -909,37 +883,6 @@ function TelaPublicadores({ onNavega, sessao, onSair }) {
               </div>
             )}
           </div>
-        </div>
-
-        <div style={PUB.card}>
-          <div style={PUB.listaHead}>
-            <div style={PUB.cardHead}>
-              <span style={PUB.cardHeadIcone}><Icone nome="pessoas" size={22} color={PUB.azul} /></span>
-              <h2 style={PUB.cardTitulo}>Tipos de partes do Ministério</h2>
-              <span style={PUB.contador}>{tiposParte.tipos.length}</span>
-            </div>
-            <button type="button" style={PUB.btnExportar} onClick={exportarTiposParteJSON} title="Baixa a lista atual em .json para atualizar o arquivo do projeto no Git">
-              <Icone nome="baixar" size={16} color={PUB.azul} /> Exportar tipos de partes
-            </button>
-          </div>
-
-          <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
-            <input style={{ ...PUB.input, flex: 1 }} placeholder="Ex.: Iniciando conversas" value={novoTipo} onChange={(e) => setNovoTipo(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") adicionarTipoParte(); }} />
-            <button style={PUB.btnCadastrar} type="button" onClick={adicionarTipoParte}>+ Adicionar</button>
-          </div>
-
-          {tiposParte.tipos.length === 0 ? (
-            <div style={PUB.tdVazio}>Nenhum tipo de parte cadastrado ainda.</div>
-          ) : (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {tiposParte.tipos.map((t) => (
-                <span key={t.id} style={PUB.tipoChip}>
-                  {t.titulo}
-                  <button type="button" style={PUB.tipoChipX} onClick={() => removerTipoParte(t.id)} title="Remover">×</button>
-                </span>
-              ))}
-            </div>
-          )}
         </div>
       </main>
     </div>
@@ -2480,7 +2423,7 @@ function novoIdCartao() { return Date.now() + Math.random(); }
 function novaSemanaCartao() {
   return {
     id: novoIdCartao(), semReuniao: false, motivo: "",
-    inicioISO: "", dataLabel: "", leituraBiblica: "",
+    dataLabel: "", leituraBiblica: "",
     presidente: "", canticoInicial: "", oracaoInicial: "", oracaoManual: false,
     tema1Titulo: "", tema1Designado: "",
     joiasDesignado: "",
@@ -2492,117 +2435,108 @@ function novaSemanaCartao() {
   };
 }
 
-// Cada semana da reunião vai de segunda a domingo. Uma semana "pertence" ao
-// mês em que cai a sua segunda-feira — por isso a última semana de um mês
-// pode terminar já no mês seguinte (ex.: 31 de agosto a 6 de setembro), e o
-// mês seguinte começa direto na primeira segunda-feira ainda não usada.
-function formataRangeSemana(inicio, fim) {
-  const dIni = String(inicio.getDate()).padStart(2, "0");
-  const dFim = String(fim.getDate()).padStart(2, "0");
-  const mesIni = MESES_NOME[inicio.getMonth()].toUpperCase();
-  const mesFim = MESES_NOME[fim.getMonth()].toUpperCase();
-  if (inicio.getMonth() === fim.getMonth() && inicio.getFullYear() === fim.getFullYear()) {
-    return `${dIni} – ${dFim} DE ${mesIni}`;
-  }
-  return `${dIni} DE ${mesIni} – ${dFim} DE ${mesFim}`;
-}
-
-function gerarSemanasDoMes(mes, ano) {
-  const cursor = new Date(ano, mes - 1, 1);
-  while (cursor.getDay() !== 1) cursor.setDate(cursor.getDate() + 1); // 1 = segunda
-  const semanas = [];
-  while (cursor.getMonth() === mes - 1) {
-    const inicio = new Date(cursor);
-    const fim = new Date(cursor);
-    fim.setDate(fim.getDate() + 6);
-    semanas.push({
-      inicioISO: isoData(inicio.getFullYear(), inicio.getMonth() + 1, inicio.getDate()),
-      dataLabel: formataRangeSemana(inicio, fim),
-    });
-    cursor.setDate(cursor.getDate() + 7);
-  }
-  return semanas;
-}
-
-// Dropdown simples de publicador (única escolha) — usado em Presidente,
-// Oração inicial/final, Designado do tema, Joias espirituais e Leitura.
-function SelectPublicador({ valor, publicadores, onChange, style }) {
-  return (
-    <select style={style || S.input} value={valor || ""} onChange={(e) => onChange(e.target.value)}>
-      <option value="">Selecione…</option>
-      {publicadores.map((p) => <option key={p.id} value={p.nome}>{p.nome}</option>)}
-    </select>
-  );
-}
-
-// Dropdown de cântico (1 a 200) — usado nos três cânticos da semana.
-function SelectCantico({ valor, onChange, style }) {
-  return (
-    <select style={style || S.input} value={valor || ""} onChange={(e) => onChange(e.target.value)}>
-      <option value="">Selecione…</option>
-      {CANTICOS_OPCOES.map((n) => <option key={n} value={String(n)}>{n}</option>)}
-    </select>
-  );
-}
-const CANTICOS_OPCOES = Array.from({ length: 200 }, (_, i) => i + 1);
-const ANOS_OPCOES = Array.from({ length: 2050 - 2023 + 1 }, (_, i) => 2023 + i);
-
-// Combinação de até "max" publicadores num só campo, separados por " / "
-// (ex.: designados do Ministério, até 4; de Vida Cristã, até 2).
-function SeletorPublicadoresCombo({ valor, max, publicadores, onChange }) {
-  const partes = (valor || "").split("/").map((s) => s.trim()).filter(Boolean);
-  while (partes.length < max) partes.push("");
-  function mudaSlot(i, novoNome) {
-    const novasPartes = partes.slice(0, max);
-    novasPartes[i] = novoNome;
-    onChange(novasPartes.filter(Boolean).join(" / "));
-  }
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      {Array.from({ length: max }, (_, i) => (
-        <select key={i} style={S.input} value={partes[i] || ""} onChange={(e) => mudaSlot(i, e.target.value)}>
-          <option value="">{i === 0 ? "Designado(s)" : "— (opcional)"}</option>
-          {publicadores.map((p) => <option key={p.id} value={p.nome}>{p.nome}</option>)}
-        </select>
-      ))}
-    </div>
-  );
-}
-
-// CARTAO_INICIAL vem de ./data/cartao.json (ver comentário no topo do
-// arquivo sobre o esquema "dados de fábrica" sem backend).
+const CARTAO_INICIAL = {
+  titulo: "Cartão de Designações",
+  subtitulo: "Vida e Ministério Cristão — Reuniões de Meio de Semana",
+  congregacao: "Congregação Parque Scaffid",
+  mesAno: "Agosto/2026",
+  semanas: [
+    {
+      id: 1, semReuniao: false, motivo: "",
+      dataLabel: "03 – 09 DE AGOSTO", leituraBiblica: "Jeremias 22-23",
+      presidente: "Filipe", canticoInicial: "40", oracaoInicial: "Filipe", oracaoManual: false,
+      tema1Titulo: "A Importância dos Bons Pastores", tema1Designado: "Dorival",
+      joiasDesignado: "Lucas Soares",
+      leituraLicao: "Th lição 11", leituraDesignado: "Lucas Santana",
+      ministerio: [
+        { id: 101, titulo: "Iniciando conversas", detalhe: "imd lição 3 pt 4", designado: "Giuliana / Helena" },
+        { id: 102, titulo: "Cultivando interesse", detalhe: "imd lição 9 pt 5", designado: "Gisele / Priscilla" },
+        { id: 103, titulo: "Discurso", detalhe: "imd ap. a 19 / th 15", designado: "Paulo" },
+      ],
+      canticoMeio: "60",
+      vidaCrista: [
+        { id: 111, titulo: "Uma História Escrita por Jeová — O Corpo Governante Unido com os irmãos (Parte 1)", detalhe: "", designado: "Vinicio" },
+        { id: 112, titulo: "Estudo bíblico de congregação", detalhe: "", designado: "Roberto / Fernando" },
+      ],
+      canticoFinal: "137", oracaoFinal: "Fernando",
+    },
+    {
+      id: 2, semReuniao: false, motivo: "",
+      dataLabel: "10 – 16 DE AGOSTO", leituraBiblica: "Jeremias 24-25",
+      presidente: "Roberto Soares", canticoInicial: "124", oracaoInicial: "Roberto Soares", oracaoManual: false,
+      tema1Titulo: "Por que alguns \u201cfigos\u201d eram bons e outros eram ruins?", tema1Designado: "João Bizerra",
+      joiasDesignado: "Daniel",
+      leituraLicao: "Th lição 5", leituraDesignado: "Bryan",
+      ministerio: [
+        { id: 201, titulo: "Iniciando conversas", detalhe: "imd lição 2 pt 5", designado: "Vera Freires / Jaqueline" },
+        { id: 202, titulo: "Cultivando interesse", detalhe: "imd lição 9 pt 5", designado: "Claudia / Mariana" },
+        { id: 203, titulo: "Fazendo discípulos", detalhe: "imd lição 12 pt 4", designado: "Lucas Soares / Lucas Santana" },
+      ],
+      canticoMeio: "65",
+      vidaCrista: [
+        { id: 211, titulo: "Necessidades Locais", detalhe: "", designado: "Rogerio" },
+        { id: 212, titulo: "Estudo bíblico de congregação", detalhe: "", designado: "Rodrigo / Cesar" },
+      ],
+      canticoFinal: "137", oracaoFinal: "Cesar",
+    },
+    {
+      id: 3, semReuniao: true,
+      motivo: "Não haverá reunião de meio de semana — Congresso nos dias 21, 22 e 23 de agosto",
+      dataLabel: "17 – 23 DE AGOSTO", leituraBiblica: "Jeremias 26-28",
+      presidente: "", canticoInicial: "", oracaoInicial: "", oracaoManual: false,
+      tema1Titulo: "", tema1Designado: "", joiasDesignado: "", leituraLicao: "", leituraDesignado: "",
+      ministerio: [], canticoMeio: "", vidaCrista: [], canticoFinal: "", oracaoFinal: "",
+    },
+    {
+      id: 4, semReuniao: false, motivo: "",
+      dataLabel: "24 – 30 DE AGOSTO", leituraBiblica: "Jeremias 29-30",
+      presidente: "Roberto Soares", canticoInicial: "12", oracaoInicial: "Roberto Soares", oracaoManual: false,
+      tema1Titulo: "Jeová disciplina seus servos na medida certa", tema1Designado: "Valter",
+      joiasDesignado: "João Bizerra",
+      leituraLicao: "Th lição 2", leituraDesignado: "Jair",
+      ministerio: [
+        { id: 401, titulo: "Iniciando conversas", detalhe: "imd lição 3 pt 4", designado: "Grazyele / Luciana" },
+        { id: 402, titulo: "Iniciando conversas", detalhe: "imd lição 1 pt 5", designado: "Wellington / Anderson" },
+        { id: 403, titulo: "Discurso", detalhe: "th lição 1", designado: "Daniel" },
+      ],
+      canticoMeio: "3",
+      vidaCrista: [
+        { id: 411, titulo: "Jeová dá esperança a seus servos", detalhe: "", designado: "Vinicius" },
+        { id: 412, titulo: "Campanha Especial de Setembro", detalhe: "", designado: "" },
+      ],
+      canticoFinal: "156", oracaoFinal: "Filipe",
+    },
+    {
+      id: 5, semReuniao: false, motivo: "",
+      dataLabel: "31 DE AGOSTO – 06 DE SETEMBRO", leituraBiblica: "Jeremias 31",
+      presidente: "Rogerio", canticoInicial: "27", oracaoInicial: "Rogerio", oracaoManual: false,
+      tema1Titulo: "Rejeite crenças e costumes que não são baseados na Bíblia", tema1Designado: "Ricardo",
+      joiasDesignado: "Anderson",
+      leituraLicao: "Th lição 12", leituraDesignado: "Cesar",
+      ministerio: [
+        { id: 501, titulo: "Iniciando conversas", detalhe: "imd lição 4 pt 3", designado: "Layane / Luana" },
+        { id: 502, titulo: "Iniciando conversas", detalhe: "imd lição 3 pt 3", designado: "Sarah / Rebeca" },
+        { id: 503, titulo: "Explicando suas crenças", detalhe: "th lição 14", designado: "Erik Gransiero" },
+      ],
+      canticoMeio: "67",
+      vidaCrista: [
+        { id: 511, titulo: "Necessidades Locais", detalhe: "", designado: "Roberto Soares" },
+        { id: 512, titulo: "Estudo bíblico de congregação", detalhe: "", designado: "Vinicius / Lucas Santana" },
+      ],
+      canticoFinal: "132", oracaoFinal: "Lucas Santana",
+    },
+  ],
+  observacoes: [
+    { id: 1, texto: "17 a 23/08 — Semana do congresso: não haverá reunião de meio de semana. O Congresso Regional será nos dias 21, 22 e 23 de agosto." },
+    { id: 2, texto: "Campanha de convites: de 01 a 20 de agosto. Levemos convites conosco em todas as saídas de campo e no testemunho informal." },
+    { id: 3, texto: "Designados: preparem-se com antecedência e cumpram o tempo designado. Em caso de impedimento, avisem o presidente da semana o quanto antes." },
+  ],
+};
 
 function TelaCartao({ onVoltar }) {
   const [dados, setDados] = useEstadoSalvo("cartao", CARTAO_INICIAL);
-  const publicadores = React.useMemo(() => leSalvo("publicadores", PUBLICADORES_INICIAL).publicadores, []);
-  const tiposParte = React.useMemo(() => leSalvo("tipos-parte", TIPOS_PARTE_INICIAL).tipos, []);
 
   function editaCampo(campo, valor) { setDados((d) => ({ ...d, [campo]: valor })); }
-
-  function mudaMesAno(novoMes, novoAno) {
-    setDados((d) => {
-      const base = gerarSemanasDoMes(novoMes, novoAno);
-      return {
-        ...d,
-        mes: novoMes, ano: novoAno,
-        mesAno: `${MESES_NOME[novoMes - 1]}/${novoAno}`,
-        semanas: base.map((sb) => ({ ...novaSemanaCartao(), inicioISO: sb.inicioISO, dataLabel: sb.dataLabel })),
-      };
-    });
-  }
-
-  function exportarCartaoJSON() {
-    const conteudo = JSON.stringify(dados, null, 2);
-    const blob = new Blob([conteudo], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "cartao.json";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
 
   function editaSemana(id, campo, valor) {
     setDados((d) => ({ ...d, semanas: d.semanas.map((s) => {
@@ -2619,6 +2553,8 @@ function TelaCartao({ onVoltar }) {
   function toggleSemReuniao(id) {
     setDados((d) => ({ ...d, semanas: d.semanas.map((s) => (s.id === id ? { ...s, semReuniao: !s.semReuniao } : s)) }));
   }
+  function addSemana() { setDados((d) => ({ ...d, semanas: [...d.semanas, novaSemanaCartao()] })); }
+  function removeSemana(id) { setDados((d) => ({ ...d, semanas: d.semanas.filter((s) => s.id !== id) })); }
 
   function addParte(semanaId, secao) {
     setDados((d) => ({ ...d, semanas: d.semanas.map((s) => (s.id === semanaId ? { ...s, [secao]: [...s[secao], { id: novoIdCartao(), titulo: "", detalhe: "", designado: "" }] } : s)) }));
@@ -2651,40 +2587,27 @@ function TelaCartao({ onVoltar }) {
           <div style={S.brandSub}>{dados.congregacao}</div>
         </div>
         <div style={S.appbarTag}>Validação</div>
-        <button style={S.btnFoto} onClick={exportarCartaoJSON}><Icone nome="pdf" size={16} color={UI.azul} /> Exportar cadastro</button>
         <button style={S.btnFoto} onClick={exportarPDF}><Icone nome="pdf" size={16} color={UI.azul} /> Exportar PDF</button>
       </header>
 
       <div style={S.grid} className="grid">
         <section className="oculta-impressao" style={S.editor}>
           <h2 style={S.h2}>Dados do mês</h2>
-          <div style={SC.linha2}>
-            <div style={S.field}>
-              <label style={S.lab}>Mês</label>
-              <select style={S.input} value={dados.mes} onChange={(e) => mudaMesAno(Number(e.target.value), dados.ano)}>
-                {MESES_NOME.map((nome, i) => <option key={nome} value={i + 1}>{nome}</option>)}
-              </select>
-            </div>
-            <div style={S.field}>
-              <label style={S.lab}>Ano</label>
-              <select style={S.input} value={dados.ano} onChange={(e) => mudaMesAno(dados.mes, Number(e.target.value))}>
-                {ANOS_OPCOES.map((ano) => <option key={ano} value={ano}>{ano}</option>)}
-              </select>
-            </div>
-          </div>
+          <div style={S.field}><label style={S.lab}>Mês / Ano</label><input style={S.input} value={dados.mesAno} onChange={(e) => editaCampo("mesAno", e.target.value)} /></div>
 
           <h3 style={S.h3}>Semanas</h3>
           {dados.semanas.map((s) => (
             <SemanaCartao key={s.id} semana={s}
-              publicadores={publicadores} tiposParte={tiposParte}
               onEdita={(campo, valor) => editaSemana(s.id, campo, valor)}
               onResetOracao={() => resetOracaoInicial(s.id)}
               onToggleSemReuniao={() => toggleSemReuniao(s.id)}
+              onRemove={() => removeSemana(s.id)}
               onAddParte={(secao) => addParte(s.id, secao)}
               onRemoveParte={(secao, parteId) => removeParte(s.id, secao, parteId)}
               onEditaParte={(secao, parteId, campo, valor) => editaParte(s.id, secao, parteId, campo, valor)}
             />
           ))}
+          <button style={S.btnAdd} onClick={addSemana}>+ Adicionar semana</button>
 
           <h3 style={S.h3}>Observações</h3>
           {dados.observacoes.map((o) => (
@@ -2706,15 +2629,16 @@ function TelaCartao({ onVoltar }) {
   );
 }
 
-function SemanaCartao({ semana: s, publicadores, tiposParte, onEdita, onResetOracao, onToggleSemReuniao, onAddParte, onRemoveParte, onEditaParte }) {
+function SemanaCartao({ semana: s, onEdita, onResetOracao, onToggleSemReuniao, onRemove, onAddParte, onRemoveParte, onEditaParte }) {
   return (
     <div style={S.card}>
       <div style={S.cardTop}>
-        <div style={{ ...S.input, fontWeight: 700, maxWidth: 220, background: "#f2f2f2" }}>{s.dataLabel || "—"}</div>
+        <input style={{ ...S.input, fontWeight: 700, maxWidth: 220 }} placeholder="Ex.: 03 – 09 DE AGOSTO" value={s.dataLabel} onChange={(e) => onEdita("dataLabel", e.target.value)} />
         <input style={{ ...S.input, maxWidth: 170 }} placeholder="Leitura (ex.: Jeremias 22-23)" value={s.leituraBiblica} onChange={(e) => onEdita("leituraBiblica", e.target.value)} />
         <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: UI.cinza, cursor: "pointer", whiteSpace: "nowrap" }}>
           <input type="checkbox" checked={s.semReuniao} onChange={onToggleSemReuniao} /> Sem reunião
         </label>
+        <button style={S.btnRemoverSemana} onClick={onRemove}>Remover semana</button>
       </div>
 
       {s.semReuniao ? (
@@ -2725,11 +2649,11 @@ function SemanaCartao({ semana: s, publicadores, tiposParte, onEdita, onResetOra
       ) : (
         <>
           <div style={SC.linha3}>
-            <div style={S.field}><label style={S.lab}>Presidente</label><SelectPublicador valor={s.presidente} publicadores={publicadores} onChange={(v) => onEdita("presidente", v)} /></div>
-            <div style={S.field}><label style={S.lab}>Cântico inicial</label><SelectCantico valor={s.canticoInicial} onChange={(v) => onEdita("canticoInicial", v)} /></div>
+            <div style={S.field}><label style={S.lab}>Presidente</label><input style={S.input} value={s.presidente} onChange={(e) => onEdita("presidente", e.target.value)} /></div>
+            <div style={S.field}><label style={S.lab}>Cântico inicial</label><input style={S.input} value={s.canticoInicial} onChange={(e) => onEdita("canticoInicial", e.target.value)} /></div>
             <div style={S.field}>
               <label style={S.lab}>Oração inicial{!s.oracaoManual && s.presidente ? " (igual ao presidente)" : ""}</label>
-              <SelectPublicador valor={s.oracaoInicial} publicadores={publicadores} onChange={(v) => onEdita("oracaoInicial", v)} />
+              <input style={S.input} value={s.oracaoInicial} onChange={(e) => onEdita("oracaoInicial", e.target.value)} />
               {s.oracaoManual && <button style={{ ...S.btnGhostAlt, marginTop: 6 }} onClick={onResetOracao}>Usar mesmo nome do presidente</button>}
             </div>
           </div>
@@ -2737,29 +2661,29 @@ function SemanaCartao({ semana: s, publicadores, tiposParte, onEdita, onResetOra
           <h4 style={SC.h4Teal}>Tesouros da Palavra de Deus</h4>
           <div style={S.field}><label style={S.lab}>Tema (parte 1)</label><input style={S.input} value={s.tema1Titulo} onChange={(e) => onEdita("tema1Titulo", e.target.value)} /></div>
           <div style={SC.linha3}>
-            <div style={S.field}><label style={S.lab}>Designado do tema</label><SelectPublicador valor={s.tema1Designado} publicadores={publicadores} onChange={(v) => onEdita("tema1Designado", v)} /></div>
-            <div style={S.field}><label style={S.lab}>Joias espirituais</label><SelectPublicador valor={s.joiasDesignado} publicadores={publicadores} onChange={(v) => onEdita("joiasDesignado", v)} /></div>
-            <div style={S.field}><label style={S.lab}>Leitura da Bíblia</label><SelectPublicador valor={s.leituraDesignado} publicadores={publicadores} onChange={(v) => onEdita("leituraDesignado", v)} /></div>
+            <div style={S.field}><label style={S.lab}>Designado do tema</label><input style={S.input} value={s.tema1Designado} onChange={(e) => onEdita("tema1Designado", e.target.value)} /></div>
+            <div style={S.field}><label style={S.lab}>Joias espirituais</label><input style={S.input} value={s.joiasDesignado} onChange={(e) => onEdita("joiasDesignado", e.target.value)} /></div>
+            <div style={S.field}><label style={S.lab}>Leitura da Bíblia</label><input style={S.input} value={s.leituraDesignado} onChange={(e) => onEdita("leituraDesignado", e.target.value)} /></div>
           </div>
           <div style={S.field}><label style={S.lab}>Lição da leitura (opcional)</label><input style={{ ...S.input, maxWidth: 200 }} placeholder="Ex.: Th lição 11" value={s.leituraLicao} onChange={(e) => onEdita("leituraLicao", e.target.value)} /></div>
 
           <h4 style={SC.h4Dourado}>Faça Seu Melhor no Ministério</h4>
           {s.ministerio.map((p) => (
-            <ParteCartao key={p.id} parte={p} variante="ministerio" tiposParte={tiposParte} publicadores={publicadores} onEdita={(campo, valor) => onEditaParte("ministerio", p.id, campo, valor)} onRemove={() => onRemoveParte("ministerio", p.id)} />
+            <ParteCartao key={p.id} parte={p} onEdita={(campo, valor) => onEditaParte("ministerio", p.id, campo, valor)} onRemove={() => onRemoveParte("ministerio", p.id)} />
           ))}
           <button style={S.btnAdd} onClick={() => onAddParte("ministerio")}>+ Adicionar parte</button>
 
-          <div style={S.field}><label style={S.lab}>Cântico (entre as seções)</label><SelectCantico valor={s.canticoMeio} onChange={(v) => onEdita("canticoMeio", v)} style={{ ...S.input, maxWidth: 120 }} /></div>
+          <div style={S.field}><label style={S.lab}>Cântico (entre as seções)</label><input style={{ ...S.input, maxWidth: 120 }} value={s.canticoMeio} onChange={(e) => onEdita("canticoMeio", e.target.value)} /></div>
 
           <h4 style={SC.h4Vinho}>Nossa Vida Cristã</h4>
           {s.vidaCrista.map((p) => (
-            <ParteCartao key={p.id} parte={p} variante="vidaCrista" tiposParte={tiposParte} publicadores={publicadores} onEdita={(campo, valor) => onEditaParte("vidaCrista", p.id, campo, valor)} onRemove={() => onRemoveParte("vidaCrista", p.id)} />
+            <ParteCartao key={p.id} parte={p} onEdita={(campo, valor) => onEditaParte("vidaCrista", p.id, campo, valor)} onRemove={() => onRemoveParte("vidaCrista", p.id)} />
           ))}
           <button style={S.btnAdd} onClick={() => onAddParte("vidaCrista")}>+ Adicionar parte</button>
 
           <div style={SC.linha2}>
-            <div style={S.field}><label style={S.lab}>Cântico final</label><SelectCantico valor={s.canticoFinal} onChange={(v) => onEdita("canticoFinal", v)} /></div>
-            <div style={S.field}><label style={S.lab}>Oração final</label><SelectPublicador valor={s.oracaoFinal} publicadores={publicadores} onChange={(v) => onEdita("oracaoFinal", v)} /></div>
+            <div style={S.field}><label style={S.lab}>Cântico final</label><input style={S.input} value={s.canticoFinal} onChange={(e) => onEdita("canticoFinal", e.target.value)} /></div>
+            <div style={S.field}><label style={S.lab}>Oração final</label><input style={S.input} value={s.oracaoFinal} onChange={(e) => onEdita("oracaoFinal", e.target.value)} /></div>
           </div>
         </>
       )}
@@ -2767,22 +2691,12 @@ function SemanaCartao({ semana: s, publicadores, tiposParte, onEdita, onResetOra
   );
 }
 
-function ParteCartao({ parte: p, variante, tiposParte, publicadores, onEdita, onRemove }) {
-  const max = variante === "ministerio" ? 4 : 2;
+function ParteCartao({ parte: p, onEdita, onRemove }) {
   return (
     <div style={SC.parteRow}>
-      {variante === "ministerio" ? (
-        <select style={{ ...S.input, flex: 2, minWidth: 140 }} value={p.titulo || ""} onChange={(e) => onEdita("titulo", e.target.value)}>
-          <option value="">Tipo de parte…</option>
-          {tiposParte.map((t) => <option key={t.id} value={t.titulo}>{t.titulo}</option>)}
-        </select>
-      ) : (
-        <input style={{ ...S.input, flex: 2, minWidth: 140 }} placeholder="Título da parte" value={p.titulo} onChange={(e) => onEdita("titulo", e.target.value)} />
-      )}
+      <input style={{ ...S.input, flex: 2, minWidth: 140 }} placeholder="Título da parte" value={p.titulo} onChange={(e) => onEdita("titulo", e.target.value)} />
       <input style={{ ...S.input, flex: 1, minWidth: 120 }} placeholder="Detalhe (ex.: lmd lição 3 pt 4)" value={p.detalhe} onChange={(e) => onEdita("detalhe", e.target.value)} />
-      <div style={{ flex: 1, minWidth: 120 }}>
-        <SeletorPublicadoresCombo valor={p.designado} max={max} publicadores={publicadores} onChange={(v) => onEdita("designado", v)} />
-      </div>
+      <input style={{ ...S.input, flex: 1, minWidth: 120 }} placeholder="Designado(s)" value={p.designado} onChange={(e) => onEdita("designado", e.target.value)} />
       <button style={S.btnRemover} onClick={onRemove}>Remover</button>
     </div>
   );
@@ -3790,8 +3704,6 @@ const PUB = (() => {
     pagBtnAtivo: { background: azul, borderColor: azul, color: "#fff" },
     btnExportar: { display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, padding: "9px 14px", border: "1px solid " + borda, borderRadius: 10, background: "#fff", color: azul, cursor: "pointer" },
     avisoExportar: { fontSize: 12.5, color: "#1f6b45", background: "#e8f5ee", border: "1px solid #bfe0cd", padding: "8px 10px", borderRadius: 8, marginBottom: 14 },
-    tipoChip: { display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, padding: "6px 8px 6px 12px", borderRadius: 999, background: "#eef2fb", color: azul, border: "1px solid " + borda },
-    tipoChipX: { border: "none", background: "transparent", color: azul, cursor: "pointer", fontSize: 16, lineHeight: 1, padding: "0 2px" },
   };
 })();
 
