@@ -2578,6 +2578,22 @@ function TelaCartao({ onVoltar }) {
     window.print();
   }
 
+  // Ainda não há backend: este botão baixa os dados atuais do cartão em
+  // .json, no mesmo formato do arquivo do repositório, para servirem de
+  // base a futuras análises e estatísticas de partes dos publicadores.
+  function exportarCartaoJSON() {
+    const conteudo = JSON.stringify(dados, null, 2);
+    const blob = new Blob([conteudo], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "cartao.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="pagina-com-impressao" style={S.page}>
       <header className="oculta-impressao" style={S.appbar}>
@@ -2587,6 +2603,7 @@ function TelaCartao({ onVoltar }) {
           <div style={S.brandSub}>{dados.congregacao}</div>
         </div>
         <div style={S.appbarTag}>Validação</div>
+        <button style={S.btnFoto} onClick={exportarCartaoJSON} title="Baixa os dados atuais do cartão em .json para atualizar o arquivo do projeto no Git"><Icone nome="baixar" size={16} color={UI.azul} /> Exportar JSON</button>
         <button style={S.btnFoto} onClick={exportarPDF}><Icone nome="pdf" size={16} color={UI.azul} /> Exportar PDF</button>
       </header>
 
