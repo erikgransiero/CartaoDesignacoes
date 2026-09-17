@@ -1,0 +1,9 @@
+{
+  "tipos": [
+    { "id": 1, "titulo": "Iniciando conversas" },
+    { "id": 2, "titulo": "Cultivando interesse" },
+    { "id": 3, "titulo": "Fazendo discípulos" },
+    { "id": 4, "titulo": "Explicando suas crenças" },
+    { "id": 5, "titulo": "Discurso" }
+  ]
+}
