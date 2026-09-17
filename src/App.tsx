@@ -107,6 +107,7 @@ function Icone({ nome, size = 40, color = TEMPLATE.azul }) {
     case "chevron-esquerda": return (<svg {...p}><polyline points="14.5 5 8 12 14.5 19" /></svg>);
     case "chevron-direita": return (<svg {...p}><polyline points="9.5 5 16 12 9.5 19" /></svg>);
     case "enviar": return (<svg {...p}><line x1="21" y1="3" x2="10" y2="14" /><path d="M21 3 14 21l-3-7-7-3Z" /></svg>);
+    case "baixar": return (<svg {...p}><path d="M12 3v12" /><polyline points="7 11 12 16 17 11" /><path d="M4 19h16" /></svg>);
     default: return null;
   }
 }
@@ -724,8 +725,28 @@ function TelaPublicadores({ onNavega, sessao, onSair }) {
   const [erro, setErro] = useState("");
   const [busca, setBusca] = useState("");
   const [pagina, setPagina] = useState(1);
+  const [avisoExportar, setAvisoExportar] = useState("");
 
   function limpar() { setNome(""); setTelefone(""); setEditandoId(null); setErro(""); }
+
+  // Ainda não há backend: o site não tem como gravar sozinho de volta no
+  // arquivo publicadores.json do Git (exigiria expor uma credencial de
+  // escrita no navegador de quem acessa, o que é inseguro). Como ponte
+  // manual até o PostgreSQL entrar, este botão baixa o cadastro atual no
+  // mesmo formato do arquivo do repositório, para enviar e atualizá-lo.
+  function exportarPublicadoresJSON() {
+    const conteudo = JSON.stringify({ publicadores: dados.publicadores }, null, 2);
+    const blob = new Blob([conteudo], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "publicadores.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setAvisoExportar("Arquivo publicadores.json baixado. Envie para atualizar o cadastro no projeto.");
+  }
 
   function cadastrar() {
     const nomeOk = nome.trim();
@@ -818,11 +839,17 @@ function TelaPublicadores({ onNavega, sessao, onSair }) {
               <h2 style={PUB.cardTitulo}>Publicadores cadastrados</h2>
               <span style={PUB.contador}>{dados.publicadores.length}</span>
             </div>
-            <div style={PUB.buscaWrap}>
-              <span style={PUB.buscaIcone}><Icone nome="buscar" size={16} color="#8a93a3" /></span>
-              <input style={PUB.buscaInput} placeholder="Buscar por nome ou telefone…" value={busca} onChange={(e) => mudaBusca(e.target.value)} />
+            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+              <div style={PUB.buscaWrap}>
+                <span style={PUB.buscaIcone}><Icone nome="buscar" size={16} color="#8a93a3" /></span>
+                <input style={PUB.buscaInput} placeholder="Buscar por nome ou telefone…" value={busca} onChange={(e) => mudaBusca(e.target.value)} />
+              </div>
+              <button type="button" style={PUB.btnExportar} onClick={exportarPublicadoresJSON} title="Baixa o cadastro atual em .json para atualizar o arquivo do projeto no Git">
+                <Icone nome="baixar" size={16} color={PUB.azul} /> Exportar cadastro
+              </button>
             </div>
           </div>
+          {avisoExportar && <div style={PUB.avisoExportar}>{avisoExportar}</div>}
 
           <div style={PUB.tabelaScroll}>
             <table style={PUB.tabela}>
@@ -3928,6 +3955,8 @@ const PUB = (() => {
     paginacaoBtns: { display: "flex", gap: 6 },
     pagBtn: { minWidth: 34, height: 34, padding: "0 8px", border: "1px solid " + borda, borderRadius: 8, background: "#fff", color: "#2b3542", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" },
     pagBtnAtivo: { background: azul, borderColor: azul, color: "#fff" },
+    btnExportar: { display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, padding: "9px 14px", border: "1px solid " + borda, borderRadius: 10, background: "#fff", color: azul, cursor: "pointer" },
+    avisoExportar: { fontSize: 12.5, color: "#1f6b45", background: "#e8f5ee", border: "1px solid #bfe0cd", padding: "8px 10px", borderRadius: 8, marginBottom: 14 },
   };
 })();
 
