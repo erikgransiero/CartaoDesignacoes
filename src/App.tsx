@@ -2427,7 +2427,7 @@ function novaSemanaCartao() {
     presidente: "", canticoInicial: "", oracaoInicial: "", oracaoManual: false,
     tema1Titulo: "", tema1Designado: "",
     joiasDesignado: "",
-    leituraLicao: "", leituraDesignado: "",
+    leituraLicao: "th lição ", leituraDesignado: "",
     ministerio: [{ id: novoIdCartao(), titulo: "", detalhe: "", designado: "" }],
     canticoMeio: "",
     vidaCrista: [{ id: novoIdCartao(), titulo: "Estudo bíblico de congregação", detalhe: "", designado: "" }],
@@ -2729,6 +2729,12 @@ const DETALHE_MINISTERIO_ATALHOS = {
   i: "imd lição 0 ponto 0",
   th: "th lição ",
 };
+// Atalhos de autocompletar do "Nossa Vida Cristã" — outras sequências de
+// letras ficam livres para digitação normal.
+const TITULO_VIDA_CRISTA_ATALHOS = {
+  est: "Estudo bíblico de congregação",
+  nes: "Necessidades Locais",
+};
 function aplicaAtalho(valorDigitado, mapa) {
   const chave = valorDigitado.trim().toLowerCase();
   return Object.prototype.hasOwnProperty.call(mapa, chave) ? mapa[chave] : valorDigitado;
@@ -2736,10 +2742,16 @@ function aplicaAtalho(valorDigitado, mapa) {
 
 function ParteCartao({ parte: p, secao, onEdita, onRemove }) {
   const ehMinisterio = secao === "ministerio";
+  const ehVidaCrista = secao === "vidaCrista";
+  function editaTitulo(valor) {
+    if (ehMinisterio) return onEdita("titulo", aplicaAtalho(valor, TITULO_MINISTERIO_ATALHOS));
+    if (ehVidaCrista) return onEdita("titulo", aplicaAtalho(valor, TITULO_VIDA_CRISTA_ATALHOS));
+    onEdita("titulo", valor);
+  }
   return (
     <div style={SC.parteRow}>
       <input style={{ ...S.input, flex: 2, minWidth: 140 }} placeholder="Título da parte" value={p.titulo}
-        onChange={(e) => onEdita("titulo", ehMinisterio ? aplicaAtalho(e.target.value, TITULO_MINISTERIO_ATALHOS) : e.target.value)} />
+        onChange={(e) => editaTitulo(e.target.value)} />
       <input style={{ ...S.input, flex: 1, minWidth: 120 }} placeholder="Detalhe (ex.: lmd lição 3 pt 4)" value={p.detalhe}
         onChange={(e) => onEdita("detalhe", ehMinisterio ? aplicaAtalho(e.target.value, DETALHE_MINISTERIO_ATALHOS) : e.target.value)} />
       <input style={{ ...S.input, flex: 1, minWidth: 120 }} placeholder="Designado(s)" value={p.designado} onChange={(e) => onEdita("designado", e.target.value)} />
