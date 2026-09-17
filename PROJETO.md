@@ -1,7 +1,7 @@
 # Gerenciador de Documentos — Congregação Parque Scaffid
 
 Documento de registro do projeto (memória técnica e funcional).
-Última atualização: 13/09/2026.
+Última atualização: 17/09/2026.
 
 > **Como usar este arquivo:** no início de qualquer sessão nova (ou quando a
 > conversa for compactada), leia este arquivo primeiro. Ele evita ter que reler
@@ -33,13 +33,21 @@ imprimir, corrigir bugs de parsing) antes de partir para backend/integrações.
 Em paralelo, abriu-se uma **segunda frente**: novas telas de "Publicadores"
 que vão alimentar dados para o futuro envio de cartões (ver §5.8/5.9).
 
+**Atualização 16-17/09/2026:** o import de PDF do Cartão de Designações foi
+removido (não sobrevivia a um formato mais novo de apostilado — ver §5.3/§6)
+e a tela ganhou um botão "Exportar JSON" para começar a acumular um
+histórico mensal fora do `localStorage`, pensando em futuras estatísticas de
+partes dos publicadores. Uma reestruturação maior da tela (dropdowns +
+semanas automáticas) chegou a ser implementada e validada, mas foi revertida
+a pedido do usuário — ver a nota de "não reabrir" em §5.3.
+
 | Tela | Situação |
 |---|---|
 | Login | Concluída e em produção |
 | Menu principal | Concluída e em produção |
 | Discurso Público | Construída e revisada · em produção (ver §6) |
 | Reunião A Sentinela | Construída e revisada · em produção (ver §6) |
-| Cartão de Designações | Construída · **em revisão** (ver §6), item 1 em produção |
+| Cartão de Designações | Construída · **em revisão** (ver §6), itens 1 e 2 em produção; preenchimento **100% manual** (import de PDF removido, ver §5.3) |
 | Calendário de Pregação | Construída · Exportar PDF (1 página) em produção; revisão completa (lista de ajustes) ainda não iniciada |
 | Bastidores | Construída · Exportar PDF (1 página) em produção; revisão completa (lista de ajustes) ainda não iniciada |
 | Configurações → Usuários | Concluída e em produção |
@@ -81,11 +89,16 @@ adiantado a pedido do usuário, fora dessa ordem — a revisão completa
   `localStorage`/`sessionStorage` conforme "lembrar". Usuário literal
   `"super adm"` sempre entra como Editor sem senha (bypass intencional,
   pedido pelo usuário). Perfis: Visualizador (só vê) e Editor (edita).
-- **Leitura de PDF** (import automático no Cartão de Designações): feita no
-  navegador com `pdfjs-dist`. Os nomes dos designados no apostilado da JW
-  são **anotações PDF do tipo FreeText**, não texto de página — foi
-  necessário correlacionar posição (distância em Y) entre estrutura extraída
-  do texto e as anotações.
+- **Import de PDF removido (16/09/2026).** O Cartão de Designações chegou a
+  ter import automático via `pdfjs-dist`, mas só funcionava com apostilados
+  cujos nomes eram **anotações PDF do tipo FreeText**. Um PDF real enviado
+  pelo usuário (formato mais novo do apostilado) não tinha anotação nenhuma
+  — os nomes eram texto de página comum, com letras acentuadas decompostas
+  em glifos separados — o que quebrava tanto o parsing quanto a premissa
+  inteira do recurso. Decisão do usuário após diagnóstico: remover o
+  import por completo (`pdfjs-dist` desinstalado, ~1,7 MB a menos no
+  bundle) e manter a tela **só com preenchimento manual**. Não reabrir essa
+  ideia sem um novo pedido explícito.
 - **Exportar PDF:** abordagem escolhida é `window.print()` + CSS
   `@media print` (sem biblioteca extra), imprimindo só a área de
   pré-visualização (`id="area-impressao"`, regra genérica reaproveitável em
@@ -169,18 +182,35 @@ Fonte padrão dos documentos: Arial.
   — ver §6).
 
 ### 5.3 Cartão de Designações
-- Import automático a partir do PDF anotado do apostilado (FreeText
-  annotations) — reconhece nomes dos designados por parte (Tesouros,
-  Ministério, Vida Cristã).
-- Blocos semanais editáveis manualmente como alternativa/complemento ao
-  import.
+- Preenchimento **100% manual**, em blocos semanais (import de PDF foi
+  removido em 16/09/2026 — ver §3 e §6).
 - Usado como referência cruzada pela validação de conflitos do Bastidores
-  (mesmo nome na mesma semana).
+  (mesmo nome na mesma semana) e como fonte de dados da tela Enviar
+  Cartão de Designação (§5.9).
 - **Exportar PDF**: layout próprio, diferente das telas anteriores — em
   vez de forçar 1 página sempre, pagina de verdade com **até 2 semanas
   por página física** (cabeçalho do cartão repetido em cada página,
   observações na última). Ver §6.
-- Em **revisão** no ciclo atual (item 1 concluído, em produção).
+- **Exportar JSON** (17/09/2026): botão no cabeçalho que baixa o `dados`
+  completo da tela em `cartao.json` (mesmo padrão de
+  "ponte manual" já usado no Cadastro de Publicadores — ver §5.8). Serve
+  para acumular um histórico mensal fora do `localStorage`, com vistas a
+  futuras análises/estatísticas de partes dos publicadores (quem fez o
+  quê, com que frequência). Ainda não há tela de análise consumindo esses
+  arquivos — por enquanto é só exportação e guarda manual.
+- Em **revisão** no ciclo atual (itens 1 e 2 concluídos, em produção).
+- **Tentativa revertida (16-17/09/2026):** chegou a ser implementada uma
+  reestruturação grande da tela — Mês/Ano como dropdown com geração
+  automática de semanas (segunda a domingo), e quase todo campo de nome
+  virando `<select>` a partir do Cadastro de Publicadores (inclusive
+  combinação de até 4/2 designados separados por "/"), mais uma nova lista
+  de "Tipos de partes" no Cadastro de Publicadores. Foi validada em
+  `preview` e funcionava corretamente, mas o usuário pediu rollback pouco
+  depois (revert por commit, sem force-push) e a tela voltou a ser 100%
+  texto livre. **Não reimplementar essa ideia sem um novo pedido
+  explícito do usuário** — se pedir de novo, o código já existiu uma vez
+  (commit `ad7ffa5`, revertido em `96f2d64`) e pode servir de ponto de
+  partida.
 
 ### 5.4 Calendário de Pregação
 - Grade automática de 7 colunas a partir do mês/ano.
@@ -438,6 +468,29 @@ compartilhado, então o Discurso Público também se beneficia dela.**
 
 *(Publicado em produção em 12/09/2026. Usuário indicou que enviará mais
 pontos de ajuste para esta tela após validar este layout — aguardando.)*
+
+### Cartão de Designações (item 2 — publicado em produção, 17/09/2026)
+1. ~~Import de PDF quebrado em formato novo de apostilado~~ — usuário
+   enviou um PDF real (`mwb_T_202609.pdf`) que dava erro "Não consegui ler
+   esse arquivo". Diagnóstico: acentos decompostos em glifos separados
+   **e**, mais grave, o PDF não tem nenhuma anotação (`getAnnotations()`
+   vazio) — os nomes são texto de página comum, não a anotação FreeText de
+   que o recurso inteiro dependia. Após duas rodadas de perguntas, o
+   usuário decidiu **remover o import por completo** (16/09) — `pdfjs-dist`
+   desinstalado, bundle caiu de ~2,2 MB para 456 KB, tela virou só
+   preenchimento manual.
+2. Na sequência, o usuário pediu uma reestruturação grande (Mês/Ano
+   dropdown + semanas automáticas + quase todo campo virando `<select>` do
+   Cadastro de Publicadores) — implementada, validada em `preview` com
+   Playwright (inclusive o caso de virada de mês, ex.: Ago→Set/2026), mas
+   **revertida a pedido do usuário** pouco depois (revert por commit,
+   `ad7ffa5` → `96f2d64`, sem force-push). Ver nota em §5.3 sobre não
+   reabrir essa ideia sem pedido explícito.
+3. ~~Adicionar botão "Exportar JSON"~~ — **feito** (17/09): baixa o
+   `dados` completo da tela, para servir de base a futuras
+   análises/estatísticas de partes. Ver §5.3.
+
+*(Publicado em produção em 17/09/2026.)*
 
 ### Calendário de Pregação e Bastidores (Exportar PDF adiantado, 12/09/2026)
 1. ~~Adicionar botão "Exportar PDF" com garantia de 1 página~~ — **feito**
