@@ -1,6 +1,4 @@
 import React, { useState, useRef, useEffect } from "react";
-import * as pdfjsLib from "pdfjs-dist";
-import pdfjsWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 // Dados "de fábrica" versionados no repositório (ainda não há backend): são
 // o que o app carrega na primeira vez, em cada dispositivo/navegador. Uma
 // vez que a pessoa usa o app, as edições dela continuam salvas só no
@@ -8,8 +6,6 @@ import pdfjsWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 // recebe, edite estes arquivos e publique uma nova versão.
 import PUBLICADORES_INICIAL from "./data/publicadores.json";
 import CALENDARIO_INICIAL from "./data/calendario.json";
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl;
 
 /**
  * Gerenciador de Documentos — Congregação Parque Scaffid
@@ -2417,214 +2413,12 @@ function PreviewCalendario({ dados, linhas, foto }) {
 
 /* ====================== TELA CARTÃO DE DESIGNAÇÕES ====================== */
 
-// ---- extração do PDF anotado (roda no navegador via pdf.js) ----
-// Os nomes anotados em azul não fazem parte do texto normal da página — são
-// anotações "FreeText" sobrepostas ao PDF original (um jeito comum de
-// preencher esses formulários). Por isso extraímos duas coisas separadas:
-// (1) o texto estrutural da apostila (títulos, durações, cabeçalhos) e
-// (2) as anotações, cada uma com sua posição na página — depois associamos
-// cada designado ao item numerado mais próximo dele na mesma página.
-//
-// Esse PDF também desenha alguns acentos como um caractere avulso flutuando
-// acima da letra (não como marca combinante do Unicode), o que quebraria a
-// leitura por linha; por isso ignoramos esses marcadores e trabalhamos com o
-// texto estrutural sem acento (as anotações com os nomes, essas sim, vêm com
-// acentuação correta).
-const ACENTO_SOLTO_RE = /^[ʰ-˿¨´¸`~]+$/;
-
-async function extrairPDFCartao(file) {
-  const buf = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-  const linhas = []; // { texto, y, page }
-  const anotacoes = []; // { texto, y, x, page, usada }
-
-  for (let p = 1; p <= pdf.numPages; p++) {
-    const page = await pdf.getPage(p);
-    const content = await page.getTextContent();
-    let atual = "", atualY = null, atualEndX = null;
-    const flush = () => { if (atual) linhas.push({ texto: atual, y: atualY, page: p }); };
-    for (const it of content.items) {
-      const texto = it.str;
-      if (!texto) continue;
-      if (ACENTO_SOLTO_RE.test(texto)) continue;
-      const x = it.transform[4], y = it.transform[5];
-      const largura = it.width || 0;
-      const altura = it.height || 10;
-      if (atualY === null) { atual = texto; atualY = y; atualEndX = x + largura; continue; }
-      if (Math.abs(y - atualY) > 2) {
-        flush();
-        if (Math.abs(y - atualY) > 16) linhas.push({ texto: "", y: atualY, page: p });
-        atual = texto; atualY = y; atualEndX = x + largura;
-      } else {
-        const gap = x - atualEndX;
-        atual += (gap > altura * 0.2 ? " " : "") + texto;
-        atualEndX = x + largura;
-      }
-    }
-    flush();
-    linhas.push({ texto: "", y: null, page: p });
-
-    const anns = await page.getAnnotations();
-    for (const a of anns) {
-      const texto2 = ((a.contentsObj && a.contentsObj.str) || "").trim();
-      if (texto2 && a.rect) {
-        anotacoes.push({
-          texto: texto2,
-          y: (a.rect[1] + a.rect[3]) / 2,
-          x: (a.rect[0] + a.rect[2]) / 2,
-          page: p, usada: false,
-        });
-      }
-    }
-  }
-
-  const offsets = [];
-  let acumulado = 0;
-  for (const l of linhas) {
-    offsets.push({ offset: acumulado, y: l.y, page: l.page });
-    acumulado += l.texto.length + 1;
-  }
-  const texto = linhas.map((l) => l.texto).join("\n").normalize("NFD").replace(/[̀-ͯ]/g, "");
-  return { texto, offsets, anotacoes };
-}
-
-function posicaoDoOffset(offsets, alvo) {
-  let lo = 0, hi = offsets.length - 1, res = offsets[0];
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1;
-    if (offsets[mid].offset <= alvo) { res = offsets[mid]; lo = mid + 1; } else hi = mid - 1;
-  }
-  return res;
-}
-
-function achaAnotacaoProxima(anotacoes, pos, distMax) {
-  let melhor = null, melhorDist = Infinity;
-  for (const a of anotacoes) {
-    if (a.usada || a.page !== pos.page || pos.y == null) continue;
-    const dist = Math.abs(a.y - pos.y);
-    if (dist < melhorDist && dist < distMax) { melhor = a; melhorDist = dist; }
-  }
-  return melhor;
-}
-
+// O import de PDF anotado foi removido: as apostilas mais recentes não
+// trazem mais os nomes como anotação sobreposta (o mecanismo pelo qual essa
+// leitura funcionava) — os nomes já vêm como texto comum, sem como
+// diferenciar automaticamente do resto do conteúdo. O cadastro do Cartão de
+// Designações agora é sempre manual, pelos blocos de semana abaixo.
 function novoIdCartao() { return Date.now() + Math.random(); }
-
-// Alguns trechos-chave (Cântico, oração, Comentários…) caem justamente nas
-// palavras estilizadas com o acento avulso, então sobra às vezes um espaço
-// extra onde o acento ficava. Este helper monta um regex tolerante a esse
-// espaço solto entre letras.
-function tolerantePalavra(palavra) {
-  return palavra.split("").map((c) => c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("[ \\t]{0,2}");
-}
-const T_CANTICO = tolerantePalavra("Cantico");
-const T_ORACAO = tolerantePalavra("oracao");
-const T_COMENTARIOS = tolerantePalavra("Comentarios");
-const T_INICIAIS = tolerantePalavra("iniciais");
-const T_PALAVRA = tolerantePalavra("PALAVRA");
-const T_DE = tolerantePalavra("DE");
-const T_DEUS = tolerantePalavra("DEUS");
-const T_VIDA = tolerantePalavra("VIDA");
-const T_CRISTA = tolerantePalavra("CRISTA");
-
-const RE_ABRE_SEMANA = new RegExp(`${T_CANTICO}[ \\t]+(\\d+)[ \\t]+e[ \\t]+${T_ORACAO}[ \\t]+${T_COMENTARIOS}[ \\t]+${T_INICIAIS}`, "g");
-const RE_FECHAMENTO = new RegExp(`${T_CANTICO}[ \\t]+(\\d+)[ \\t]+e[ \\t]+${T_ORACAO}(?![ \\t]*${T_COMENTARIOS})`, "g");
-const RE_PALAVRA_DE_DEUS = new RegExp(`${T_PALAVRA}[ \\t]+${T_DE}[ \\t]+${T_DEUS}`, "g");
-const RE_VIDA_CRISTA = new RegExp(`${T_VIDA}[ \\t]+${T_CRISTA}`, "g");
-const RE_ITEM = /(?:^|[\s·])(\d{1,2})\.[ ]+((?:(?!\(\d{1,2}\s*min\)|\d{1,2}\.[ ])[\s\S]){1,90})\((\d{1,2})\s*min\)/g;
-
-// Lê o PDF anotado e devolve um rascunho de semanas. É um reconhecimento "de
-// melhor esforço": datas, lição da leitura e alguma parte tipo "Consideração"
-// costumam precisar de ajuste manual na prévia antes de aplicar.
-function processarCartaoPDF({ texto, offsets, anotacoes }) {
-  const aberturas = [...texto.matchAll(RE_ABRE_SEMANA)];
-  const semanas = [];
-
-  for (let w = 0; w < aberturas.length; w++) {
-    const abre = aberturas[w];
-    const inicio = abre.index;
-    const fim = w + 1 < aberturas.length ? aberturas[w + 1].index : texto.length;
-
-    const linhasBloco = texto.slice(inicio, fim).split("\n").map((l) => l.trim());
-    let presidente = "";
-    for (let i = 1; i < linhasBloco.length && i < 40; i++) {
-      if (/^\d{1,3}$/.test(linhasBloco[i])) {
-        let j = i - 1;
-        while (j >= 0 && !linhasBloco[j]) j--;
-        const cand = linhasBloco[j];
-        if (cand && cand.split(" ").length <= 4 && !/\d/.test(cand) && /^[A-Z][a-zA-Zç\s./]*$/.test(cand)) {
-          presidente = cand;
-          break;
-        }
-      }
-    }
-    const annPresidente = achaAnotacaoProxima(anotacoes, posicaoDoOffset(offsets, inicio), 60);
-    if (annPresidente) { presidente = annPresidente.texto.trim(); annPresidente.usada = true; }
-
-    RE_FECHAMENTO.lastIndex = inicio;
-    const mFecha = RE_FECHAMENTO.exec(texto);
-    let canticoFinal = "", oracaoFinal = "";
-    if (mFecha && mFecha.index < fim) {
-      canticoFinal = mFecha[1];
-      const annFecha = achaAnotacaoProxima(anotacoes, posicaoDoOffset(offsets, mFecha.index), 40);
-      if (annFecha) { oracaoFinal = annFecha.texto.trim(); annFecha.usada = true; }
-    }
-
-    RE_ITEM.lastIndex = inicio;
-    const itens = [];
-    let m;
-    while ((m = RE_ITEM.exec(texto)) && m.index < fim) {
-      const numero = Number(m[1]);
-      const titulo = m[2].replace(/\s+/g, " ").trim();
-      if (titulo && numero >= 1 && numero <= 15) {
-        const pos = posicaoDoOffset(offsets, m.index + m[0].length);
-        const ann = achaAnotacaoProxima(anotacoes, pos, 40);
-        itens.push({ numero, titulo, designado: ann ? ann.texto.trim() : "", posicao: m.index });
-        if (ann) ann.usada = true;
-      }
-    }
-
-    // parte 1 (tema principal) costuma ter o nome colado no cabeçalho
-    // "PALAVRA DE DEUS" em vez de junto da própria duração
-    const item1 = itens.find((i) => i.numero === 1);
-    if (item1 && !item1.designado) {
-      RE_PALAVRA_DE_DEUS.lastIndex = inicio;
-      const mPD = RE_PALAVRA_DE_DEUS.exec(texto);
-      if (mPD && mPD.index < fim) {
-        const annPD = achaAnotacaoProxima(anotacoes, posicaoDoOffset(offsets, mPD.index), 40);
-        if (annPD) { item1.designado = annPD.texto.trim(); annPD.usada = true; }
-      }
-    }
-
-    RE_VIDA_CRISTA.lastIndex = inicio;
-    const mVC = RE_VIDA_CRISTA.exec(texto);
-    const posVidaCrista = mVC && mVC.index < fim ? mVC.index : -1;
-
-    const ministerioItens = [], vidaCristaItens = [];
-    for (const it of itens) {
-      if (it.numero <= 3) continue;
-      if (posVidaCrista !== -1 && it.posicao > posVidaCrista) vidaCristaItens.push(it);
-      else ministerioItens.push(it);
-    }
-
-    const tema1 = itens.find((i) => i.numero === 1);
-    const joias = itens.find((i) => i.numero === 2);
-    const leitura = itens.find((i) => i.numero === 3);
-
-    semanas.push({
-      id: novoIdCartao(), semReuniao: false, motivo: "",
-      dataLabel: "", leituraBiblica: "",
-      presidente, canticoInicial: abre[1], oracaoInicial: presidente, oracaoManual: false,
-      tema1Titulo: tema1 ? tema1.titulo : "", tema1Designado: tema1 ? tema1.designado : "",
-      joiasDesignado: joias ? joias.designado : "",
-      leituraLicao: "", leituraDesignado: leitura ? leitura.designado : "",
-      ministerio: ministerioItens.map((i) => ({ id: novoIdCartao(), titulo: i.titulo, detalhe: "", designado: i.designado })),
-      canticoMeio: "",
-      vidaCrista: vidaCristaItens.map((i) => ({ id: novoIdCartao(), titulo: i.titulo, detalhe: "", designado: i.designado })),
-      canticoFinal, oracaoFinal,
-    });
-  }
-  return semanas;
-}
 
 function novaSemanaCartao() {
   return {
@@ -2741,10 +2535,6 @@ const CARTAO_INICIAL = {
 
 function TelaCartao({ onVoltar }) {
   const [dados, setDados] = useEstadoSalvo("cartao", CARTAO_INICIAL);
-  const inputPdf = useRef(null);
-  const [pdfProcessando, setPdfProcessando] = useState(false);
-  const [pdfErro, setPdfErro] = useState("");
-  const [pdfPrevia, setPdfPrevia] = useState(null);
 
   function editaCampo(campo, valor) { setDados((d) => ({ ...d, [campo]: valor })); }
 
@@ -2788,26 +2578,6 @@ function TelaCartao({ onVoltar }) {
     window.print();
   }
 
-  async function processarPDF(e) {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-    setPdfErro(""); setPdfPrevia(null); setPdfProcessando(true);
-    try {
-      const extraido = await extrairPDFCartao(file);
-      const semanasNovas = processarCartaoPDF(extraido);
-      if (!semanasNovas.length) setPdfErro("Não consegui reconhecer nenhuma semana nesse PDF. Confira se é a apostila da Vida e Ministério Cristão.");
-      else setPdfPrevia(semanasNovas);
-    } catch (err) {
-      console.error(err);
-      setPdfErro("Não consegui ler esse arquivo. Confira se é um PDF válido.");
-    } finally {
-      setPdfProcessando(false);
-      if (inputPdf.current) inputPdf.current.value = "";
-    }
-  }
-  function aplicarPdfPrevia() { setDados((d) => ({ ...d, semanas: pdfPrevia })); setPdfPrevia(null); }
-  function cancelarPdfPrevia() { setPdfPrevia(null); }
-
   return (
     <div className="pagina-com-impressao" style={S.page}>
       <header className="oculta-impressao" style={S.appbar}>
@@ -2822,29 +2592,6 @@ function TelaCartao({ onVoltar }) {
 
       <div style={S.grid} className="grid">
         <section className="oculta-impressao" style={S.editor}>
-          <div style={S.wpp}>
-            <div style={S.wppHead}>
-              <span style={S.wppTitulo}>Importar rascunho em PDF</span>
-              <span style={S.wppDica}>Envie a apostila da Vida e Ministério Cristão já com as designações anotadas — eu tento reconhecer presidente, cânticos e cada parte com seu designado.</span>
-            </div>
-            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-              <button style={S.btnProcessar} onClick={() => inputPdf.current && inputPdf.current.click()} disabled={pdfProcessando}>{pdfProcessando ? "Lendo PDF…" : "Selecionar PDF"}</button>
-              <input ref={inputPdf} type="file" accept="application/pdf" onChange={processarPDF} style={{ display: "none" }} />
-              {pdfErro && <span style={S.erro}>{pdfErro}</span>}
-            </div>
-            {pdfPrevia && (
-              <div style={S.previaBox}>
-                <div style={S.previaTitulo}>Reconheci {pdfPrevia.length} semana(s) nesse PDF. Confira com calma — nem tudo o PDF anota de forma padronizada, então alguns campos podem precisar de ajuste manual. Isto vai substituir as semanas atuais.</div>
-                <table style={S.previaTable}><thead><tr><th style={S.previaTh}>Semana</th><th style={S.previaTh}>Presidente</th><th style={S.previaTh}>Partes reconhecidas</th></tr></thead>
-                  <tbody>{pdfPrevia.map((s, i) => (
-                    <tr key={i}><td style={S.previaTd}>{i + 1}ª</td><td style={S.previaTd}>{s.presidente || "—"}</td><td style={S.previaTd}>{s.ministerio.length + s.vidaCrista.length + 3}</td></tr>
-                  ))}</tbody>
-                </table>
-                <div style={S.previaBtns}><button style={S.btnSim} onClick={aplicarPdfPrevia}>Substituir semanas</button><button style={S.btnNao} onClick={cancelarPdfPrevia}>Cancelar</button></div>
-              </div>
-            )}
-          </div>
-
           <h2 style={S.h2}>Dados do mês</h2>
           <div style={S.field}><label style={S.lab}>Mês / Ano</label><input style={S.input} value={dados.mesAno} onChange={(e) => editaCampo("mesAno", e.target.value)} /></div>
 
