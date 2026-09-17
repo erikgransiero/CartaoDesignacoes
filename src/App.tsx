@@ -2578,6 +2578,11 @@ function TelaCartao({ onVoltar }) {
     window.print();
   }
 
+  function limparCartao() {
+    if (!window.confirm("Limpar todos os campos do cartão (mês/ano e semanas)? As observações não serão apagadas.")) return;
+    setDados((d) => ({ ...d, mesAno: "", semanas: [novaSemanaCartao()] }));
+  }
+
   // Ainda não há backend: este botão baixa os dados atuais do cartão em
   // .json, no mesmo formato do arquivo do repositório, para servirem de
   // base a futuras análises e estatísticas de partes dos publicadores.
@@ -2603,6 +2608,7 @@ function TelaCartao({ onVoltar }) {
           <div style={S.brandSub}>{dados.congregacao}</div>
         </div>
         <div style={S.appbarTag}>Validação</div>
+        <button style={S.btnRemover} onClick={limparCartao} title="Limpa mês/ano e semanas para inserir novos dados (não apaga as observações)">Limpar</button>
         <button style={S.btnFoto} onClick={exportarCartaoJSON} title="Baixa os dados atuais do cartão em .json para atualizar o arquivo do projeto no Git"><Icone nome="baixar" size={16} color={UI.azul} /> Exportar JSON</button>
         <button style={S.btnFoto} onClick={exportarPDF}><Icone nome="pdf" size={16} color={UI.azul} /> Exportar PDF</button>
       </header>
