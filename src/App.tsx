@@ -2692,7 +2692,7 @@ function SemanaCartao({ semana: s, onEdita, onResetOracao, onToggleSemReuniao, o
 
           <h4 style={SC.h4Dourado}>Faça Seu Melhor no Ministério</h4>
           {s.ministerio.map((p) => (
-            <ParteCartao key={p.id} parte={p} onEdita={(campo, valor) => onEditaParte("ministerio", p.id, campo, valor)} onRemove={() => onRemoveParte("ministerio", p.id)} />
+            <ParteCartao key={p.id} parte={p} secao="ministerio" onEdita={(campo, valor) => onEditaParte("ministerio", p.id, campo, valor)} onRemove={() => onRemoveParte("ministerio", p.id)} />
           ))}
           <button style={S.btnAdd} onClick={() => onAddParte("ministerio")}>+ Adicionar parte</button>
 
@@ -2700,7 +2700,7 @@ function SemanaCartao({ semana: s, onEdita, onResetOracao, onToggleSemReuniao, o
 
           <h4 style={SC.h4Vinho}>Nossa Vida Cristã</h4>
           {s.vidaCrista.map((p) => (
-            <ParteCartao key={p.id} parte={p} onEdita={(campo, valor) => onEditaParte("vidaCrista", p.id, campo, valor)} onRemove={() => onRemoveParte("vidaCrista", p.id)} />
+            <ParteCartao key={p.id} parte={p} secao="vidaCrista" onEdita={(campo, valor) => onEditaParte("vidaCrista", p.id, campo, valor)} onRemove={() => onRemoveParte("vidaCrista", p.id)} />
           ))}
           <button style={S.btnAdd} onClick={() => onAddParte("vidaCrista")}>+ Adicionar parte</button>
 
@@ -2714,11 +2714,34 @@ function SemanaCartao({ semana: s, onEdita, onResetOracao, onToggleSemReuniao, o
   );
 }
 
-function ParteCartao({ parte: p, onEdita, onRemove }) {
+// Atalhos de autocompletar do "Faça seu melhor no ministério" — o usuário
+// digita só o início e o campo já completa com o texto padrão da parte.
+const TITULO_MINISTERIO_ATALHOS = {
+  cu: "Cultivando o Interesse",
+  di: "Discurso",
+  ex: "Explicando suas crenças",
+  fa: "Fazendo discípulos",
+  in: "Iniciando conversas",
+  le: "Leitura Bíblica",
+  o: "O que você diria?",
+};
+const DETALHE_MINISTERIO_ATALHOS = {
+  i: "imd lição 0 ponto 0",
+  th: "th lição ",
+};
+function aplicaAtalho(valorDigitado, mapa) {
+  const chave = valorDigitado.trim().toLowerCase();
+  return Object.prototype.hasOwnProperty.call(mapa, chave) ? mapa[chave] : valorDigitado;
+}
+
+function ParteCartao({ parte: p, secao, onEdita, onRemove }) {
+  const ehMinisterio = secao === "ministerio";
   return (
     <div style={SC.parteRow}>
-      <input style={{ ...S.input, flex: 2, minWidth: 140 }} placeholder="Título da parte" value={p.titulo} onChange={(e) => onEdita("titulo", e.target.value)} />
-      <input style={{ ...S.input, flex: 1, minWidth: 120 }} placeholder="Detalhe (ex.: lmd lição 3 pt 4)" value={p.detalhe} onChange={(e) => onEdita("detalhe", e.target.value)} />
+      <input style={{ ...S.input, flex: 2, minWidth: 140 }} placeholder="Título da parte" value={p.titulo}
+        onChange={(e) => onEdita("titulo", ehMinisterio ? aplicaAtalho(e.target.value, TITULO_MINISTERIO_ATALHOS) : e.target.value)} />
+      <input style={{ ...S.input, flex: 1, minWidth: 120 }} placeholder="Detalhe (ex.: lmd lição 3 pt 4)" value={p.detalhe}
+        onChange={(e) => onEdita("detalhe", ehMinisterio ? aplicaAtalho(e.target.value, DETALHE_MINISTERIO_ATALHOS) : e.target.value)} />
       <input style={{ ...S.input, flex: 1, minWidth: 120 }} placeholder="Designado(s)" value={p.designado} onChange={(e) => onEdita("designado", e.target.value)} />
       <button style={S.btnRemover} onClick={onRemove}>Remover</button>
     </div>
