@@ -1,7 +1,7 @@
 # Gerenciador de Documentos — Congregação Parque Scaffid
 
 Documento de registro do projeto (memória técnica e funcional).
-Última atualização: 17/09/2026.
+Última atualização: 18/09/2026.
 
 > **Como usar este arquivo:** no início de qualquer sessão nova (ou quando a
 > conversa for compactada), leia este arquivo primeiro. Ele evita ter que reler
@@ -41,13 +41,23 @@ partes dos publicadores. Uma reestruturação maior da tela (dropdowns +
 semanas automáticas) chegou a ser implementada e validada, mas foi revertida
 a pedido do usuário — ver a nota de "não reabrir" em §5.3.
 
+**Atualização 18/09/2026:** lote de ajustes incrementais no Cartão de
+Designações e telas relacionadas, todos em produção — botão "Limpar" (não
+apaga observações), autocompletar por atalho de digitação em "Faça seu
+melhor no ministério" e em "Nossa Vida Cristã", prefixo padrão "th lição "
+em "Lição da leitura", mensagem do WhatsApp da tela Enviar Cartão de
+Designação reordenada e sem o campo Local, cadastro de Publicadores
+populado com os 16 publicadores reais da congregação (substituindo os 5 de
+exemplo) e validação para não deixar cadastrar dois publicadores com o
+mesmo telefone. Ver §5.3/§5.8/§5.9 e §6.
+
 | Tela | Situação |
 |---|---|
 | Login | Concluída e em produção |
 | Menu principal | Concluída e em produção |
 | Discurso Público | Construída e revisada · em produção (ver §6) |
 | Reunião A Sentinela | Construída e revisada · em produção (ver §6) |
-| Cartão de Designações | Construída · **em revisão** (ver §6), itens 1 e 2 em produção; preenchimento **100% manual** (import de PDF removido, ver §5.3) |
+| Cartão de Designações | Construída · **em revisão** (ver §6), itens 1-3 em produção; preenchimento **100% manual** com atalhos de autocompletar (ver §5.3) |
 | Calendário de Pregação | Construída · Exportar PDF (1 página) em produção; revisão completa (lista de ajustes) ainda não iniciada |
 | Bastidores | Construída · Exportar PDF (1 página) em produção; revisão completa (lista de ajustes) ainda não iniciada |
 | Configurações → Usuários | Concluída e em produção |
@@ -198,7 +208,32 @@ Fonte padrão dos documentos: Arial.
   futuras análises/estatísticas de partes dos publicadores (quem fez o
   quê, com que frequência). Ainda não há tela de análise consumindo esses
   arquivos — por enquanto é só exportação e guarda manual.
-- Em **revisão** no ciclo atual (itens 1 e 2 concluídos, em produção).
+- **Botão "Limpar"** (18/09/2026): no cabeçalho, ao lado de "Exportar
+  JSON"/"Exportar PDF". Pede confirmação e reseta Mês/Ano e as semanas
+  (volta a uma única semana em branco), deixando pronto para o próximo
+  mês. **Não apaga as Observações** — isso foi um requisito explícito do
+  usuário, testado e confirmado.
+- **Autocompletar por atalho de digitação** (18/09/2026), só em campos de
+  texto livre (não é dropdown/`<select>` — essa ideia foi revertida, ver
+  nota abaixo): o `onChange` compara o texto digitado (normalizado,
+  minúsculo) contra um mapa fixo e, se bater, substitui pelo texto
+  completo.
+  - Em "Faça seu melhor no ministério": campo Título aceita `cu`→
+    "Cultivando o Interesse", `di`→"Discurso", `ex`→"Explicando suas
+    crenças", `fa`→"Fazendo discípulos", `in`→"Iniciando conversas",
+    `le`→"Leitura Bíblica", `o`→"O que você diria?". Campo Detalhe aceita
+    `i`→"imd lição 0 ponto 0" e `th`→"th lição " (usuário completa o
+    número na sequência). Implementado em `TITULO_MINISTERIO_ATALHOS` /
+    `DETALHE_MINISTERIO_ATALHOS` + helper `aplicaAtalho`, aplicado só
+    quando `secao === "ministerio"` dentro de `ParteCartao`.
+  - Em "Nossa Vida Cristã": campo Título aceita `est`→"Estudo bíblico de
+    congregação" e `nes`→"Necessidades Locais"; qualquer outra sequência
+    fica livre para digitação normal (`TITULO_VIDA_CRISTA_ATALHOS`,
+    aplicado só quando `secao === "vidaCrista"`).
+  - Em "Tesouros da Palavra de Deus": o campo "Lição da leitura" de toda
+    semana nova (`novaSemanaCartao()`) já nasce com `"th lição "`
+    preenchido — o usuário só completa o número.
+- Em **revisão** no ciclo atual (itens 1-3 concluídos, em produção).
 - **Tentativa revertida (16-17/09/2026):** chegou a ser implementada uma
   reestruturação grande da tela — Mês/Ano como dropdown com geração
   automática de semanas (segunda a domingo), e quase todo campo de nome
@@ -264,6 +299,17 @@ Fonte padrão dos documentos: Arial.
   que a tela **Enviar Cartão de Designação** deverá usar futuramente para
   obter o telefone de cada designado na hora de enviar (essa ligação ainda
   **não foi feita**; hoje as duas telas não conversam entre si).
+- **Validação de telefone duplicado** (18/09/2026): ao cadastrar (nesta
+  tela ou pelo cadastro rápido da tela Enviar Cartão de Designação —
+  ver §5.9), compara os dígitos do telefone digitado (sem formatação)
+  contra todos os já cadastrados; se já existir, bloqueia com a mensagem
+  "Este contato já existe: \<nome\>." Editar um publicador mantendo o
+  próprio número continua funcionando (a comparação ignora o próprio
+  `id` em edição).
+- **Dados de fábrica atualizados** (18/09/2026): `src/data/publicadores.json`
+  passou a ter os **16 publicadores reais** da congregação (nome +
+  telefone), exportados pela própria tela e enviados para eu atualizar o
+  arquivo — substituindo os 5 registros de exemplo originais.
 
 ### 5.9 Enviar Cartão de Designação (nova, 12-13/09/2026 — em desenvolvimento incremental)
 - Tela "de sistema" (padrão Sidebar, **com** breadcrumb: "Cartão de
@@ -314,16 +360,26 @@ Fonte padrão dos documentos: Arial.
   os 3 checkboxes de Local (só o escolhido marcado) e a observação —
   atualiza em tempo real conforme o formulário muda.
 - **Enviar cartão** (botões "Enviar pelo WhatsApp" / "Enviar por e-mail"):
-  presentes só **visualmente** por decisão explícita do usuário — ao
-  clicar, mostram um aviso de que o envio real fica para uma próxima
-  etapa. Ainda não puxam telefone do Cadastro de Publicadores nem montam
-  mensagem nenhuma.
+  "Enviar por e-mail" continua só **visualmente** (mostra aviso de que o
+  envio real fica para uma próxima etapa). "Enviar pelo WhatsApp" **já
+  funciona de verdade** (ver `abrirWhatsapp`/`montarMensagemWhatsapp`,
+  `wa.me`) — busca o telefone no Cadastro de Publicadores por nome
+  (`encontraPublicadorPorNome`) e, se não achar, abre um modal para
+  cadastrar o telefone na hora (com a validação de duplicado de §5.8)
+  antes de prosseguir.
+- **Mensagem do WhatsApp** (formato atualizado em 18/09/2026): saudação
+  personalizada (Irmão/Irmã + primeiro nome, gênero adivinhado ou
+  confirmado pelo usuário), seguida de `Nome:`, `Ajudante:` (só se
+  houver), `*Data: ...*` **em negrito** (sintaxe `*texto*` do próprio
+  WhatsApp) e `Número da parte:`. O campo **Local não entra mais na
+  mensagem** (continua visível só na pré-visualização em tela) — pedido
+  explícito do usuário. Ver `montarMensagemWhatsapp`.
 - **Pendências conhecidas / decisões explicitamente adiadas pelo usuário:**
-  ligação com Cadastro de Publicadores (por nome) para obter telefone;
-  envio real por WhatsApp (`wa.me`) e e-mail; múltiplos meses no dropdown
-  "Mês da reunião" (depende de backend). O usuário disse que vai continuar
-  mandando pontos de ajuste incrementalmente para esta tela — **não
-  considerar esta tela "fechada"**.
+  envio real por e-mail; múltiplos meses no dropdown "Mês da reunião"
+  (depende de backend). (A ligação com Cadastro de Publicadores e o envio
+  real por WhatsApp **já foram feitos** — ver acima.) O usuário disse que
+  vai continuar mandando pontos de ajuste incrementalmente para esta
+  tela — **não considerar esta tela "fechada"**.
 
 ---
 
@@ -492,6 +548,30 @@ pontos de ajuste para esta tela após validar este layout — aguardando.)*
 
 *(Publicado em produção em 17/09/2026.)*
 
+### Cartão de Designações (item 3) e telas relacionadas (publicado em produção, 18/09/2026)
+1. ~~Botão "Limpar"~~ — **feito**: reseta Mês/Ano e semanas (volta a uma
+   semana em branco), pede confirmação antes (ação irreversível), e
+   **não mexe nas Observações** — testado e confirmado via Playwright.
+2. ~~Autocompletar por atalho de digitação~~ — **feito** em "Faça seu
+   melhor no ministério" (Título e Detalhe) e em "Nossa Vida Cristã"
+   (Título); "Lição da leitura" de semana nova já nasce com
+   `"th lição "`. Ver detalhes técnicos em §5.3.
+3. ~~Reordenar a mensagem do WhatsApp (Enviar Cartão de Designação)~~ —
+   **feito**: agora segue Nome → Ajudante → Data (negrito) → Número da
+   parte, sem o campo Local. Testado abrindo o link `wa.me` gerado e
+   conferindo o texto decodificado.
+4. ~~Atualizar cadastro de Publicadores com dados reais~~ — **feito**:
+   usuário populou o cadastro pela própria tela ao longo do tempo,
+   exportou o JSON e enviou; `src/data/publicadores.json` passou a ter
+   os 16 publicadores reais (antes eram 5 de exemplo).
+5. ~~Impedir publicador duplicado pelo telefone~~ — **feito**, nos dois
+   pontos de cadastro (Cadastro de Publicadores e o cadastro rápido da
+   tela Enviar Cartão de Designação), com a mensagem "Este contato já
+   existe: \<nome\>." Ver §5.8.
+
+*(Todos os itens validados em `preview` via Playwright antes de ir para
+produção, no mesmo dia.)*
+
 ### Calendário de Pregação e Bastidores (Exportar PDF adiantado, 12/09/2026)
 1. ~~Adicionar botão "Exportar PDF" com garantia de 1 página~~ — **feito**
    nas duas telas, reaproveitando 100% do padrão zoom-to-fit já global
@@ -560,9 +640,8 @@ não como capítulo fechado.)*
    completa por lista numerada de ajustes).
 6. **Frente paralela em andamento:** continuar recebendo e implementando
    pontos de ajuste incrementais para **Enviar Cartão de Designação** (ver
-   §5.9) — inclui, quando o usuário pedir, ligar essa tela ao Cadastro de
-   Publicadores (buscar telefone por nome) e implementar o envio real
-   (WhatsApp/e-mail).
+   §5.9) — envio real por WhatsApp já feito (ligado ao Cadastro de
+   Publicadores); falta o envio real por e-mail, quando o usuário pedir.
 7. Somente depois da revisão completa: **backend/banco de dados**
    (o usuário já tem uma VM Ubuntu na Oracle Cloud com PostgreSQL
    configurado, falta liberar acesso externo — pode ser feito em paralelo,
