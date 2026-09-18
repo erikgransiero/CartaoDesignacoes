@@ -1151,18 +1151,19 @@ function TelaEnviarCartao({ onNavega, sessao, onSair }) {
 
   function montarMensagemWhatsapp(nomeAlvo, genero) {
     const tratamento = genero === "F" ? "Irmã" : "Irmão";
-    const localInfo = (LOCAIS_CARTAO.find((l) => l.id === local) || LOCAIS_CARTAO[0]).titulo;
     const linhas = [
       `Olá, ${tratamento} ${primeiroNome(nomeAlvo)}!`,
       "",
       `Segue sua designação para a Reunião Vida e Ministério${cartaoDados.mesAno ? " — " + cartaoDados.mesAno : ""}:`,
       "",
-      `Parte: ${numeroParte || "—"}`,
-      `Data: ${data || "—"}`,
-      `Local: ${localInfo}`,
+      `Nome: ${nomeAlvo || "—"}`,
     ];
     if (ajudante) linhas.push(`Ajudante: ${ajudante}`);
-    linhas.push("", observacao, "", "Por favor, confirme que está ciente desta designação!");
+    linhas.push(
+      `*Data: ${data || "—"}*`,
+      `Número da parte: ${numeroParte || "—"}`,
+      "", observacao, "", "Por favor, confirme que está ciente desta designação!"
+    );
     return linhas.join("\n");
   }
 
