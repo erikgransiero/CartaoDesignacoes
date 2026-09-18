@@ -749,6 +749,8 @@ function TelaPublicadores({ onNavega, sessao, onSair }) {
     const digitos = telefone.replace(/\D/g, "");
     if (!nomeOk) { setErro("Informe o nome do publicador."); return; }
     if (digitos.length !== 11) { setErro("Informe o DDD e o número do celular com 9 dígitos."); return; }
+    const duplicado = dados.publicadores.find((p) => p.id !== editandoId && p.telefone.replace(/\D/g, "") === digitos);
+    if (duplicado) { setErro(`Este contato já existe: ${duplicado.nome}.`); return; }
     if (editandoId) {
       setDados((d) => ({ ...d, publicadores: d.publicadores.map((p) => (p.id === editandoId ? { ...p, nome: nomeOk, telefone } : p)) }));
     } else {
@@ -1218,6 +1220,8 @@ function TelaEnviarCartao({ onNavega, sessao, onSair }) {
   function confirmarCadastroRapido() {
     const digitos = (modalTelefone.telefone || "").replace(/\D/g, "");
     if (digitos.length !== 11) { setErroModal("Informe o DDD e o número do celular com 9 dígitos."); return; }
+    const duplicado = publicadores.publicadores.find((p) => p.telefone.replace(/\D/g, "") === digitos);
+    if (duplicado) { setErroModal(`Este contato já existe: ${duplicado.nome}.`); return; }
     const nomeAlvo = modalTelefone.nome;
     const telefoneFormatado = modalTelefone.telefone;
     const genero = modalTelefone.genero;
