@@ -2798,7 +2798,10 @@ function ParteCartao({ parte: p, secao, onEdita, onRemove }) {
       <input style={{ ...S.input, flex: 1, minWidth: 120 }} placeholder="Detalhe (ex.: lmd lição 3 pt 4)" value={p.detalhe}
         onChange={(e) => onEdita("detalhe", ehMinisterio ? aplicaAtalho(e.target.value, DETALHE_MINISTERIO_ATALHOS) : e.target.value)} />
       <input style={{ ...S.input, flex: 1, minWidth: 120 }} placeholder="Designado(s)" value={p.designado} onChange={(e) => onEdita("designado", e.target.value)} />
-      <button style={S.btnRemover} onClick={onRemove}>Remover</button>
+      {/* tabIndex -1: o Tab pula o "Remover" e vai direto do campo do designado
+          para o botão "+ Adicionar parte", agilizando o preenchimento por
+          teclado. O botão continua clicável com o mouse. */}
+      <button style={S.btnRemover} tabIndex={-1} onClick={onRemove}>Remover</button>
     </div>
   );
 }
