@@ -46,6 +46,13 @@ const MENU_LATERAL_EXTRA = [
   { id: "cadastro-publicadores", titulo: "Cadastro Publicadores", icone: "usuario-mais", pronto: true },
 ];
 
+// Terceiro grupo do menu lateral, abaixo de uma nova linha separadora. A tela
+// de Estatísticas ainda não foi construída (pronto: false), então o item fica
+// esmaecido e o clique não navega — mesmo padrão dos itens em construção.
+const MENU_ESTATISTICAS = [
+  { id: "estatisticas", titulo: "Estatísticas", icone: "grafico", pronto: false },
+];
+
 /* ---------------- persistência no navegador ---------------- */
 // Cada tela guarda o que foi preenchido no próprio navegador. Além de não
 // perder o trabalho ao voltar para o menu, é isso que permite os Bastidores
@@ -105,6 +112,7 @@ function Icone({ nome, size = 40, color = TEMPLATE.azul }) {
     case "enviar": return (<svg {...p}><line x1="21" y1="3" x2="10" y2="14" /><path d="M21 3 14 21l-3-7-7-3Z" /></svg>);
     case "baixar": return (<svg {...p}><path d="M12 3v12" /><polyline points="7 11 12 16 17 11" /><path d="M4 19h16" /></svg>);
     case "salvar": return (<svg {...p}><path d="M5 3h11l3 3v15H5z" /><path d="M8 3v6h8V3" /><path d="M8 21v-7h8v7" /></svg>);
+    case "grafico": return (<svg {...p}><path d="M4 20V4" /><path d="M4 20h16" /><rect x="7" y="12" width="3" height="5" /><rect x="12" y="8" width="3" height="9" /><rect x="17" y="5" width="3" height="12" /></svg>);
     default: return null;
   }
 }
@@ -177,6 +185,17 @@ function Sidebar({ atual, onNavega, sessao, onSair }) {
         })}
         <div style={M.navSeparador} />
         {MENU_LATERAL_EXTRA.map((d) => {
+          const ativo = d.id === atual;
+          return (
+            <button key={d.id} style={{ ...M.navItem, ...(ativo ? M.navItemAtivo : {}), ...(d.pronto ? {} : { opacity: 0.5 }) }}
+              onClick={() => onNavega(d.id)} title={d.pronto ? "" : "Em construção"}>
+              <Icone nome={d.icone} size={22} color={ativo ? TEMPLATE.azul : "#5b6472"} />
+              <span style={M.navLabel}>{d.titulo}</span>
+            </button>
+          );
+        })}
+        <div style={M.navSeparador} />
+        {MENU_ESTATISTICAS.map((d) => {
           const ativo = d.id === atual;
           return (
             <button key={d.id} style={{ ...M.navItem, ...(ativo ? M.navItemAtivo : {}), ...(d.pronto ? {} : { opacity: 0.5 }) }}
