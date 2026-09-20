@@ -104,6 +104,7 @@ function Icone({ nome, size = 40, color = TEMPLATE.azul }) {
     case "chevron-direita": return (<svg {...p}><polyline points="9.5 5 16 12 9.5 19" /></svg>);
     case "enviar": return (<svg {...p}><line x1="21" y1="3" x2="10" y2="14" /><path d="M21 3 14 21l-3-7-7-3Z" /></svg>);
     case "baixar": return (<svg {...p}><path d="M12 3v12" /><polyline points="7 11 12 16 17 11" /><path d="M4 19h16" /></svg>);
+    case "salvar": return (<svg {...p}><path d="M5 3h11l3 3v15H5z" /><path d="M8 3v6h8V3" /><path d="M8 21v-7h8v7" /></svg>);
     default: return null;
   }
 }
@@ -2176,6 +2177,8 @@ function TelaCalendario({ onVoltar }) {
   const [fotoOriginalAtiva, setFotoOriginalAtiva] = React.useState(true);
   const [selDia, setSelDia] = React.useState(null); // {numero, ini, fim}
   const [corFonte, setCorFonte] = React.useState("#c0392b");
+  const [avisoSalvo, setAvisoSalvo] = React.useState("");
+  const timeoutSalvoRef = React.useRef(null);
   const inputFileCal = React.useRef(null);
   const impressaoRef = React.useRef(null);
 
@@ -2204,6 +2207,20 @@ function TelaCalendario({ onVoltar }) {
     const restaura = () => { document.title = tituloOriginal; window.removeEventListener("afterprint", restaura); };
     window.addEventListener("afterprint", restaura);
     window.print();
+  }
+
+  // O calendário já é salvo sozinho a cada alteração (useEstadoSalvo), mas o
+  // usuário pediu um botão explícito para ter a confirmação visual de que os
+  // dados estão salvos antes de atualizar o site.
+  function salvarAgora() {
+    try {
+      window.localStorage.setItem(CHAVE_SALVA + "calendario", JSON.stringify(dados));
+      setAvisoSalvo("Calendário salvo com sucesso!");
+    } catch (e) {
+      setAvisoSalvo("Não foi possível salvar. Tente novamente.");
+    }
+    if (timeoutSalvoRef.current) window.clearTimeout(timeoutSalvoRef.current);
+    timeoutSalvoRef.current = window.setTimeout(() => setAvisoSalvo(""), 3000);
   }
 
   function usarFotoOriginal() { setFoto(IMG_CALENDARIO); setFotoOriginalAtiva(true); }
@@ -2252,6 +2269,8 @@ function TelaCalendario({ onVoltar }) {
           <div style={S.brandSub}>Congregação Parque Scaffid</div>
         </div>
         <div style={S.appbarTag}>Validação</div>
+        {avisoSalvo && <span style={S.avisoSalvoAppbar}>{avisoSalvo}</span>}
+        <button style={S.btnSalvar} onClick={salvarAgora}><Icone nome="salvar" size={16} color="#fff" /> Salvar</button>
         <button style={S.btnFoto} onClick={exportarPDF}><Icone nome="pdf" size={16} color={UI.azul} /> Exportar PDF</button>
       </header>
 
@@ -2935,6 +2954,19 @@ function trocaDiaDaSemana(iso, novoDia) {
   d.setDate(d.getDate() - deslocAtual + deslocNovo);
   return isoData(d.getFullYear(), d.getMonth() + 1, d.getDate());
 }
+// A própria data, mais as duas próximas ocorrências do mesmo dia da semana
+// (+7 e +14 dias) — permite escolher a data exata quando é preciso pular
+// uma semana (ex.: semana de congresso) sem perder o dia da semana escolhido.
+function candidatosMesmoDiaDaSemana(iso) {
+  const { ano, mes, dia } = partesData(iso);
+  if (!ano) return [iso];
+  const base = new Date(ano, mes - 1, dia);
+  return [0, 7, 14].map((offset) => {
+    const d = new Date(base);
+    d.setDate(d.getDate() + offset);
+    return isoData(d.getFullYear(), d.getMonth() + 1, d.getDate());
+  });
+}
 
 /* ---- comparação de nomes ---- */
 function normalizaNome(s) {
@@ -3240,6 +3272,13 @@ function TelaBastidores({ onVoltar }) {
       return { ...d, linhas };
     });
   }
+  function mudaDataExataDaLinha(id, novaData) {
+    setDados((d) => {
+      const linhas = d.linhas.map((l) => (l.id === id ? { ...l, data: novaData } : l));
+      linhas.sort((a, b) => a.data.localeCompare(b.data));
+      return { ...d, linhas };
+    });
+  }
   function mudaLimpeza(id, letra) {
     setDados((d) => {
       const idx = d.linhas.findIndex((l) => l.id === id);
@@ -3382,7 +3421,12 @@ function TelaBastidores({ onVoltar }) {
                         <select style={SB.selectDia} value={dow} onChange={(e) => mudaDiaDaLinha(linha.id, Number(e.target.value))}>
                           {ORDEM_DIAS.map((d) => <option key={d} value={d} title={DIAS_NOME[d]}>{DIAS_ABREV[d]}</option>)}
                         </select>
-                        <div style={SB.dataTexto}>{formataDataCurta(linha.data)}</div>
+                        <select style={SB.selectDataExata} value={linha.data} title="Escolha a data exata (útil para pular uma semana, ex.: congresso)"
+                          onChange={(e) => mudaDataExataDaLinha(linha.id, e.target.value)}>
+                          {candidatosMesmoDiaDaSemana(linha.data).map((iso) => (
+                            <option key={iso} value={iso}>{formataDataCurta(iso)}</option>
+                          ))}
+                        </select>
                       </td>
                       {linha.destaque === "aviso" ? (
                         <td style={SB.td} colSpan={COLUNAS_DESIGNADOS.length + 1}>
@@ -3900,6 +3944,8 @@ const S = {
   fotoAcoes: { marginLeft: "auto", display: "flex", gap: 8 },
   btnFoto: { fontSize: 12, padding: "7px 12px", border: "1px solid " + UI.borda, background: "#fff", borderRadius: 8, cursor: "pointer", color: UI.tinta },
   btnFotoOn: { background: "#eef2fb", borderColor: UI.azul, color: UI.azul, fontWeight: 700 },
+  btnSalvar: { display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, padding: "7px 12px", border: "1px solid rgba(255,255,255,.4)", background: "rgba(255,255,255,.16)", color: "#fff", borderRadius: 8, cursor: "pointer" },
+  avisoSalvoAppbar: { fontSize: 12, fontWeight: 600, color: "#c8f2d8" },
   grid: { display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,520px)", gap: 20, padding: 20, alignItems: "start" },
   editor: { background: "#fff", border: "1px solid " + UI.borda, borderRadius: 12, padding: 18 },
   previewWrap: { position: "sticky", top: 20 },
@@ -4020,6 +4066,7 @@ const SB = {
   tdData: { padding: "5px 6px", borderBottom: "1px solid " + UI.borda, verticalAlign: "middle", minWidth: 74 },
   selectDia: { fontSize: 11, padding: "4px 4px", border: "1px solid " + UI.borda, borderRadius: 6, background: "#fff", color: TEMPLATE.azul, fontWeight: 700, cursor: "pointer", width: "100%", minWidth: 62 },
   dataTexto: { fontSize: 12, color: "#595959", fontWeight: 700, marginTop: 2, textAlign: "center" },
+  selectDataExata: { fontSize: 11, padding: "3px 2px", border: "1px solid " + UI.borda, borderRadius: 6, background: "#fff", color: "#595959", fontWeight: 700, cursor: "pointer", width: "100%", minWidth: 62, marginTop: 2, textAlign: "center" },
   inputNome: { width: "100%", minWidth: 110, padding: "6px 8px", border: "1px solid " + UI.borda, borderRadius: 6, fontSize: 13, color: COR_NOME, fontWeight: 600 },
   selectLimpeza: { fontSize: 13, fontWeight: 800, padding: "6px 8px", border: "1px solid " + UI.borda, borderRadius: 6, cursor: "pointer", textAlign: "center" },
   btnLinha: { fontSize: 14, lineHeight: 1, padding: "5px 9px", border: "1px solid #e3c2c2", color: "#9a3b3b", background: "#fff", borderRadius: 6, cursor: "pointer" },
