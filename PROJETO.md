@@ -1,7 +1,7 @@
 # Gerenciador de Documentos — Congregação Parque Scaffid
 
 Documento de registro do projeto (memória técnica e funcional).
-Última atualização: 20/09/2026.
+Última atualização: 21/09/2026.
 
 > **Como usar este arquivo:** no início de qualquer sessão nova (ou quando a
 > conversa for compactada), leia este arquivo primeiro. Ele evita ter que reler
@@ -60,6 +60,15 @@ Além disso, foi criado no menu lateral um novo item **"Estatísticas"**
 (abaixo de "Cadastro Publicadores", com divisória própria) — ainda sem
 tela, esmaecido, aguardando definição do que deve mostrar. Ver §5.4/§5.5,
 §5.10 e §6.
+
+**Atualização 21/09/2026:** dados de fábrica do Cartão atualizados para
+**Outubro/2026** (JSON exportado pelo usuário) e criados botões de
+**backup manual** (Exportar/Importar .json) em Bastidores, Calendário de
+Pregação e Cartão de Designações — ponte até o backend para o usuário não
+perder o conteúdo ao limpar o cache do navegador. Também neste ciclo:
+Enter no campo do designado do Cartão adiciona nova parte (funciona no
+Safari) e destaque na tabela de Bastidores ao clicar num nome do resumo
+de participações. Ver §3, §5.3/§5.4/§5.5 e §6.
 
 | Tela | Situação |
 |---|---|
@@ -125,6 +134,21 @@ adiantado a pedido do usuário, fora dessa ordem — a revisão completa
   pré-visualização (`id="area-impressao"`, regra genérica reaproveitável em
   qualquer tela). Implementado assim no Discurso Público; replicar o mesmo
   padrão nas demais telas quando pedido.
+- **Backup manual (Exportar/Importar .json) — ponte até o backend
+  (21/09/2026):** como não há backend e os dados vivem só no `localStorage`
+  de cada navegador, o usuário perde tudo ao limpar o cache. Enquanto o
+  PostgreSQL não entra, existem dois helpers reutilizáveis no topo do
+  `App.tsx`: `baixarJSON(nomeArquivo, obj)` (baixa o estado da tela num
+  `.json`) e o componente `BotaoImportarJSON` (abre seletor de arquivo, lê
+  o `.json`, valida e chama `setDados`, com `window.confirm` antes por
+  substituir tudo). Já usados em Cartão, Calendário e Bastidores. **Limite
+  importante:** o backup só captura o que está salvo **na mesma URL** onde
+  os dados foram digitados — `preview` e `main` têm `localStorage`
+  separados; logo, para o usuário salvar o que já editou, o recurso
+  precisa estar **em produção**. A tecnologia de "gravar/substituir um
+  arquivo automaticamente" (File System Access API) **não funciona no
+  Safari/iPad**, por isso a escolha do arquivo é manual. Não é uma
+  substituição do backend — é ponte até ele.
 - **Testes:** Playwright headless (Chromium em `/opt/pw-browsers/chromium`,
   rodar com `NODE_PATH=$(npm root -g) node script.mjs`). Screenshots
   enviados ao usuário antes de decisões de layout, sempre que houver dúvida.
@@ -212,13 +236,20 @@ Fonte padrão dos documentos: Arial.
   vez de forçar 1 página sempre, pagina de verdade com **até 2 semanas
   por página física** (cabeçalho do cartão repetido em cada página,
   observações na última). Ver §6.
-- **Exportar JSON** (17/09/2026): botão no cabeçalho que baixa o `dados`
-  completo da tela em `cartao.json` (mesmo padrão de
-  "ponte manual" já usado no Cadastro de Publicadores — ver §5.8). Serve
-  para acumular um histórico mensal fora do `localStorage`, com vistas a
-  futuras análises/estatísticas de partes dos publicadores (quem fez o
-  quê, com que frequência). Ainda não há tela de análise consumindo esses
-  arquivos — por enquanto é só exportação e guarda manual.
+- **Exportar JSON / Importar JSON** (17/09 e 21/09/2026): "Exportar JSON"
+  baixa o `dados` completo em `cartao.json` (via helper `baixarJSON`);
+  "Importar JSON" restaura de um `.json` (via `BotaoImportarJSON`, ver §3).
+  Serve tanto de backup contra limpeza de cache quanto para acumular um
+  histórico mensal fora do `localStorage`, com vistas a futuras
+  análises/estatísticas de partes dos publicadores. Ainda não há tela de
+  análise consumindo esses arquivos.
+- **Enter adiciona parte** (20/09/2026): pressionar Enter no campo
+  "Designado(s)" da **última** linha de "Faça seu melhor no ministério" ou
+  "Nossa Vida Cristã" cria uma nova parte e move o foco para o primeiro
+  campo dela. Foi a forma de dar navegação por teclado que funciona no
+  Safari/iPad (onde Tab não alcança botões); o botão "Remover" da linha
+  tem `tabIndex=-1` para o Tab pular direto do designado para o
+  "+ Adicionar parte". Ver `ParteCartao`.
 - **Botão "Limpar"** (18/09/2026): no cabeçalho, ao lado de "Exportar
   JSON"/"Exportar PDF". Pede confirmação e reseta Mês/Ano e as semanas
   (volta a uma única semana em branco), deixando pronto para o próximo
@@ -271,6 +302,8 @@ Fonte padrão dos documentos: Arial.
   com sucesso!" por 3s — é uma confirmação visual explícita pedida pelo
   usuário, que tem muitas informações nessa tela e não quer perdê-las ao
   atualizar o site. Ver `salvarAgora`.
+- **Exportar / Importar** (21/09/2026): backup manual em `.json`
+  (`calendario.json`) para não perder o conteúdo ao limpar o cache — ver §3.
 
 ### 5.5 Bastidores
 - Tabela por data: Áudio/Vídeo, Volantes, Indicadores, Limpeza
@@ -283,7 +316,11 @@ Fonte padrão dos documentos: Arial.
   Sentinela (fim de semana) — comparação leva em conta mês, não só dia do
   número, para evitar falso positivo entre meses diferentes.
 - **Resumo de participação no mês**: 3 grupos — mais de 2x, exatamente 1x,
-  não escalados no mês.
+  não escalados no mês. Os nomes de "Mais de 2 vezes" e "Apenas 1 vez" são
+  **clicáveis** (20/09/2026): ao clicar, as células da tabela com aquele
+  nome ficam realçadas (vermelho claro / azul claro), para localizar onde o
+  irmão aparece; clicar de novo desliga (toggle). Ver `nomeDestacado` /
+  `fundoCelula`.
 - **Realce de linha inteira**: Evento (amarelo, layout normal) ou Aviso
   (vermelho, mescla todas as colunas e abre campo de texto livre).
 - **Exportar PDF**: mesmo padrão de página única (zoom-to-fit) das demais
@@ -306,6 +343,8 @@ Fonte padrão dos documentos: Arial.
   duplica. Da 3ª linha em diante, mudar o dia é uma **exceção** que altera
   só aquela linha (via `trocaDiaDaSemana`), sem mexer no resto do mês. Ver
   `mudaDiaDaLinha`.
+- **Exportar / Importar** (21/09/2026): backup manual em `.json`
+  (`bastidores.json`) para não perder o conteúdo ao limpar o cache — ver §3.
 
 ### 5.6 Configurações → Usuários
 - Cadastro de usuários (nome, e-mail, senha com confirmação, perfil
@@ -638,6 +677,26 @@ produção, no mesmo dia.)*
 
 *(Todos os itens validados em `preview` via Playwright antes de ir para
 produção.)*
+
+### Cartão (Enter/backup), destaque de Bastidores e backups (produção, 20-21/09/2026)
+1. ~~Bastidores: clicar num nome do resumo destaca as células na tabela~~ —
+   **feito** (vermelho/azul, toggle). Ver §5.5.
+2. ~~Cartão: navegar/adicionar parte pelo teclado~~ — **feito**: primeiro
+   tentei Tab→botão+Espaço, que **não funciona no Safari** (não dá Tab a
+   botões); a solução final foi **Enter no campo do designado** adiciona a
+   parte e move o foco. Ver §5.3.
+3. ~~Atualizar dados de fábrica do Cartão para Outubro/2026~~ — **feito**
+   (JSON exportado pelo usuário substituiu o `CARTAO_INICIAL` inline).
+4. ~~Botões Exportar/Importar (.json) em Cartão, Calendário e Bastidores~~ —
+   **feito**, como backup manual até o backend. Testado o ciclo
+   exportar→alterar→importar (restaura). Ver §3 e §5.3/§5.4/§5.5.
+   - **Pegadinha registrada:** o backup só enxerga o `localStorage` da URL
+     onde foi digitado; `preview` e `main` são separados. Por isso este lote
+     foi para **produção** — é lá que o usuário tem os dados a salvar antes
+     de limpar o cache.
+
+*(Validados em `preview` via Playwright; publicados em produção em
+21/09/2026.)*
 
 ### Calendário de Pregação e Bastidores (Exportar PDF adiantado, 12/09/2026)
 1. ~~Adicionar botão "Exportar PDF" com garantia de 1 página~~ — **feito**
