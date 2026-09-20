@@ -2479,101 +2479,242 @@ function novaSemanaCartao() {
 }
 
 const CARTAO_INICIAL = {
-  titulo: "Cartão de Designações",
-  subtitulo: "Vida e Ministério Cristão — Reuniões de Meio de Semana",
-  congregacao: "Congregação Parque Scaffid",
-  mesAno: "Agosto/2026",
-  semanas: [
+  "titulo": "Cartão de Designações",
+  "subtitulo": "Vida e Ministério Cristão — Reuniões de Meio de Semana",
+  "congregacao": "Congregação Parque Scaffid",
+  "mesAno": "Outubro/2026",
+  "semanas": [
     {
-      id: 1, semReuniao: false, motivo: "",
-      dataLabel: "03 – 09 DE AGOSTO", leituraBiblica: "Jeremias 22-23",
-      presidente: "Filipe", canticoInicial: "40", oracaoInicial: "Filipe", oracaoManual: false,
-      tema1Titulo: "A Importância dos Bons Pastores", tema1Designado: "Dorival",
-      joiasDesignado: "Lucas Soares",
-      leituraLicao: "Th lição 11", leituraDesignado: "Lucas Santana",
-      ministerio: [
-        { id: 101, titulo: "Iniciando conversas", detalhe: "imd lição 3 pt 4", designado: "Giuliana / Helena" },
-        { id: 102, titulo: "Cultivando interesse", detalhe: "imd lição 9 pt 5", designado: "Gisele / Priscilla" },
-        { id: 103, titulo: "Discurso", detalhe: "imd ap. a 19 / th 15", designado: "Paulo" },
+      "id": 1789925907218.727,
+      "semReuniao": false,
+      "motivo": "",
+      "dataLabel": "05 - 11 DE OUTUBRO",
+      "leituraBiblica": "JEREMIAS 40-41",
+      "presidente": "Roberto Soares",
+      "canticoInicial": "33",
+      "oracaoInicial": "Roberto Soares",
+      "oracaoManual": false,
+      "tema1Titulo": "Tenha o ponto de vista correto sobre a proteção de Jeová",
+      "tema1Designado": "Daniel",
+      "joiasDesignado": "Filipe",
+      "leituraLicao": "th lição 2",
+      "leituraDesignado": "Paulo Gonçalves",
+      "ministerio": [
+        {
+          "id": 1789925907218.11,
+          "titulo": "Iniciando conversas",
+          "detalhe": "imd lição 2 ponto 3",
+          "designado": "Vera Bizerra / Rita"
+        },
+        {
+          "id": 1789926065668.815,
+          "titulo": "Iniciando conversas",
+          "detalhe": "imd lição 2 ponto 5",
+          "designado": "Graziele / Regina "
+        },
+        {
+          "id": 1789926113768.952,
+          "titulo": "Iniciando conversas",
+          "detalhe": "imd lição 5 ponto 3",
+          "designado": "Sarah / Priscilla e Rebeca"
+        },
+        {
+          "id": 1789926141293.1843,
+          "titulo": "Explicando suas crenças",
+          "detalhe": "th lição 17",
+          "designado": "Auricelia / Elaine Soares"
+        }
       ],
-      canticoMeio: "60",
-      vidaCrista: [
-        { id: 111, titulo: "Uma História Escrita por Jeová — O Corpo Governante Unido com os irmãos (Parte 1)", detalhe: "", designado: "Vinicio" },
-        { id: 112, titulo: "Estudo bíblico de congregação", detalhe: "", designado: "Roberto / Fernando" },
+      "canticoMeio": "17",
+      "vidaCrista": [
+        {
+          "id": 1789925907218.4941,
+          "titulo": "Jeová é o Protetor das viúvas",
+          "detalhe": "",
+          "designado": "Dorival"
+        },
+        {
+          "id": 1789926263455.5327,
+          "titulo": "Estudo bíblico de congregação",
+          "detalhe": "",
+          "designado": "João Bizerra / Lucas Santana"
+        }
       ],
-      canticoFinal: "137", oracaoFinal: "Fernando",
+      "canticoFinal": "38",
+      "oracaoFinal": "João Bizerra"
     },
     {
-      id: 2, semReuniao: false, motivo: "",
-      dataLabel: "10 – 16 DE AGOSTO", leituraBiblica: "Jeremias 24-25",
-      presidente: "Roberto Soares", canticoInicial: "124", oracaoInicial: "Roberto Soares", oracaoManual: false,
-      tema1Titulo: "Por que alguns \u201cfigos\u201d eram bons e outros eram ruins?", tema1Designado: "João Bizerra",
-      joiasDesignado: "Daniel",
-      leituraLicao: "Th lição 5", leituraDesignado: "Bryan",
-      ministerio: [
-        { id: 201, titulo: "Iniciando conversas", detalhe: "imd lição 2 pt 5", designado: "Vera Freires / Jaqueline" },
-        { id: 202, titulo: "Cultivando interesse", detalhe: "imd lição 9 pt 5", designado: "Claudia / Mariana" },
-        { id: 203, titulo: "Fazendo discípulos", detalhe: "imd lição 12 pt 4", designado: "Lucas Soares / Lucas Santana" },
+      "id": 1789926303869.9246,
+      "semReuniao": false,
+      "motivo": "",
+      "dataLabel": "12 - 18 DE OUTUBRO",
+      "leituraBiblica": "JEREMIAS 42-44",
+      "presidente": "Roberto Soares",
+      "canticoInicial": "103",
+      "oracaoInicial": "Roberto Soares",
+      "oracaoManual": false,
+      "tema1Titulo": "Eles perguntaram o que fazer, mas não obedeceram",
+      "tema1Designado": "Ricardo",
+      "joiasDesignado": "Wellington",
+      "leituraLicao": "th lição 11",
+      "leituraDesignado": "Jair",
+      "ministerio": [
+        {
+          "id": 1789926303869.8672,
+          "titulo": "Iniciando conversas",
+          "detalhe": "imd lição 1 ponto 5",
+          "designado": "João Pedro / Paulo Gonçalves"
+        },
+        {
+          "id": 1789926431148.2058,
+          "titulo": "Cultivando o Interesse",
+          "detalhe": "imd lição 7 ponto 4",
+          "designado": "Jessica / Claudia"
+        },
+        {
+          "id": 1789926478296.544,
+          "titulo": "O que você diria?",
+          "detalhe": "imd lição 2 ponto 3",
+          "designado": "José Carlos"
+        }
       ],
-      canticoMeio: "65",
-      vidaCrista: [
-        { id: 211, titulo: "Necessidades Locais", detalhe: "", designado: "Rogerio" },
-        { id: 212, titulo: "Estudo bíblico de congregação", detalhe: "", designado: "Rodrigo / Cesar" },
+      "canticoMeio": "47",
+      "vidaCrista": [
+        {
+          "id": 1789926303869.1577,
+          "titulo": "Necessidades Locais",
+          "detalhe": "",
+          "designado": "Ademir Soares"
+        },
+        {
+          "id": 1789926522428.9688,
+          "titulo": "Estudo bíblico de congregação",
+          "detalhe": "",
+          "designado": "Rodrigo / Fernando Gonçalves"
+        }
       ],
-      canticoFinal: "137", oracaoFinal: "Cesar",
+      "canticoFinal": "129",
+      "oracaoFinal": "Rodrigo"
     },
     {
-      id: 3, semReuniao: true,
-      motivo: "Não haverá reunião de meio de semana — Congresso nos dias 21, 22 e 23 de agosto",
-      dataLabel: "17 – 23 DE AGOSTO", leituraBiblica: "Jeremias 26-28",
-      presidente: "", canticoInicial: "", oracaoInicial: "", oracaoManual: false,
-      tema1Titulo: "", tema1Designado: "", joiasDesignado: "", leituraLicao: "", leituraDesignado: "",
-      ministerio: [], canticoMeio: "", vidaCrista: [], canticoFinal: "", oracaoFinal: "",
+      "id": 1789926550738.2046,
+      "semReuniao": false,
+      "motivo": "",
+      "dataLabel": "19 - 25 DE OUTUBRO",
+      "leituraBiblica": "JEREMIAS 45-46",
+      "presidente": "Dorival",
+      "canticoInicial": "21",
+      "oracaoInicial": "Dorival",
+      "oracaoManual": false,
+      "tema1Titulo": "Ter esperança é o segredo para o contentamento",
+      "tema1Designado": "Roberto Soares",
+      "joiasDesignado": "Lucas Soares",
+      "leituraLicao": "th lição 10",
+      "leituraDesignado": "Cesar",
+      "ministerio": [
+        {
+          "id": 1789926550738.0754,
+          "titulo": "Iniciando conversas",
+          "detalhe": "imd lição 2 ponto 3",
+          "designado": "Karla / Judite"
+        },
+        {
+          "id": 1789926635664.6206,
+          "titulo": "Iniciando conversas",
+          "detalhe": "imd lição 4 ponto 5",
+          "designado": "Lucas Santana / Beatriz"
+        },
+        {
+          "id": 1789926644668.7944,
+          "titulo": "Iniciando conversas",
+          "detalhe": "imd lição 2 ponto 4",
+          "designado": "Bryan / Lucas soares"
+        },
+        {
+          "id": 1789926651570.9575,
+          "titulo": "Discurso",
+          "detalhe": "th lição 7",
+          "designado": "Erik"
+        }
+      ],
+      "canticoMeio": "117",
+      "vidaCrista": [
+        {
+          "id": 1789926550738.889,
+          "titulo": "Partilhe com outros o que você tem",
+          "detalhe": "",
+          "designado": "João Bizerra"
+        },
+        {
+          "id": 1789926761242.3083,
+          "titulo": "Estudo bíblico de congregação",
+          "detalhe": "",
+          "designado": "Valter Soares / Wellington"
+        }
+      ],
+      "canticoFinal": "87",
+      "oracaoFinal": "Valter Soares"
     },
     {
-      id: 4, semReuniao: false, motivo: "",
-      dataLabel: "24 – 30 DE AGOSTO", leituraBiblica: "Jeremias 29-30",
-      presidente: "Roberto Soares", canticoInicial: "12", oracaoInicial: "Roberto Soares", oracaoManual: false,
-      tema1Titulo: "Jeová disciplina seus servos na medida certa", tema1Designado: "Valter",
-      joiasDesignado: "João Bizerra",
-      leituraLicao: "Th lição 2", leituraDesignado: "Jair",
-      ministerio: [
-        { id: 401, titulo: "Iniciando conversas", detalhe: "imd lição 3 pt 4", designado: "Grazyele / Luciana" },
-        { id: 402, titulo: "Iniciando conversas", detalhe: "imd lição 1 pt 5", designado: "Wellington / Anderson" },
-        { id: 403, titulo: "Discurso", detalhe: "th lição 1", designado: "Daniel" },
+      "id": 1789926799026.6062,
+      "semReuniao": false,
+      "motivo": "",
+      "dataLabel": "26 DE OUTUBRO - 01 DE NOVEMBRO",
+      "leituraBiblica": "JEREMIAS 47-48",
+      "presidente": "Roberto Soares",
+      "canticoInicial": "125",
+      "oracaoInicial": "Roberto Soares",
+      "oracaoManual": false,
+      "tema1Titulo": "Jeová é um Juíz justo e misericordioso",
+      "tema1Designado": "Daniel",
+      "joiasDesignado": "Anderson Soares",
+      "leituraLicao": "th lição 11",
+      "leituraDesignado": "João Pedro",
+      "ministerio": [
+        {
+          "id": 1789926799026.1836,
+          "titulo": "Iniciando conversas",
+          "detalhe": "imd lição 5 ponto 4",
+          "designado": ""
+        },
+        {
+          "id": 1789926884434.8457,
+          "titulo": "Cultivando o Interesse",
+          "detalhe": "imd lição 9 ponto 5",
+          "designado": "Gisele / Mariana"
+        },
+        {
+          "id": 1789926932218.5037,
+          "titulo": "Fazendo discípulos",
+          "detalhe": "th lição 8",
+          "designado": "Priscilla / Marina"
+        }
       ],
-      canticoMeio: "3",
-      vidaCrista: [
-        { id: 411, titulo: "Jeová dá esperança a seus servos", detalhe: "", designado: "Vinicius" },
-        { id: 412, titulo: "Campanha Especial de Setembro", detalhe: "", designado: "" },
+      "canticoMeio": "158",
+      "vidaCrista": [
+        {
+          "id": 1789926799026.3372,
+          "titulo": "Necessidades Locais",
+          "detalhe": "",
+          "designado": "Rodrigo Soares"
+        },
+        {
+          "id": 1789927038224.2903,
+          "titulo": "Estudo bíblico de congregação",
+          "detalhe": "",
+          "designado": "Filipe / Bryan"
+        }
       ],
-      canticoFinal: "156", oracaoFinal: "Filipe",
-    },
-    {
-      id: 5, semReuniao: false, motivo: "",
-      dataLabel: "31 DE AGOSTO – 06 DE SETEMBRO", leituraBiblica: "Jeremias 31",
-      presidente: "Rogerio", canticoInicial: "27", oracaoInicial: "Rogerio", oracaoManual: false,
-      tema1Titulo: "Rejeite crenças e costumes que não são baseados na Bíblia", tema1Designado: "Ricardo",
-      joiasDesignado: "Anderson",
-      leituraLicao: "Th lição 12", leituraDesignado: "Cesar",
-      ministerio: [
-        { id: 501, titulo: "Iniciando conversas", detalhe: "imd lição 4 pt 3", designado: "Layane / Luana" },
-        { id: 502, titulo: "Iniciando conversas", detalhe: "imd lição 3 pt 3", designado: "Sarah / Rebeca" },
-        { id: 503, titulo: "Explicando suas crenças", detalhe: "th lição 14", designado: "Erik Gransiero" },
-      ],
-      canticoMeio: "67",
-      vidaCrista: [
-        { id: 511, titulo: "Necessidades Locais", detalhe: "", designado: "Roberto Soares" },
-        { id: 512, titulo: "Estudo bíblico de congregação", detalhe: "", designado: "Vinicius / Lucas Santana" },
-      ],
-      canticoFinal: "132", oracaoFinal: "Lucas Santana",
-    },
+      "canticoFinal": "54",
+      "oracaoFinal": "Filipe"
+    }
   ],
-  observacoes: [
-    { id: 1, texto: "17 a 23/08 — Semana do congresso: não haverá reunião de meio de semana. O Congresso Regional será nos dias 21, 22 e 23 de agosto." },
-    { id: 2, texto: "Campanha de convites: de 01 a 20 de agosto. Levemos convites conosco em todas as saídas de campo e no testemunho informal." },
-    { id: 3, texto: "Designados: preparem-se com antecedência e cumpram o tempo designado. Em caso de impedimento, avisem o presidente da semana o quanto antes." },
-  ],
+  "observacoes": [
+    {
+      "id": 3,
+      "texto": "Designados: preparem-se com antecedência e cumpram o tempo designado. Em caso de impedimento, avisem o presidente da semana o quanto antes."
+    }
+  ]
 };
 
 function TelaCartao({ onVoltar }) {
