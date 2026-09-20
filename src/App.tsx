@@ -82,6 +82,54 @@ function useEstadoSalvo(chave, inicial) {
   return [dados, setDados];
 }
 
+// Backup manual (ponte até o backend): baixa os dados atuais de uma tela em
+// um arquivo .json que a pessoa guarda fora do navegador, para não perder o
+// conteúdo ao limpar o cache.
+function baixarJSON(nomeArquivo, obj) {
+  const conteudo = JSON.stringify(obj, null, 2);
+  const blob = new Blob([conteudo], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nomeArquivo;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// Botão "Importar" reutilizável: abre um seletor de arquivo, lê o .json e
+// entrega o objeto para a tela restaurar. Pede confirmação antes, pois
+// substitui o conteúdo atual da tela.
+function BotaoImportarJSON({ onCarregado, label, confirmacao }) {
+  const inputRef = useRef(null);
+  function aoEscolher(e) {
+    const arquivo = e.target.files && e.target.files[0];
+    e.target.value = ""; // permite reimportar o mesmo arquivo depois
+    if (!arquivo) return;
+    const leitor = new FileReader();
+    leitor.onload = (ev) => {
+      try {
+        const obj = JSON.parse(ev.target.result);
+        if (!obj || typeof obj !== "object") throw new Error("formato inválido");
+        if (confirmacao && !window.confirm(confirmacao)) return;
+        onCarregado(obj);
+      } catch (err) {
+        window.alert("Não consegui ler este arquivo. Confira se é um backup .json válido desta tela.");
+      }
+    };
+    leitor.readAsText(arquivo);
+  }
+  return (
+    <>
+      <input ref={inputRef} type="file" accept="application/json,.json" style={{ display: "none" }} onChange={aoEscolher} />
+      <button style={S.btnFoto} onClick={() => inputRef.current && inputRef.current.click()}>
+        <Icone nome="baixar" size={16} color={UI.azul} /> {label || "Importar"}
+      </button>
+    </>
+  );
+}
+
 /* ---------------- ÍCONES (SVG de linha, estilo jw.org) ---------------- */
 function Icone({ nome, size = 40, color = TEMPLATE.azul }) {
   const p = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round" };
@@ -2290,6 +2338,8 @@ function TelaCalendario({ onVoltar }) {
         <div style={S.appbarTag}>Validação</div>
         {avisoSalvo && <span style={S.avisoSalvoAppbar}>{avisoSalvo}</span>}
         <button style={S.btnSalvar} onClick={salvarAgora}><Icone nome="salvar" size={16} color="#fff" /> Salvar</button>
+        <button style={S.btnFoto} onClick={() => baixarJSON("calendario.json", dados)} title="Baixa um backup do calendário em .json"><Icone nome="baixar" size={16} color={UI.azul} /> Exportar</button>
+        <BotaoImportarJSON confirmacao="Importar este arquivo vai substituir todos os dados atuais do Calendário de Pregação. Deseja continuar?" onCarregado={(obj) => setDados(obj)} />
         <button style={S.btnFoto} onClick={exportarPDF}><Icone nome="pdf" size={16} color={UI.azul} /> Exportar PDF</button>
       </header>
 
@@ -2770,18 +2820,7 @@ function TelaCartao({ onVoltar }) {
   // Ainda não há backend: este botão baixa os dados atuais do cartão em
   // .json, no mesmo formato do arquivo do repositório, para servirem de
   // base a futuras análises e estatísticas de partes dos publicadores.
-  function exportarCartaoJSON() {
-    const conteudo = JSON.stringify(dados, null, 2);
-    const blob = new Blob([conteudo], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "cartao.json";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
+  function exportarCartaoJSON() { baixarJSON("cartao.json", dados); }
 
   return (
     <div className="pagina-com-impressao" style={S.page}>
@@ -2794,6 +2833,7 @@ function TelaCartao({ onVoltar }) {
         <div style={S.appbarTag}>Validação</div>
         <button style={S.btnRemover} onClick={limparCartao} title="Limpa mês/ano e semanas para inserir novos dados (não apaga as observações)">Limpar</button>
         <button style={S.btnFoto} onClick={exportarCartaoJSON} title="Baixa os dados atuais do cartão em .json para atualizar o arquivo do projeto no Git"><Icone nome="baixar" size={16} color={UI.azul} /> Exportar JSON</button>
+        <BotaoImportarJSON label="Importar JSON" confirmacao="Importar este arquivo vai substituir todos os dados atuais do Cartão de Designações. Deseja continuar?" onCarregado={(obj) => setDados(obj)} />
         <button style={S.btnFoto} onClick={exportarPDF}><Icone nome="pdf" size={16} color={UI.azul} /> Exportar PDF</button>
       </header>
 
@@ -3582,6 +3622,8 @@ function TelaBastidores({ onVoltar }) {
           <div style={S.brandSub}>{dados.congregacao}</div>
         </div>
         <div style={S.appbarTag}>Validação</div>
+        <button style={S.btnFoto} onClick={() => baixarJSON("bastidores.json", dados)} title="Baixa um backup dos Bastidores em .json"><Icone nome="baixar" size={16} color={UI.azul} /> Exportar</button>
+        <BotaoImportarJSON confirmacao="Importar este arquivo vai substituir todos os dados atuais dos Bastidores. Deseja continuar?" onCarregado={(obj) => setDados(obj)} />
         <button style={S.btnFoto} onClick={exportarPDF}><Icone nome="pdf" size={16} color={UI.azul} /> Exportar PDF</button>
       </header>
 
