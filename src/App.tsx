@@ -2916,6 +2916,7 @@ const FUNDO_FDS = "#EAEFF7";      // linha de fim de semana
 const COR_NOME = "#3B5998";
 const COR_CONFLITO = "#F8D0D0";   // vermelho claro: conflito
 const COR_SEGUIDO = "#FFF0B3";    // amarelo claro: trabalhou na reunião anterior
+const COR_SELECAO_UMA = "#DCE6FA"; // azul claro: destaque ao selecionar quem aparece 1x
 
 // Destaque manual da linha, além do fundo automático de fim de semana:
 //  - "evento": fundo amarelo, mantém as colunas (marca uma semana especial);
@@ -3385,6 +3386,22 @@ function TelaBastidores({ onVoltar }) {
   const resumo = React.useMemo(() => resumoParticipacoes(dados.linhas), [dados.linhas]);
   const muitasVezes = resumo.filter((r) => r.total > 2);
   const umaVez = resumo.filter((r) => r.total === 1);
+
+  // Nome destacado ao clicar num chip do resumo: { nome, tipo } — tipo
+  // "muitas" pinta as células desse nome de vermelho claro, "uma" de azul
+  // claro. Clicar de novo no mesmo chip desliga o destaque.
+  const [nomeDestacado, setNomeDestacado] = React.useState(null);
+  function alternaDestaque(nome, tipo) {
+    setNomeDestacado((atual) => (atual && atual.nome === nome && atual.tipo === tipo ? null : { nome, tipo }));
+  }
+  // Fundo da célula da tabela: o destaque manual (chip clicado) tem
+  // prioridade sobre os fundos automáticos de conflito/seguido.
+  function fundoCelula(linha, campo, estado) {
+    if (nomeDestacado && separaNomes(linha[campo]).some((n) => mesmoIrmao(n, nomeDestacado.nome))) {
+      return nomeDestacado.tipo === "muitas" ? COR_CONFLITO : COR_SELECAO_UMA;
+    }
+    return fundoDaCelula(estado) || "#fff";
+  }
   // cadastrados que não entraram em nenhuma linha do mês
   const naoEscalados = (dados.irmaos || []).filter((ir) =>
     ir.nome && ir.nome.trim() && !resumo.some((r) => mesmoIrmao(r.nome, ir.nome)));
@@ -3487,12 +3504,15 @@ function TelaBastidores({ onVoltar }) {
                         </td>
                       ) : (
                         <>
-                          {COLUNAS_DESIGNADOS.map((c) => (
-                            <td key={c.campo} style={SB.td}>
-                              <input style={{ ...SB.inputNome, background: fundoDaCelula(estadoCelula(dados.linhas, i, c.campo, conflitos[i])) || "#fff" }}
-                                value={linha[c.campo]} onChange={(e) => editaLinha(linha.id, c.campo, e.target.value)} />
-                            </td>
-                          ))}
+                          {COLUNAS_DESIGNADOS.map((c) => {
+                            const destacada = nomeDestacado && separaNomes(linha[c.campo]).some((n) => mesmoIrmao(n, nomeDestacado.nome));
+                            return (
+                              <td key={c.campo} style={SB.td}>
+                                <input style={{ ...SB.inputNome, background: fundoCelula(linha, c.campo, estadoCelula(dados.linhas, i, c.campo, conflitos[i])), ...(destacada ? SB.inputNomeDestacado : {}) }}
+                                  value={linha[c.campo]} onChange={(e) => editaLinha(linha.id, c.campo, e.target.value)} />
+                              </td>
+                            );
+                          })}
                           <td style={SB.td}>
                             <select style={{ ...SB.selectLimpeza, background: ESTILO_GRUPO[linha.limpeza].fundo, color: ESTILO_GRUPO[linha.limpeza].cor }}
                               value={linha.limpeza} onChange={(e) => mudaLimpeza(linha.id, e.target.value)}>
@@ -3520,11 +3540,16 @@ function TelaBastidores({ onVoltar }) {
               <div style={{ ...SB.resumoTitulo, color: "#9a3b3b" }}>Mais de 2 vezes ({muitasVezes.length})</div>
               {muitasVezes.length ? (
                 <div style={SB.resumoChips}>
-                  {muitasVezes.map((r) => (
-                    <span key={r.nome} style={{ ...SB.resumoChip, background: COR_CONFLITO, borderColor: "#e3b6b6", color: "#7a2e2e" }}>
-                      {r.nome} <strong>{r.total}×</strong>
-                    </span>
-                  ))}
+                  {muitasVezes.map((r) => {
+                    const ativo = nomeDestacado && nomeDestacado.tipo === "muitas" && nomeDestacado.nome === r.nome;
+                    return (
+                      <button key={r.nome} type="button" onClick={() => alternaDestaque(r.nome, "muitas")}
+                        title="Clique para destacar na tabela acima"
+                        style={{ ...SB.resumoChip, ...SB.resumoChipBtn, background: COR_CONFLITO, borderColor: "#e3b6b6", color: "#7a2e2e", ...(ativo ? SB.resumoChipAtivo : {}) }}>
+                        {r.nome} <strong>{r.total}×</strong>
+                      </button>
+                    );
+                  })}
                 </div>
               ) : <div style={SB.resumoVazio}>Ninguém passou de 2 participações.</div>}
             </div>
@@ -3532,11 +3557,16 @@ function TelaBastidores({ onVoltar }) {
               <div style={{ ...SB.resumoTitulo, color: UI.azul }}>Apenas 1 vez ({umaVez.length})</div>
               {umaVez.length ? (
                 <div style={SB.resumoChips}>
-                  {umaVez.map((r) => (
-                    <span key={r.nome} style={{ ...SB.resumoChip, background: "#eef2fb", borderColor: "#c9d6ee", color: UI.azul }}>
-                      {r.nome}
-                    </span>
-                  ))}
+                  {umaVez.map((r) => {
+                    const ativo = nomeDestacado && nomeDestacado.tipo === "uma" && nomeDestacado.nome === r.nome;
+                    return (
+                      <button key={r.nome} type="button" onClick={() => alternaDestaque(r.nome, "uma")}
+                        title="Clique para destacar na tabela acima"
+                        style={{ ...SB.resumoChip, ...SB.resumoChipBtn, background: "#eef2fb", borderColor: "#c9d6ee", color: UI.azul, ...(ativo ? SB.resumoChipAtivo : {}) }}>
+                        {r.nome}
+                      </button>
+                    );
+                  })}
                 </div>
               ) : <div style={SB.resumoVazio}>Ninguém ficou com uma participação só.</div>}
             </div>
@@ -4132,8 +4162,11 @@ const SB = {
   resumoTitulo: { fontSize: 12, fontWeight: 700, marginBottom: 8 },
   resumoChips: { display: "flex", gap: 6, flexWrap: "wrap" },
   resumoChip: { fontSize: 12, padding: "4px 10px", borderRadius: 20, border: "1px solid transparent", whiteSpace: "nowrap" },
+  resumoChipBtn: { cursor: "pointer", fontFamily: "inherit", fontWeight: 600 },
+  resumoChipAtivo: { boxShadow: "0 0 0 2px rgba(0,0,0,.35)", fontWeight: 800 },
   resumoVazio: { fontSize: 12, color: UI.cinza, fontStyle: "italic" },
   resumoNota: { fontSize: 11, opacity: .75 },
+  inputNomeDestacado: { border: "2px solid #6b7280", fontWeight: 800 },
 };
 
 const PVB = {
