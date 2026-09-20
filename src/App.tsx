@@ -2734,16 +2734,20 @@ function SemanaCartao({ semana: s, onEdita, onResetOracao, onToggleSemReuniao, o
           <div style={S.field}><label style={S.lab}>Lição da leitura (opcional)</label><input style={{ ...S.input, maxWidth: 200 }} placeholder="Ex.: Th lição 11" value={s.leituraLicao} onChange={(e) => onEdita("leituraLicao", e.target.value)} /></div>
 
           <h4 style={SC.h4Dourado}>Faça Seu Melhor no Ministério</h4>
-          {s.ministerio.map((p) => (
-            <ParteCartao key={p.id} parte={p} secao="ministerio" onEdita={(campo, valor) => onEditaParte("ministerio", p.id, campo, valor)} onRemove={() => onRemoveParte("ministerio", p.id)} />
+          {s.ministerio.map((p, idx) => (
+            <ParteCartao key={p.id} parte={p} secao="ministerio" ehUltima={idx === s.ministerio.length - 1}
+              onEdita={(campo, valor) => onEditaParte("ministerio", p.id, campo, valor)}
+              onRemove={() => onRemoveParte("ministerio", p.id)} onAdd={() => onAddParte("ministerio")} />
           ))}
           <button style={S.btnAdd} onClick={() => onAddParte("ministerio")}>+ Adicionar parte</button>
 
           <div style={S.field}><label style={S.lab}>Cântico (entre as seções)</label><input style={{ ...S.input, maxWidth: 120 }} value={s.canticoMeio} onChange={(e) => onEdita("canticoMeio", e.target.value)} /></div>
 
           <h4 style={SC.h4Vinho}>Nossa Vida Cristã</h4>
-          {s.vidaCrista.map((p) => (
-            <ParteCartao key={p.id} parte={p} secao="vidaCrista" onEdita={(campo, valor) => onEditaParte("vidaCrista", p.id, campo, valor)} onRemove={() => onRemoveParte("vidaCrista", p.id)} />
+          {s.vidaCrista.map((p, idx) => (
+            <ParteCartao key={p.id} parte={p} secao="vidaCrista" ehUltima={idx === s.vidaCrista.length - 1}
+              onEdita={(campo, valor) => onEditaParte("vidaCrista", p.id, campo, valor)}
+              onRemove={() => onRemoveParte("vidaCrista", p.id)} onAdd={() => onAddParte("vidaCrista")} />
           ))}
           <button style={S.btnAdd} onClick={() => onAddParte("vidaCrista")}>+ Adicionar parte</button>
 
@@ -2783,7 +2787,7 @@ function aplicaAtalho(valorDigitado, mapa) {
   return Object.prototype.hasOwnProperty.call(mapa, chave) ? mapa[chave] : valorDigitado;
 }
 
-function ParteCartao({ parte: p, secao, onEdita, onRemove }) {
+function ParteCartao({ parte: p, secao, ehUltima, onEdita, onRemove, onAdd }) {
   const ehMinisterio = secao === "ministerio";
   const ehVidaCrista = secao === "vidaCrista";
   function editaTitulo(valor) {
@@ -2791,13 +2795,32 @@ function ParteCartao({ parte: p, secao, onEdita, onRemove }) {
     if (ehVidaCrista) return onEdita("titulo", aplicaAtalho(valor, TITULO_VIDA_CRISTA_ATALHOS));
     onEdita("titulo", valor);
   }
+  // Enter no campo do designado da ÚLTIMA linha cria uma nova parte e move o
+  // foco para o primeiro campo dela — assim dá para preencher tudo pelo
+  // teclado, sem mouse e sem depender de o navegador dar Tab a botões (o
+  // Safari, por padrão, não navega para botões com Tab).
+  function onKeyDownDesignado(e) {
+    if (e.key !== "Enter" || !ehUltima || !onAdd) return;
+    e.preventDefault();
+    const linhaAtual = e.currentTarget.closest("[data-parte-row]");
+    onAdd();
+    setTimeout(() => {
+      const nova = linhaAtual && linhaAtual.nextElementSibling;
+      if (nova && nova.getAttribute && nova.getAttribute("data-parte-row") !== null) {
+        const primeiro = nova.querySelector("input, select");
+        if (primeiro) primeiro.focus();
+      }
+    }, 0);
+  }
   return (
-    <div style={SC.parteRow}>
+    <div style={SC.parteRow} data-parte-row="">
       <input style={{ ...S.input, flex: 2, minWidth: 140 }} placeholder="Título da parte" value={p.titulo}
         onChange={(e) => editaTitulo(e.target.value)} />
       <input style={{ ...S.input, flex: 1, minWidth: 120 }} placeholder="Detalhe (ex.: lmd lição 3 pt 4)" value={p.detalhe}
         onChange={(e) => onEdita("detalhe", ehMinisterio ? aplicaAtalho(e.target.value, DETALHE_MINISTERIO_ATALHOS) : e.target.value)} />
-      <input style={{ ...S.input, flex: 1, minWidth: 120 }} placeholder="Designado(s)" value={p.designado} onChange={(e) => onEdita("designado", e.target.value)} />
+      <input style={{ ...S.input, flex: 1, minWidth: 120 }} placeholder="Designado(s)" value={p.designado}
+        onChange={(e) => onEdita("designado", e.target.value)} onKeyDown={onKeyDownDesignado}
+        title="Dica: pressione Enter aqui para adicionar uma nova parte" />
       {/* tabIndex -1: o Tab pula o "Remover" e vai direto do campo do designado
           para o botão "+ Adicionar parte", agilizando o preenchimento por
           teclado. O botão continua clicável com o mouse. */}
