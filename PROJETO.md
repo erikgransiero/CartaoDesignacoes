@@ -1,7 +1,7 @@
 # Gerenciador de Documentos — Congregação Parque Scaffid
 
 Documento de registro do projeto (memória técnica e funcional).
-Última atualização: 18/09/2026.
+Última atualização: 20/09/2026.
 
 > **Como usar este arquivo:** no início de qualquer sessão nova (ou quando a
 > conversa for compactada), leia este arquivo primeiro. Ele evita ter que reler
@@ -51,6 +51,16 @@ populado com os 16 publicadores reais da congregação (substituindo os 5 de
 exemplo) e validação para não deixar cadastrar dois publicadores com o
 mesmo telefone. Ver §5.3/§5.8/§5.9 e §6.
 
+**Atualização 20/09/2026:** ajustes no Bastidores e no Calendário de
+Pregação, todos em produção — no Bastidores, cada linha ganhou um seletor
+de data exata (semana anterior, atual e as duas próximas do mesmo dia da
+semana) e o auto-preenchimento do mês inteiro a partir do padrão dos dois
+primeiros dias; no Calendário, um botão "Salvar" com confirmação visual.
+Além disso, foi criado no menu lateral um novo item **"Estatísticas"**
+(abaixo de "Cadastro Publicadores", com divisória própria) — ainda sem
+tela, esmaecido, aguardando definição do que deve mostrar. Ver §5.4/§5.5,
+§5.10 e §6.
+
 | Tela | Situação |
 |---|---|
 | Login | Concluída e em produção |
@@ -58,11 +68,12 @@ mesmo telefone. Ver §5.3/§5.8/§5.9 e §6.
 | Discurso Público | Construída e revisada · em produção (ver §6) |
 | Reunião A Sentinela | Construída e revisada · em produção (ver §6) |
 | Cartão de Designações | Construída · **em revisão** (ver §6), itens 1-3 em produção; preenchimento **100% manual** com atalhos de autocompletar (ver §5.3) |
-| Calendário de Pregação | Construída · Exportar PDF (1 página) em produção; revisão completa (lista de ajustes) ainda não iniciada |
-| Bastidores | Construída · Exportar PDF (1 página) em produção; revisão completa (lista de ajustes) ainda não iniciada |
+| Calendário de Pregação | Construída · Exportar PDF (1 página) + botão "Salvar" em produção; revisão completa (lista de ajustes) ainda não iniciada |
+| Bastidores | Construída · Exportar PDF + seletor de data exata + auto-preenchimento do mês em produção; revisão completa (lista de ajustes) ainda não iniciada |
 | Configurações → Usuários | Concluída e em produção |
 | Cadastro de Publicadores | Construída e em produção (nova, ver §5.8) |
 | Enviar Cartão de Designação | Construída e em produção · **em desenvolvimento incremental** (ver §5.9/§6) |
+| Estatísticas | **Só o item de menu** (esmaecido, sem tela) — ver §5.10 |
 
 **Ordem da revisão escolhida pelo usuário:** Discurso Público → Reunião A
 Sentinela → Cartão de Designações → Calendário de Pregação → Bastidores.
@@ -254,6 +265,12 @@ Fonte padrão dos documentos: Arial.
 - **Exportar PDF**: mesmo padrão de página única (zoom-to-fit) do Discurso
   Público/Sentinela — adiantado a pedido do usuário; revisão completa
   (lista numerada de ajustes) ainda **não iniciada**.
+- **Botão "Salvar"** (20/09/2026): no cabeçalho, ao lado de "Exportar PDF".
+  Os dados já eram salvos sozinhos a cada alteração (`useEstadoSalvo`); o
+  botão grava imediatamente no `localStorage` e mostra "Calendário salvo
+  com sucesso!" por 3s — é uma confirmação visual explícita pedida pelo
+  usuário, que tem muitas informações nessa tela e não quer perdê-las ao
+  atualizar o site. Ver `salvarAgora`.
 
 ### 5.5 Bastidores
 - Tabela por data: Áudio/Vídeo, Volantes, Indicadores, Limpeza
@@ -272,6 +289,23 @@ Fonte padrão dos documentos: Arial.
 - **Exportar PDF**: mesmo padrão de página única (zoom-to-fit) das demais
   telas — adiantado a pedido do usuário; revisão completa (lista numerada
   de ajustes) ainda **não iniciada**.
+- **Célula de Data — dois seletores** (20/09/2026): além do dropdown de dia
+  da semana, cada linha tem um segundo dropdown com a **data exata**, que
+  oferece 4 opções do mesmo dia da semana — a **anterior** (-7), a atual, e
+  as **duas próximas** (+7, +14). Serve para adiantar ou pular uma semana
+  (ex.: congresso) sem perder o dia escolhido, e para ajustar uma reunião
+  pontual. Ver `candidatosMesmoDiaDaSemana` e `mudaDataExataDaLinha`.
+- **Auto-preenchimento do mês pelo padrão dos 2 primeiros dias**
+  (20/09/2026): ao trocar o dia da semana da **1ª ou 2ª linha** (as mais
+  antigas do mês), o projeto entende que esses dois dias formam o padrão
+  semanal da congregação e **completa o mês inteiro** alternando entre eles
+  (ex.: terça na 1ª linha + domingo na 2ª → terça/domingo até o fim do
+  mês). A operação é **aditiva e não-destrutiva**: linhas com datas que
+  continuam no novo padrão mantêm as designações; linhas que ficam fora do
+  padrão **não são apagadas** (continuam na tabela); a linha editada nunca
+  duplica. Da 3ª linha em diante, mudar o dia é uma **exceção** que altera
+  só aquela linha (via `trocaDiaDaSemana`), sem mexer no resto do mês. Ver
+  `mudaDiaDaLinha`.
 
 ### 5.6 Configurações → Usuários
 - Cadastro de usuários (nome, e-mail, senha com confirmação, perfil
@@ -380,6 +414,19 @@ Fonte padrão dos documentos: Arial.
   real por WhatsApp **já foram feitos** — ver acima.) O usuário disse que
   vai continuar mandando pontos de ajuste incrementalmente para esta
   tela — **não considerar esta tela "fechada"**.
+
+### 5.10 Estatísticas (só item de menu, 20/09/2026)
+- Item novo no menu lateral (`MENU_ESTATISTICAS`, terceiro grupo, abaixo
+  de "Cadastro Publicadores" com sua própria divisória; ícone `grafico`
+  novo). Está com `pronto: false` — **esmaecido e sem navegação**, no mesmo
+  padrão dos itens em construção.
+- **Ainda não há tela.** A ideia é aproveitar o histórico de cartões
+  exportados (`cartao.json`, ver §5.3) para futuras análises/estatísticas
+  de partes dos publicadores (quem fez o quê, com que frequência). O
+  usuário ainda vai definir o que essa tela deve mostrar; quando definir,
+  construir a tela e virar o item para `pronto: true`, adicionando o
+  `id: "estatisticas"` à navegação em `App` (mesmo padrão de
+  `cadastro-publicadores`/`enviar-cartao`).
 
 ---
 
@@ -572,6 +619,26 @@ pontos de ajuste para esta tela após validar este layout — aguardando.)*
 *(Todos os itens validados em `preview` via Playwright antes de ir para
 produção, no mesmo dia.)*
 
+### Bastidores, Calendário e menu de Estatísticas (publicado em produção, 20/09/2026)
+1. ~~Calendário: botão "Salvar" com confirmação visual~~ — **feito**. Ver §5.4.
+2. ~~Bastidores: seletor de data exata por linha~~ — **feito**: começou com
+   3 opções (atual + 2 próximas) e depois passou a **4** (inclui a semana
+   anterior), a pedido do usuário. Ver §5.5.
+3. ~~Bastidores: auto-preenchimento do mês pelo padrão dos 2 primeiros
+   dias~~ — **feito**, de forma não-destrutiva (não apaga linhas nem dados;
+   sem duplicar a linha editada). Bug de perda de dado e de linha duplicada
+   foi pego nos testes Playwright e corrigido antes de subir. Ver §5.5.
+4. ~~Menu lateral: divisória + item "Estatísticas"~~ — **feito** (esmaecido,
+   sem tela ainda). Ver §5.10.
+5. Observação: o usuário relatou que "o número do dia ficava vazio até
+   selecionar o dia". Não consegui reproduzir esse comportamento nos testes
+   (o valor sempre veio preenchido); o auto-preenchimento reduz muito a
+   necessidade de mexer linha a linha. Ficou combinado que, se reaparecer,
+   ele manda navegador/aparelho + passo a passo para investigar.
+
+*(Todos os itens validados em `preview` via Playwright antes de ir para
+produção.)*
+
 ### Calendário de Pregação e Bastidores (Exportar PDF adiantado, 12/09/2026)
 1. ~~Adicionar botão "Exportar PDF" com garantia de 1 página~~ — **feito**
    nas duas telas, reaproveitando 100% do padrão zoom-to-fit já global
@@ -642,7 +709,10 @@ não como capítulo fechado.)*
    pontos de ajuste incrementais para **Enviar Cartão de Designação** (ver
    §5.9) — envio real por WhatsApp já feito (ligado ao Cadastro de
    Publicadores); falta o envio real por e-mail, quando o usuário pedir.
-7. Somente depois da revisão completa: **backend/banco de dados**
+7. **Nova frente aberta (aguardando definição):** construir a tela de
+   **Estatísticas** (item de menu já criado, ver §5.10) sobre o histórico
+   de cartões exportados — o usuário ainda vai dizer o que ela deve mostrar.
+8. Somente depois da revisão completa: **backend/banco de dados**
    (o usuário já tem uma VM Ubuntu na Oracle Cloud com PostgreSQL
    configurado, falta liberar acesso externo — pode ser feito em paralelo,
    sem bloquear o front) + **integração WhatsApp API** + **integração
