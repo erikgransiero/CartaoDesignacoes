@@ -3265,11 +3265,41 @@ function TelaBastidores({ onVoltar }) {
   function mudaDestaque(id, destaque) {
     setDados((d) => ({ ...d, linhas: d.linhas.map((l) => (l.id === id ? { ...l, destaque } : l)) }));
   }
+  // Ao trocar o dia da semana da 1ª ou 2ª linha (as duas mais antigas do
+  // mês), entendemos que esses dois dias formam o padrão semanal da
+  // congregação e completamos o mês inteiro alternando entre eles — assim o
+  // usuário só precisa ajustar essas duas linhas para preencher o mês todo.
+  // Nenhum dado já preenchido é perdido: linhas cujas datas continuam no
+  // novo padrão mantêm suas designações; linhas que ficam fora do novo
+  // padrão continuam na tabela (não some nada), e a linha editada nunca
+  // fica duplicada. As demais linhas (3ª em diante) continuam podendo ser
+  // ajustadas uma a uma, como exceção, sem afetar o restante do mês.
   function mudaDiaDaLinha(id, novoDia) {
+    const idx = dados.linhas.findIndex((l) => l.id === id);
+    if (idx !== 0 && idx !== 1) {
+      setDados((d) => {
+        const linhas = d.linhas.map((l) => (l.id === id ? { ...l, data: trocaDiaDaSemana(l.data, novoDia) } : l));
+        linhas.sort((a, b) => a.data.localeCompare(b.data));
+        return { ...d, linhas };
+      });
+      return;
+    }
     setDados((d) => {
-      const linhas = d.linhas.map((l) => (l.id === id ? { ...l, data: trocaDiaDaSemana(l.data, novoDia) } : l));
+      const outraLinha = d.linhas[idx === 0 ? 1 : 0];
+      const diaOutro = outraLinha ? diaDaSemanaISO(outraLinha.data) : novoDia;
+      const diaA = idx === 0 ? novoDia : diaOutro;
+      const diaB = idx === 0 ? diaOutro : novoDia;
+      const letraInicial = d.linhas[0] ? d.linhas[0].limpeza : "A";
+      const molde = gerarLinhasDoMes(d.mes, d.ano, diaA, diaB, letraInicial);
+      const semAEditada = d.linhas.filter((l) => l.id !== id);
+      const porData = {};
+      semAEditada.forEach((l) => { porData[l.data] = l; });
+      const linhasDoPadrao = molde.map((nova) => (porData[nova.data] ? { ...porData[nova.data] } : nova));
+      const datasDoPadrao = new Set(molde.map((l) => l.data));
+      const linhasForaDoPadrao = semAEditada.filter((l) => !datasDoPadrao.has(l.data));
+      const linhas = [...linhasDoPadrao, ...linhasForaDoPadrao];
       linhas.sort((a, b) => a.data.localeCompare(b.data));
-      return { ...d, linhas };
+      return { ...d, diaFimDeSemana: diaA, diaMeioDeSemana: diaB, linhas: aplicaCicloLimpeza(linhas, 0, letraInicial) };
     });
   }
   function mudaDataExataDaLinha(id, novaData) {
