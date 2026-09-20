@@ -2954,14 +2954,15 @@ function trocaDiaDaSemana(iso, novoDia) {
   d.setDate(d.getDate() - deslocAtual + deslocNovo);
   return isoData(d.getFullYear(), d.getMonth() + 1, d.getDate());
 }
-// A própria data, mais as duas próximas ocorrências do mesmo dia da semana
-// (+7 e +14 dias) — permite escolher a data exata quando é preciso pular
-// uma semana (ex.: semana de congresso) sem perder o dia da semana escolhido.
+// A semana anterior, a própria data e as duas próximas ocorrências do mesmo
+// dia da semana (-7, 0, +7 e +14 dias) — permite escolher a data exata quando
+// é preciso adiantar ou pular uma semana (ex.: semana de congresso) sem perder
+// o dia da semana escolhido.
 function candidatosMesmoDiaDaSemana(iso) {
   const { ano, mes, dia } = partesData(iso);
   if (!ano) return [iso];
   const base = new Date(ano, mes - 1, dia);
-  return [0, 7, 14].map((offset) => {
+  return [-7, 0, 7, 14].map((offset) => {
     const d = new Date(base);
     d.setDate(d.getDate() + offset);
     return isoData(d.getFullYear(), d.getMonth() + 1, d.getDate());
