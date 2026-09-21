@@ -4094,19 +4094,39 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
   const [parceiroAlvo, setParceiroAlvo] = useState("");
   const [heatTop, setHeatTop] = useState(18);
 
-  // Ajuste manual dos nomes/grupo exibidos na tabela A — enquanto o cruzamento
-  // de nomes não usa só o Cadastro de Publicadores como fonte única, o
-  // usuário pode corrigir aqui na hora. Fica salvo no navegador.
-  const [overridesA, setOverridesA] = useEstadoSalvo("estatisticas-overrides", {});
-  function chaveOverride(nome) { return normaliza(nome); }
-  function textoExibido(nome, campo, padrao) {
-    const o = overridesA[chaveOverride(nome)];
-    return o && o[campo] != null ? o[campo] : (padrao != null ? padrao : "");
+  // Fusão manual de nomes: ao editar a coluna "Irmão" e sair da célula
+  // (Enter/blur), tudo que era daquele nome passa a ser contado no nome
+  // novo — inclusive se o nome novo já existir como outra linha (os dois
+  // se juntam numa pessoa só). Mapa: nome normalizado -> nome final digitado.
+  const [fusoesNome, setFusoesNome] = useEstadoSalvo("estatisticas-fusoes-nome", {});
+  // Ajuste manual do grupo de elegibilidade (mesma ideia, por nome final).
+  const [gruposOverride, setGruposOverride] = useEstadoSalvo("estatisticas-grupos-override", {});
+  // Segue a cadeia de fusões (com proteção contra ciclo) até chegar no nome final.
+  function resolveNomeFinal(nomeBruto) {
+    let atual = canonPessoa(nomeBruto);
+    const vistos = new Set();
+    while (fusoesNome[normaliza(atual)] && !vistos.has(normaliza(atual))) {
+      vistos.add(normaliza(atual));
+      atual = fusoesNome[normaliza(atual)];
+    }
+    return atual;
   }
-  function editaOverride(nome, campo, valor) {
-    const chave = chaveOverride(nome);
-    setOverridesA((d) => ({ ...d, [chave]: { ...(d[chave] || {}), [campo]: valor } }));
+  function commitNome(nomeAtual, valorDigitado) {
+    const novo = (valorDigitado || "").trim();
+    if (!novo || normaliza(novo) === normaliza(nomeAtual)) return;
+    setFusoesNome((d) => ({ ...d, [normaliza(nomeAtual)]: novo }));
   }
+  function commitGrupo(nomeAtual, valorDigitado) {
+    const novo = (valorDigitado || "").trim();
+    const chave = normaliza(nomeAtual);
+    setGruposOverride((d) => {
+      if (!novo) { const cp = { ...d }; delete cp[chave]; return cp; }
+      return { ...d, [chave]: novo };
+    });
+  }
+  // Enter só tira o foco do campo — o commit em si acontece sempre no
+  // onBlur (clicar fora, dar Tab ou apertar Enter chegam todos ali).
+  function enterTiraFoco(e) { if (e.key === "Enter") { e.preventDefault(); e.target.blur(); } }
   // Ordenação clicável das colunas da tabela A
   const [sortA, setSortA] = useState({ campo: "total", dir: "desc" });
   function alternaOrdenacao(campo, numerica) {
@@ -4144,7 +4164,11 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
     for (const p of publicadores) m[normaliza(p.nome)] = { eleg: p.elegibilidade || "Não definido", ativo: p.ativo !== false };
     return m;
   }, [publicadores]);
-  const infoPessoa = (nome) => elegDe[normaliza(nome)] || { eleg: "Não definido", ativo: true };
+  function infoPessoa(nome) {
+    const base = elegDe[normaliza(nome)] || { eleg: "Não definido", ativo: true };
+    const grupo = gruposOverride[normaliza(nome)];
+    return grupo ? { ...base, eleg: grupo } : base;
+  }
 
   function pesoDe(tipo, papel) {
     if (papel === "ajudante") return pesos.ajudante;
@@ -4157,11 +4181,16 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
     const periodo = { de: datasSemana[0] || "", ate: datasSemana[datasSemana.length - 1] || "" };
     const totalMeses = periodo.de ? Math.max(1, (diasEntreISO(periodo.de, periodo.ate) / 30.44) + 0.001) : 1;
 
-    // fatos: uma linha por pessoa+parte+semana+papel
+    // fatos: uma linha por pessoa+parte+semana+papel (nomes já passados pela
+    // fusão manual, para que uma correção na tabela A já some tudo junto)
     const fatos = [];
     for (const r of registros) {
-      fatos.push({ pessoa: r.titular, papel: "titular", tipo: r.tipo, categoria: r.categoria, data: r.data });
-      if (r.ajudante) fatos.push({ pessoa: r.ajudante, papel: "ajudante", tipo: r.tipo, categoria: r.categoria, data: r.data });
+      const titular = resolveNomeFinal(r.titular);
+      fatos.push({ pessoa: titular, papel: "titular", tipo: r.tipo, categoria: r.categoria, data: r.data });
+      if (r.ajudante) {
+        const ajudante = resolveNomeFinal(r.ajudante);
+        fatos.push({ pessoa: ajudante, papel: "ajudante", tipo: r.tipo, categoria: r.categoria, data: r.data });
+      }
     }
 
     // agregação por pessoa
@@ -4203,7 +4232,7 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
     const duplas = {};
     for (const r of registros) {
       if (!r.ajudante) continue;
-      const par = [r.titular, r.ajudante].sort();
+      const par = [resolveNomeFinal(r.titular), resolveNomeFinal(r.ajudante)].sort();
       const k = par.join(" | ");
       const d = duplas[k] || (duplas[k] = { a: par[0], b: par[1], n: 0, ultima: "" });
       d.n++;
@@ -4238,7 +4267,7 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
     for (const f of fatos) if (f.data.slice(0, 7) === ultimoMes) noMes[f.pessoa] = (noMes[f.pessoa] || 0) + 1;
 
     return { registros, periodo, totalMeses, fatos, pessoas, listaDuplas, parceiros, dispersao, tiposUsados, ultimoMes, noMes, P };
-  }, [base, pesos, publicadores]);
+  }, [base, pesos, publicadores, fusoesNome, gruposOverride]);
 
   const pessoasFiltradas = an.pessoas.filter((p) => grupoFiltro === "Todos" || p.eleg === grupoFiltro);
 
@@ -4256,8 +4285,7 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
     { campo: "vidaCrista", label: "V.Cristã", num: true },
   ];
   function valorOrdenavel(p, campo) {
-    if (campo === "nome") return textoExibido(p.nome, "nome", p.nome);
-    if (campo === "eleg") return textoExibido(p.nome, "grupo", p.eleg === "Não definido" ? "" : p.eleg);
+    if (campo === "eleg") return p.eleg === "Não definido" ? "" : p.eleg;
     if (campo === "tesouros") return p.porCategoria["Tesouros"] || 0;
     if (campo === "ministerio") return p.porCategoria["Ministério"] || 0;
     if (campo === "vidaCrista") return p.porCategoria["Vida Cristã"] || 0;
@@ -4274,7 +4302,7 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
       return dir === "asc" ? cmp : -cmp;
     });
     return lista;
-  }, [pessoasFiltradas, sortA, overridesA]);
+  }, [pessoasFiltradas, sortA]);
 
   // ---- Relatório B: esquecidos ----
   const limiteDias = semanasEsquecido * 7;
@@ -4381,7 +4409,7 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
           {/* A. VOLUME */}
           <details style={EST.sec} open>
             <summary style={EST.secTit}>A. Volume por irmão</summary>
-            <p style={EST.cfgNota}>As colunas "Irmão" e "Grupo" são editáveis (clique e digite) — útil enquanto o cruzamento de nomes é ajustado manualmente. Clique no ícone ⇅ de qualquer coluna para ordenar.</p>
+            <p style={EST.cfgNota}>As colunas "Irmão" e "Grupo" são editáveis: digite e pressione Enter (ou clique fora) para aplicar. Ao corrigir um nome, tudo que estava no nome antigo passa a somar no nome novo — mesmo que o nome novo já exista como outra linha, os dois se juntam numa pessoa só. Clique no ícone ⇅ de qualquer coluna para ordenar.</p>
             <div style={EST.tabScroll}>
               <table style={EST.tab}>
                 <thead><tr>
@@ -4397,11 +4425,14 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
                   {pessoasTabelaA.map((p) => (
                     <tr key={p.nome} style={p.ativo ? undefined : { opacity: .5 }}>
                       <td style={EST.td}>
-                        <input style={EST.tdInput} value={textoExibido(p.nome, "nome", p.nome)} onChange={(e) => editaOverride(p.nome, "nome", e.target.value)} />
+                        <input key={"nome-" + p.nome} style={EST.tdInput} defaultValue={p.nome}
+                          title="Edite e pressione Enter para juntar os cálculos deste nome com o nome digitado"
+                          onKeyDown={enterTiraFoco} onBlur={(e) => commitNome(p.nome, e.target.value)} />
                         {p.ativo ? "" : " (inativo)"}
                       </td>
                       <td style={EST.td}>
-                        <input style={EST.tdInput} placeholder={p.eleg === "Não definido" ? "—" : p.eleg} value={textoExibido(p.nome, "grupo", "")} onChange={(e) => editaOverride(p.nome, "grupo", e.target.value)} />
+                        <input key={"grupo-" + p.nome} style={EST.tdInput} placeholder="—" defaultValue={p.eleg === "Não definido" ? "" : p.eleg}
+                          onKeyDown={enterTiraFoco} onBlur={(e) => commitGrupo(p.nome, e.target.value)} />
                       </td>
                       <td style={EST.tdN}>{p.total}</td><td style={EST.tdN}>{p.titular}</td><td style={EST.tdN}>{p.ajudante}</td>
                       <td style={EST.tdN}>{p.mediaMensal}</td><td style={EST.tdN}><strong>{p.carga.toFixed(1)}</strong></td>
