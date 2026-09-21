@@ -4101,32 +4101,66 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
   const [fusoesNome, setFusoesNome] = useEstadoSalvo("estatisticas-fusoes-nome", {});
   // Ajuste manual do grupo de elegibilidade (mesma ideia, por nome final).
   const [gruposOverride, setGruposOverride] = useEstadoSalvo("estatisticas-grupos-override", {});
+  // Chave de comparação mais robusta que o normaliza() padrão: também tira
+  // espaços do início/fim e reduz espaços duplicados no meio — a planilha
+  // original tem nomes com espaço sobrando (ex.: "Regina "), e sem isso a
+  // fusão podia silenciosamente não casar duas grafias do mesmo nome.
+  function chaveNome(s) { return normaliza((s || "").trim().replace(/\s+/g, " ")); }
   // Segue a cadeia de fusões (com proteção contra ciclo) até chegar no nome final.
   function resolveNomeFinal(nomeBruto) {
     let atual = canonPessoa(nomeBruto);
     const vistos = new Set();
-    while (fusoesNome[normaliza(atual)] && !vistos.has(normaliza(atual))) {
-      vistos.add(normaliza(atual));
-      atual = fusoesNome[normaliza(atual)];
+    while (fusoesNome[chaveNome(atual)] && !vistos.has(chaveNome(atual))) {
+      vistos.add(chaveNome(atual));
+      atual = fusoesNome[chaveNome(atual)];
     }
     return atual;
   }
   function commitNome(nomeAtual, valorDigitado) {
     const novo = (valorDigitado || "").trim();
-    if (!novo || normaliza(novo) === normaliza(nomeAtual)) return;
-    setFusoesNome((d) => ({ ...d, [normaliza(nomeAtual)]: novo }));
+    if (!novo || chaveNome(novo) === chaveNome(nomeAtual)) return;
+    setFusoesNome((d) => ({ ...d, [chaveNome(nomeAtual)]: novo }));
   }
   function commitGrupo(nomeAtual, valorDigitado) {
     const novo = (valorDigitado || "").trim();
-    const chave = normaliza(nomeAtual);
+    const chave = chaveNome(nomeAtual);
     setGruposOverride((d) => {
       if (!novo) { const cp = { ...d }; delete cp[chave]; return cp; }
       return { ...d, [chave]: novo };
     });
   }
-  // Enter só tira o foco do campo — o commit em si acontece sempre no
-  // onBlur (clicar fora, dar Tab ou apertar Enter chegam todos ali).
-  function enterTiraFoco(e) { if (e.key === "Enter") { e.preventDefault(); e.target.blur(); } }
+  // Navegação por teclado nas células de "Irmão"/"Grupo": setas para cima/
+  // baixo (e Enter) vão para a mesma coluna na linha seguinte/anterior;
+  // seta esquerda/direita só muda de célula quando o cursor já está na
+  // ponta do texto (senão, deixa mover o cursor normalmente). Sair da
+  // célula por qualquer um desses caminhos aciona o onBlur, que é sempre
+  // quem de fato aplica a fusão/ajuste.
+  function focaCelula(tr, coluna) {
+    const td = tr && tr.children[coluna];
+    const input = td && td.querySelector("input");
+    if (input) { input.focus(); input.select(); return true; }
+    return false;
+  }
+  function navegaCelula(e) {
+    const tecla = e.key;
+    const input = e.currentTarget;
+    const td = input.closest("td");
+    const tr = td.closest("tr");
+    const coluna = Array.prototype.indexOf.call(tr.children, td);
+    if (tecla === "Enter" || tecla === "ArrowDown" || tecla === "ArrowUp") {
+      e.preventDefault();
+      const alvo = tecla === "ArrowUp" ? tr.previousElementSibling : tr.nextElementSibling;
+      if (!alvo || !focaCelula(alvo, coluna)) input.blur();
+      return;
+    }
+    if (tecla === "ArrowLeft" || tecla === "ArrowRight") {
+      const noInicio = input.selectionStart === 0 && input.selectionEnd === 0;
+      const noFim = input.selectionStart === input.value.length && input.selectionEnd === input.value.length;
+      if ((tecla === "ArrowLeft" && !noInicio) || (tecla === "ArrowRight" && !noFim)) return;
+      e.preventDefault();
+      focaCelula(tr, tecla === "ArrowLeft" ? coluna - 1 : coluna + 1);
+    }
+  }
   // Ordenação clicável das colunas da tabela A
   const [sortA, setSortA] = useState({ campo: "total", dir: "desc" });
   function alternaOrdenacao(campo, numerica) {
@@ -4166,7 +4200,7 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
   }, [publicadores]);
   function infoPessoa(nome) {
     const base = elegDe[normaliza(nome)] || { eleg: "Não definido", ativo: true };
-    const grupo = gruposOverride[normaliza(nome)];
+    const grupo = gruposOverride[chaveNome(nome)];
     return grupo ? { ...base, eleg: grupo } : base;
   }
 
@@ -4426,13 +4460,13 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
                     <tr key={p.nome} style={p.ativo ? undefined : { opacity: .5 }}>
                       <td style={EST.td}>
                         <input key={"nome-" + p.nome} style={EST.tdInput} defaultValue={p.nome}
-                          title="Edite e pressione Enter para juntar os cálculos deste nome com o nome digitado"
-                          onKeyDown={enterTiraFoco} onBlur={(e) => commitNome(p.nome, e.target.value)} />
+                          title="Edite e pressione Enter (ou use as setas) para juntar os cálculos deste nome com o nome digitado"
+                          onKeyDown={navegaCelula} onBlur={(e) => commitNome(p.nome, e.target.value)} />
                         {p.ativo ? "" : " (inativo)"}
                       </td>
                       <td style={EST.td}>
                         <input key={"grupo-" + p.nome} style={EST.tdInput} placeholder="—" defaultValue={p.eleg === "Não definido" ? "" : p.eleg}
-                          onKeyDown={enterTiraFoco} onBlur={(e) => commitGrupo(p.nome, e.target.value)} />
+                          onKeyDown={navegaCelula} onBlur={(e) => commitGrupo(p.nome, e.target.value)} />
                       </td>
                       <td style={EST.tdN}>{p.total}</td><td style={EST.tdN}>{p.titular}</td><td style={EST.tdN}>{p.ajudante}</td>
                       <td style={EST.tdN}>{p.mediaMensal}</td><td style={EST.tdN}><strong>{p.carga.toFixed(1)}</strong></td>
