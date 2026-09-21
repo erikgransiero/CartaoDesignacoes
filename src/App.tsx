@@ -4081,15 +4081,40 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
   const cartao = React.useMemo(() => leSalvo("cartao", CARTAO_INICIAL), []);
   const publicadores = React.useMemo(() => leSalvo("publicadores", PUBLICADORES_INICIAL).publicadores, []);
 
-  // configurações ajustáveis
-  const [pesos, setPesos] = useState({ ensino: 3, demo: 2, joias: 2, leitura: 1, ajudante: 0.5 });
-  const [semanasEsquecido, setSemanasEsquecido] = useState(8);
-  const [semanasDuplaAlerta, setSemanasDuplaAlerta] = useState(8);
+  // configurações ajustáveis (o quadro de pesos/limites foi removido da tela
+  // a pedido do usuário — a congregação usa quantidade, não peso — mas os
+  // valores continuam fixos aqui para não quebrar as demais seções, que
+  // serão revistas numa próxima rodada)
+  const [pesos] = useState({ ensino: 3, demo: 2, joias: 2, leitura: 1, ajudante: 0.5 });
+  const [semanasEsquecido] = useState(8);
+  const [semanasDuplaAlerta] = useState(8);
   const [scoreW, setScoreW] = useState({ intervalo: 0.4, carga: 0.3, tipo: 0.2, parceiro: 0.1 });
-  const [grupoFiltro, setGrupoFiltro] = useState("Todos");
+  const [grupoFiltro] = useState("Todos");
   const [tipoAlvo, setTipoAlvo] = useState("Iniciando conversas");
   const [parceiroAlvo, setParceiroAlvo] = useState("");
   const [heatTop, setHeatTop] = useState(18);
+
+  // Ajuste manual dos nomes/grupo exibidos na tabela A — enquanto o cruzamento
+  // de nomes não usa só o Cadastro de Publicadores como fonte única, o
+  // usuário pode corrigir aqui na hora. Fica salvo no navegador.
+  const [overridesA, setOverridesA] = useEstadoSalvo("estatisticas-overrides", {});
+  function chaveOverride(nome) { return normaliza(nome); }
+  function textoExibido(nome, campo, padrao) {
+    const o = overridesA[chaveOverride(nome)];
+    return o && o[campo] != null ? o[campo] : (padrao != null ? padrao : "");
+  }
+  function editaOverride(nome, campo, valor) {
+    const chave = chaveOverride(nome);
+    setOverridesA((d) => ({ ...d, [chave]: { ...(d[chave] || {}), [campo]: valor } }));
+  }
+  // Ordenação clicável das colunas da tabela A
+  const [sortA, setSortA] = useState({ campo: "total", dir: "desc" });
+  function alternaOrdenacao(campo, numerica) {
+    setSortA((atual) => {
+      if (atual.campo !== campo) return { campo, dir: numerica ? "desc" : "asc" };
+      return { campo, dir: atual.dir === "asc" ? "desc" : "asc" };
+    });
+  }
 
   // simulação
   const [simPessoa, setSimPessoa] = useState("");
@@ -4215,8 +4240,41 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
     return { registros, periodo, totalMeses, fatos, pessoas, listaDuplas, parceiros, dispersao, tiposUsados, ultimoMes, noMes, P };
   }, [base, pesos, publicadores]);
 
-  const gruposDisponiveis = ["Todos", ...ELEGIBILIDADES];
   const pessoasFiltradas = an.pessoas.filter((p) => grupoFiltro === "Todos" || p.eleg === grupoFiltro);
+
+  // Colunas da tabela A (com ícone de ordenação clicável em todas)
+  const COLS_TABELA_A = [
+    { campo: "nome", label: "Irmão", num: false },
+    { campo: "eleg", label: "Grupo", num: false },
+    { campo: "total", label: "Total", num: true },
+    { campo: "titular", label: "Tit.", num: true },
+    { campo: "ajudante", label: "Ajud.", num: true },
+    { campo: "mediaMensal", label: "Méd/mês", num: true },
+    { campo: "carga", label: "Carga", num: true },
+    { campo: "tesouros", label: "Tesouros", num: true },
+    { campo: "ministerio", label: "Minist.", num: true },
+    { campo: "vidaCrista", label: "V.Cristã", num: true },
+  ];
+  function valorOrdenavel(p, campo) {
+    if (campo === "nome") return textoExibido(p.nome, "nome", p.nome);
+    if (campo === "eleg") return textoExibido(p.nome, "grupo", p.eleg === "Não definido" ? "" : p.eleg);
+    if (campo === "tesouros") return p.porCategoria["Tesouros"] || 0;
+    if (campo === "ministerio") return p.porCategoria["Ministério"] || 0;
+    if (campo === "vidaCrista") return p.porCategoria["Vida Cristã"] || 0;
+    return p[campo];
+  }
+  const pessoasTabelaA = React.useMemo(() => {
+    const lista = pessoasFiltradas.slice();
+    const { campo, dir } = sortA;
+    lista.sort((a, b) => {
+      const va = valorOrdenavel(a, campo), vb = valorOrdenavel(b, campo);
+      let cmp;
+      if (typeof va === "string" || typeof vb === "string") cmp = String(va).localeCompare(String(vb), "pt-BR");
+      else cmp = (va || 0) - (vb || 0);
+      return dir === "asc" ? cmp : -cmp;
+    });
+    return lista;
+  }, [pessoasFiltradas, sortA, overridesA]);
 
   // ---- Relatório B: esquecidos ----
   const limiteDias = semanasEsquecido * 7;
@@ -4320,38 +4378,31 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
           </div>
           <p style={EST.aviso}>Presidente e orações estão <strong>fora</strong> de todas as contagens (Regra 1). Dados do histórico + do Cartão de Designações atual (append).</p>
 
-          {/* CONFIG */}
-          <details style={EST.sec} open>
-            <summary style={EST.secTit}>⚙️ Configurações (pesos e limites)</summary>
-            <div style={EST.cfgGrid}>
-              <div><div style={EST.cfgLab}>Peso ensino/discurso</div><input type="number" step="0.5" style={EST.cfgInput} value={pesos.ensino} onChange={(e) => setPesos({ ...pesos, ensino: +e.target.value })} /></div>
-              <div><div style={EST.cfgLab}>Peso demonstração</div><input type="number" step="0.5" style={EST.cfgInput} value={pesos.demo} onChange={(e) => setPesos({ ...pesos, demo: +e.target.value })} /></div>
-              <div><div style={EST.cfgLab}>Peso joias</div><input type="number" step="0.5" style={EST.cfgInput} value={pesos.joias} onChange={(e) => setPesos({ ...pesos, joias: +e.target.value })} /></div>
-              <div><div style={EST.cfgLab}>Peso leitura</div><input type="number" step="0.5" style={EST.cfgInput} value={pesos.leitura} onChange={(e) => setPesos({ ...pesos, leitura: +e.target.value })} /></div>
-              <div><div style={EST.cfgLab}>Peso ajudante</div><input type="number" step="0.5" style={EST.cfgInput} value={pesos.ajudante} onChange={(e) => setPesos({ ...pesos, ajudante: +e.target.value })} /></div>
-              <div><div style={EST.cfgLab}>"Esquecido" após (semanas)</div><input type="number" style={EST.cfgInput} value={semanasEsquecido} onChange={(e) => setSemanasEsquecido(+e.target.value || 0)} /></div>
-              <div><div style={EST.cfgLab}>Alerta dupla &lt; (semanas)</div><input type="number" style={EST.cfgInput} value={semanasDuplaAlerta} onChange={(e) => setSemanasDuplaAlerta(+e.target.value || 0)} /></div>
-              <div><div style={EST.cfgLab}>Filtrar grupo</div>
-                <select style={EST.cfgInput} value={grupoFiltro} onChange={(e) => setGrupoFiltro(e.target.value)}>{gruposDisponiveis.map((g) => <option key={g} value={g}>{g}</option>)}</select>
-              </div>
-            </div>
-            <div style={EST.cfgNota}>Carga ponderada = soma dos pesos das partes. Titular usa o peso do tipo; ajudante usa o peso de ajudante. Ensino inclui Tesouros/Vida Cristã (discurso), Estudo, Necessidades, Explicando, Discurso.</div>
-          </details>
-
           {/* A. VOLUME */}
           <details style={EST.sec} open>
-            <summary style={EST.secTit}>A. Volume por irmão {grupoFiltro !== "Todos" ? `— grupo: ${grupoFiltro}` : ""}</summary>
+            <summary style={EST.secTit}>A. Volume por irmão</summary>
+            <p style={EST.cfgNota}>As colunas "Irmão" e "Grupo" são editáveis (clique e digite) — útil enquanto o cruzamento de nomes é ajustado manualmente. Clique no ícone ⇅ de qualquer coluna para ordenar.</p>
             <div style={EST.tabScroll}>
               <table style={EST.tab}>
                 <thead><tr>
-                  <th style={EST.th}>Irmão</th><th style={EST.th}>Grupo</th><th style={EST.thN}>Total</th><th style={EST.thN}>Tit.</th><th style={EST.thN}>Ajud.</th>
-                  <th style={EST.thN}>Méd/mês</th><th style={EST.thN}>Carga</th><th style={EST.thN}>Tesouros</th><th style={EST.thN}>Minist.</th><th style={EST.thN}>V.Cristã</th>
+                  {COLS_TABELA_A.map((c) => (
+                    <th key={c.campo} style={c.num ? EST.thN : EST.th}>
+                      <button type="button" style={EST.btnOrdenar} onClick={() => alternaOrdenacao(c.campo, c.num)} title="Ordenar">
+                        {c.label} <span style={EST.iconeOrdenar}>{sortA.campo === c.campo ? (sortA.dir === "asc" ? "▲" : "▼") : "⇅"}</span>
+                      </button>
+                    </th>
+                  ))}
                 </tr></thead>
                 <tbody>
-                  {pessoasFiltradas.map((p) => (
+                  {pessoasTabelaA.map((p) => (
                     <tr key={p.nome} style={p.ativo ? undefined : { opacity: .5 }}>
-                      <td style={EST.td}>{p.nome}{p.ativo ? "" : " (inativo)"}</td>
-                      <td style={EST.tdMini}>{p.eleg === "Não definido" ? "—" : p.eleg}</td>
+                      <td style={EST.td}>
+                        <input style={EST.tdInput} value={textoExibido(p.nome, "nome", p.nome)} onChange={(e) => editaOverride(p.nome, "nome", e.target.value)} />
+                        {p.ativo ? "" : " (inativo)"}
+                      </td>
+                      <td style={EST.td}>
+                        <input style={EST.tdInput} placeholder={p.eleg === "Não definido" ? "—" : p.eleg} value={textoExibido(p.nome, "grupo", "")} onChange={(e) => editaOverride(p.nome, "grupo", e.target.value)} />
+                      </td>
                       <td style={EST.tdN}>{p.total}</td><td style={EST.tdN}>{p.titular}</td><td style={EST.tdN}>{p.ajudante}</td>
                       <td style={EST.tdN}>{p.mediaMensal}</td><td style={EST.tdN}><strong>{p.carga.toFixed(1)}</strong></td>
                       <td style={EST.tdN}>{p.porCategoria["Tesouros"] || 0}</td><td style={EST.tdN}>{p.porCategoria["Ministério"] || 0}</td><td style={EST.tdN}>{p.porCategoria["Vida Cristã"] || 0}</td>
@@ -4530,40 +4581,43 @@ const EST = {
   wrap: { padding: "0 4px 40px" },
   kpis: { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 8 },
   kpi: { background: "#fff", border: "1px solid " + UI.borda, borderRadius: 10, padding: "8px 14px", minWidth: 84, textAlign: "center" },
-  kpiN: { fontSize: 16, fontWeight: 800, color: UI.azul },
-  kpiL: { fontSize: 10, color: UI.cinza, textTransform: "uppercase", letterSpacing: .5 },
-  btnExport: { marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, padding: "9px 14px", border: "1px solid " + UI.borda, borderRadius: 10, background: "#fff", color: UI.azul, cursor: "pointer" },
-  aviso: { fontSize: 11, color: UI.cinza, margin: "0 0 12px" },
+  kpiN: { fontSize: 18, fontWeight: 800, color: UI.azul },
+  kpiL: { fontSize: 11, color: UI.cinza, textTransform: "uppercase", letterSpacing: .5 },
+  btnExport: { marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, padding: "9px 14px", border: "1px solid " + UI.borda, borderRadius: 10, background: "#fff", color: UI.azul, cursor: "pointer" },
+  aviso: { fontSize: 12.5, color: UI.cinza, margin: "0 0 12px" },
   sec: { background: "#fff", border: "1px solid " + UI.borda, borderRadius: 12, padding: "10px 14px", marginBottom: 12 },
-  secTit: { fontSize: 13, fontWeight: 800, color: UI.azul, cursor: "pointer", listStyle: "none" },
-  subTit: { fontSize: 11, fontWeight: 700, color: UI.tinta, margin: "10px 0 6px", textTransform: "uppercase", letterSpacing: .5 },
+  secTit: { fontSize: 14, fontWeight: 800, color: UI.azul, cursor: "pointer", listStyle: "none" },
+  subTit: { fontSize: 12, fontWeight: 700, color: UI.tinta, margin: "10px 0 6px", textTransform: "uppercase", letterSpacing: .5 },
   duasColunas: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, alignItems: "start" },
   cfgGrid: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, margin: "8px 0" },
-  cfgLab: { fontSize: 10, color: UI.cinza, marginBottom: 2 },
-  cfgInput: { width: "100%", padding: "5px 7px", border: "1px solid " + UI.borda, borderRadius: 6, fontSize: 12, boxSizing: "border-box" },
-  cfgInputMini: { padding: "2px 4px", border: "1px solid " + UI.borda, borderRadius: 4, fontSize: 11 },
-  cfgNota: { fontSize: 10, color: UI.cinza, lineHeight: 1.5, marginTop: 6, fontStyle: "italic" },
+  cfgLab: { fontSize: 11, color: UI.cinza, marginBottom: 2 },
+  cfgInput: { width: "100%", padding: "6px 8px", border: "1px solid " + UI.borda, borderRadius: 6, fontSize: 13, boxSizing: "border-box" },
+  cfgInputMini: { padding: "3px 5px", border: "1px solid " + UI.borda, borderRadius: 4, fontSize: 12.5 },
+  cfgNota: { fontSize: 11.5, color: UI.cinza, lineHeight: 1.5, marginTop: 6, fontStyle: "italic" },
   tabScroll: { overflowX: "auto", border: "1px solid " + UI.borda, borderRadius: 8, marginTop: 4 },
-  tabScrollAlto: { overflow: "auto", maxHeight: 300, border: "1px solid " + UI.borda, borderRadius: 8, marginTop: 4 },
-  tab: { borderCollapse: "collapse", width: "100%", fontSize: 10 },
-  th: { position: "sticky", top: 0, background: UI.azul, color: "#fff", fontSize: 9.5, fontWeight: 700, padding: "5px 6px", textAlign: "left", whiteSpace: "nowrap", zIndex: 1 },
-  thN: { position: "sticky", top: 0, background: UI.azul, color: "#fff", fontSize: 9.5, fontWeight: 700, padding: "5px 6px", textAlign: "center", whiteSpace: "nowrap", zIndex: 1 },
-  thVert: { position: "sticky", top: 0, background: UI.azul, color: "#fff", fontSize: 8.5, fontWeight: 700, padding: "4px 3px", textAlign: "center", height: 78, whiteSpace: "nowrap", verticalAlign: "bottom", zIndex: 1 },
+  tabScrollAlto: { overflow: "auto", maxHeight: 320, border: "1px solid " + UI.borda, borderRadius: 8, marginTop: 4 },
+  tab: { borderCollapse: "collapse", width: "100%", fontSize: 12.5 },
+  th: { position: "sticky", top: 0, background: UI.azul, color: "#fff", fontSize: 11.5, fontWeight: 700, padding: "6px 8px", textAlign: "left", whiteSpace: "nowrap", zIndex: 1 },
+  thN: { position: "sticky", top: 0, background: UI.azul, color: "#fff", fontSize: 11.5, fontWeight: 700, padding: "6px 8px", textAlign: "center", whiteSpace: "nowrap", zIndex: 1 },
+  btnOrdenar: { background: "transparent", border: "none", color: "#fff", font: "inherit", fontWeight: 700, padding: 0, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 },
+  iconeOrdenar: { fontSize: 9, opacity: .85 },
+  tdInput: { width: "100%", minWidth: 90, border: "none", borderBottom: "1px dashed " + UI.borda, background: "transparent", font: "inherit", color: "inherit", padding: "2px 4px", borderRadius: 0 },
+  thVert: { position: "sticky", top: 0, background: UI.azul, color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 3px", textAlign: "center", height: 84, whiteSpace: "nowrap", verticalAlign: "bottom", zIndex: 1 },
   thCanto: { position: "sticky", top: 0, left: 0, background: UI.azul, zIndex: 2, minWidth: 90 },
-  td: { padding: "3px 6px", borderBottom: "1px solid #eef0f4", whiteSpace: "nowrap" },
-  tdMini: { padding: "3px 6px", borderBottom: "1px solid #eef0f4", whiteSpace: "nowrap", fontSize: 9, color: UI.cinza },
-  tdN: { padding: "3px 6px", borderBottom: "1px solid #eef0f4", textAlign: "center", whiteSpace: "nowrap" },
-  tdHeadRow: { padding: "3px 6px", borderBottom: "1px solid #eef0f4", whiteSpace: "nowrap", fontSize: 9, fontWeight: 700, position: "sticky", left: 0, background: "#fff" },
-  cell: { width: 22, minWidth: 22, textAlign: "center", fontSize: 9, border: "1px solid #eef0f4", padding: 0, height: 20 },
+  td: { padding: "4px 8px", borderBottom: "1px solid #eef0f4", whiteSpace: "nowrap" },
+  tdMini: { padding: "4px 8px", borderBottom: "1px solid #eef0f4", whiteSpace: "nowrap", fontSize: 11, color: UI.cinza },
+  tdN: { padding: "4px 8px", borderBottom: "1px solid #eef0f4", textAlign: "center", whiteSpace: "nowrap" },
+  tdHeadRow: { padding: "4px 8px", borderBottom: "1px solid #eef0f4", whiteSpace: "nowrap", fontSize: 10.5, fontWeight: 700, position: "sticky", left: 0, background: "#fff" },
+  cell: { width: 24, minWidth: 24, textAlign: "center", fontSize: 10.5, border: "1px solid #eef0f4", padding: 0, height: 22 },
   chips: { display: "flex", flexWrap: "wrap", gap: 6 },
-  chipAlerta: { fontSize: 10, background: "#fdeaea", border: "1px solid #e3b6b6", color: "#9a3b3b", borderRadius: 20, padding: "3px 8px" },
-  chipAviso: { fontSize: 10, background: "#fff6e5", border: "1px solid #e6cf9a", color: "#8a5a00", borderRadius: 20, padding: "3px 8px" },
-  chipInfo: { fontSize: 10, background: "#eef2fb", border: "1px solid #c9d6ee", color: UI.azul, borderRadius: 20, padding: "3px 8px" },
-  vazio: { fontSize: 11, color: UI.cinza, fontStyle: "italic" },
-  btnSim: { marginTop: 8, fontSize: 12, fontWeight: 700, padding: "8px 14px", background: UI.azul, color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" },
-  simBox: { marginTop: 8, background: "#f7f9fc", border: "1px solid " + UI.borda, borderRadius: 8, padding: 10, fontSize: 12, lineHeight: 1.6 },
+  chipAlerta: { fontSize: 11, background: "#fdeaea", border: "1px solid #e3b6b6", color: "#9a3b3b", borderRadius: 20, padding: "3px 8px" },
+  chipAviso: { fontSize: 11, background: "#fff6e5", border: "1px solid #e6cf9a", color: "#8a5a00", borderRadius: 20, padding: "3px 8px" },
+  chipInfo: { fontSize: 11, background: "#eef2fb", border: "1px solid #c9d6ee", color: UI.azul, borderRadius: 20, padding: "3px 8px" },
+  vazio: { fontSize: 12.5, color: UI.cinza, fontStyle: "italic" },
+  btnSim: { marginTop: 8, fontSize: 13, fontWeight: 700, padding: "8px 14px", background: UI.azul, color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" },
+  simBox: { marginTop: 8, background: "#f7f9fc", border: "1px solid " + UI.borda, borderRadius: 8, padding: 10, fontSize: 13, lineHeight: 1.6 },
   simAlerta: { color: "#9a3b3b", marginTop: 4 },
-  rodape: { fontSize: 11, color: UI.cinza, textAlign: "center", marginTop: 8, fontStyle: "italic" },
+  rodape: { fontSize: 12.5, color: UI.cinza, textAlign: "center", marginTop: 8, fontStyle: "italic" },
 };
 
 const M = {
