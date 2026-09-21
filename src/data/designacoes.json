@@ -1,0 +1,3066 @@
+{
+  "fonte": "Estatistica_das_Designacoes.xlsx (histórico 2025-2026)",
+  "periodo": {
+    "de": "2025-10-06",
+    "ate": "2026-08-31"
+  },
+  "aliasMap": {
+    "Daniel": "Daniel",
+    "João Bizerra": "João Bizerra",
+    "João Pedro": "João Pedro",
+    "Orlando": "Orlando",
+    "Marina": "Marina",
+    "Layane": "Layane",
+    "Estéfane": "Estéfane",
+    "Giuliana": "Giuliana",
+    "Rebeca": "Rebeca",
+    "Regina": "Regina",
+    "Lucas Santana": "Lucas Santana",
+    "Lucas Soares": "Lucas Soares",
+    "Valter Soares": "Valter Soares",
+    "Valter": "Valter Soares",
+    "Filipe Donizete": "Filipe Donizete",
+    "Filipe": "Filipe Donizete",
+    "Roberto Soares": "Roberto Soares",
+    "Roberto": "Roberto Soares",
+    "Wellington": "Wellington",
+    "Ariane e Cacilda": "Ariane e Cacilda",
+    "Ariane": "Ariane e Cacilda",
+    "Graziele": "Graziele",
+    "Mariana": "Mariana",
+    "Sheila": "Sheila",
+    "Jaqueline": "Jaqueline",
+    "Dayane": "Dayane",
+    "Rogério": "Rogério",
+    "Rogerio": "Rogério",
+    "Valmir Soares": "Valmir Soares",
+    "Valmir": "Valmir Soares",
+    "Anderson": "Anderson",
+    "Rodrigo Soares": "Rodrigo Soares",
+    "Rodrigo": "Rodrigo Soares",
+    "Fernando Gonçalves": "Fernando Gonçalves",
+    "Fernando e Paulo": "Fernando e Paulo",
+    "Fernando": "Fernando",
+    "Vera Bizerra": "Vera Bizerra",
+    "Vera Freires": "Vera Freires",
+    "Judite": "Judite",
+    "Elaine Spaler": "Elaine Spaler",
+    "Elaine C.": "Elaine C.",
+    "Elaine Campoio": "Elaine Campoio",
+    "Helena": "Helena",
+    "Priscilla": "Priscilla",
+    "Vinicius": "Vinicius",
+    "Felipe Donizete": "Felipe Donizete",
+    "Felipe Martines": "Felipe Martines",
+    "Felipe M. / Aline": "Felipe M. / Aline",
+    "Felipe M.": "Felipe M. / Aline",
+    "Erik Gransiero": "Erik Gransiero",
+    "Erik": "Erik Gransiero",
+    "Dorival": "Dorival",
+    "Sarah": "Sarah",
+    "Rita": "Rita",
+    "Gisele": "Gisele",
+    "Raquel": "Raquel",
+    "Ricardo Neri": "Ricardo Neri",
+    "Ricardo": "Ricardo Neri",
+    "José Carlos": "José Carlos",
+    "José Vicente": "José Vicente",
+    "Arthur": "Arthur",
+    "Paulo G.": "Paulo G.",
+    "Paulo": "Paulo G.",
+    "Vicente": "Vicente",
+    "Auricélia": "Auricelia",
+    "Auricelia": "Auricelia",
+    "Rosana": "Rosana",
+    "Cristiane Ribeiro": "Cristiane Ribeiro",
+    "Cristiane": "Cristiane Ribeiro",
+    "Marjore/Zé Carlos": "Marjore/Zé Carlos",
+    "Luana": "Luana",
+    "Elizene": "Elizene",
+    "Monica": "Monica",
+    "Mônica": "Monica",
+    "Luciana": "Luciana",
+    "#N/A": "#N/A",
+    "Ademir Soares": "Ademir Soares",
+    "Ademir": "Ademir Soares",
+    "Mirna": "Mirna",
+    "Kelly": "Kelly",
+    "Cesar Viana": "Cesar Viana",
+    "Cesar": "Cesar Viana",
+    "Margareth": "Margareth",
+    "Layana": "Layana",
+    "Aline": "Aline",
+    "Bryan": "Bryan",
+    "Beatriz": "Beatriz",
+    "Verra Bizerra": "Verra Bizerra",
+    "Roberta": "Roberta",
+    "Tamires": "Tamires",
+    "Marjorie / Cristiane": "Marjorie / Cristiane",
+    "Jair Queiroz": "Jair Queiroz",
+    "Jair": "Jair Queiroz",
+    "Grazielly": "Grazielly",
+    "Margarete": "Margarete",
+    "Vinicio": "Vinicio",
+    "Claudia": "Claudia",
+    "Dorval": "Dorval",
+    "Graziela": "Graziela",
+    "Fipile": "Fipile",
+    "Karla": "Karla",
+    "Jessica": "Jessica",
+    "Grazyele": "Grazyele"
+  },
+  "registros": [
+    {
+      "data": "2025-10-06",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Daniel",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-10-06",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "João Bizerra",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-10-06",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Orlando",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-10-06",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Marina",
+      "ajudante": "Layane"
+    },
+    {
+      "data": "2025-10-06",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Estéfane",
+      "ajudante": "Giuliana"
+    },
+    {
+      "data": "2025-10-06",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Rebeca",
+      "ajudante": "Regina"
+    },
+    {
+      "data": "2025-10-06",
+      "numero": "7",
+      "categoria": "Ministério",
+      "tipo": "Fazendo discípulos",
+      "titular": "Lucas Santana",
+      "ajudante": "Valter Soares"
+    },
+    {
+      "data": "2025-10-06",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Filipe Donizete",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-10-06",
+      "numero": "9",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Roberto Soares",
+      "ajudante": "Lucas Soares"
+    },
+    {
+      "data": "2025-10-13",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Lucas Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-10-13",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Wellington",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-10-13",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Filipe Donizete",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-10-13",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Ariane e Cacilda",
+      "ajudante": "Graziele"
+    },
+    {
+      "data": "2025-10-13",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Mariana",
+      "ajudante": "Sheila"
+    },
+    {
+      "data": "2025-10-13",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Jaqueline",
+      "ajudante": "Dayane"
+    },
+    {
+      "data": "2025-10-13",
+      "numero": "7",
+      "categoria": "Ministério",
+      "tipo": "Explicando suas crenças",
+      "titular": "Rogério",
+      "ajudante": "Valmir Soares"
+    },
+    {
+      "data": "2025-10-13",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Anderson",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-10-13",
+      "numero": "9",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Rodrigo Soares",
+      "ajudante": "Lucas Santana"
+    },
+    {
+      "data": "2025-10-20",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Roberto Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-10-20",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Rogério",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-10-20",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Fernando Gonçalves",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-10-20",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Vera Bizerra",
+      "ajudante": "Judite"
+    },
+    {
+      "data": "2025-10-20",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Elaine Spaler",
+      "ajudante": "Helena"
+    },
+    {
+      "data": "2025-10-20",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Fazendo discípulos",
+      "titular": "Vera Freires",
+      "ajudante": "Priscilla"
+    },
+    {
+      "data": "2025-10-20",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Vinicius",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-10-20",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Felipe Donizete",
+      "ajudante": "Erik Gransiero"
+    },
+    {
+      "data": "2025-10-27",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Filipe Donizete",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-10-27",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Dorival",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-10-27",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "João Bizerra",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-10-27",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Regina",
+      "ajudante": "Sarah"
+    },
+    {
+      "data": "2025-10-27",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Daniel",
+      "ajudante": "Vinicius"
+    },
+    {
+      "data": "2025-10-27",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Discurso",
+      "titular": "Valter Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-10-27",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Necessidades locais",
+      "titular": "Rodrigo Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-11-03",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Dorival",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-11-03",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Anderson",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-11-03",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Lucas Santana",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-11-03",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Rita",
+      "ajudante": "Vera Bizerra"
+    },
+    {
+      "data": "2025-11-03",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Gisele",
+      "ajudante": "Jaqueline"
+    },
+    {
+      "data": "2025-11-03",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Fazendo discípulos",
+      "titular": "Priscilla",
+      "ajudante": "Raquel"
+    },
+    {
+      "data": "2025-11-03",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Rodrigo Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-11-03",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Lucas Soares",
+      "ajudante": "Ricardo Neri"
+    },
+    {
+      "data": "2025-11-10",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Daniel",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-11-10",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "José Carlos",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-11-10",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Arthur",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-11-10",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Paulo G.",
+      "ajudante": "Valmir Soares"
+    },
+    {
+      "data": "2025-11-10",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Erik Gransiero",
+      "ajudante": "Vera Freires"
+    },
+    {
+      "data": "2025-11-10",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Discurso",
+      "titular": "Ricardo Neri",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-11-10",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Roberto Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-11-10",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Valter Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-11-10",
+      "numero": "9",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Vinicius",
+      "ajudante": "Wellington"
+    },
+    {
+      "data": "2025-11-17",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Rodrigo Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-11-17",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Vicente",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-11-17",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "João Pedro",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-11-17",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Auricelia",
+      "ajudante": "Rosana"
+    },
+    {
+      "data": "2025-11-17",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Cristiane Ribeiro",
+      "ajudante": "Marjore/Zé Carlos"
+    },
+    {
+      "data": "2025-11-17",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Luana",
+      "ajudante": "Elizene"
+    },
+    {
+      "data": "2025-11-17",
+      "numero": "7",
+      "categoria": "Ministério",
+      "tipo": "Explicando suas crenças",
+      "titular": "Marina",
+      "ajudante": "Sarah"
+    },
+    {
+      "data": "2025-11-17",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Dorival",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-11-17",
+      "numero": "9",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Filipe Donizete",
+      "ajudante": "Paulo G."
+    },
+    {
+      "data": "2025-11-24",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Wellington",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-11-24",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "João Bizerra",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-11-24",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Fernando Gonçalves",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-11-24",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Giuliana",
+      "ajudante": "Monica"
+    },
+    {
+      "data": "2025-11-24",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Layane",
+      "ajudante": "Luciana"
+    },
+    {
+      "data": "2025-11-24",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Discurso",
+      "titular": "José Carlos",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-11-24",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Anderson",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-11-24",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Daniel",
+      "ajudante": "Erik Gransiero"
+    },
+    {
+      "data": "2025-12-08",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Rogério",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-12-08",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Valter Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-12-08",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Dorival",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-12-08",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Ariane e Cacilda",
+      "ajudante": "Monica"
+    },
+    {
+      "data": "2025-12-08",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Sheila",
+      "ajudante": "Judite"
+    },
+    {
+      "data": "2025-12-08",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Daniel",
+      "ajudante": "Lucas Santana"
+    },
+    {
+      "data": "2025-12-08",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Filipe Donizete",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-12-08",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Ademir Soares",
+      "ajudante": "Erik Gransiero"
+    },
+    {
+      "data": "2025-12-15",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Wellington",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-12-15",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Vicente",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-12-15",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Arthur",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-12-15",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Mirna",
+      "ajudante": "Kelly"
+    },
+    {
+      "data": "2025-12-15",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Estéfane",
+      "ajudante": "Elaine Spaler"
+    },
+    {
+      "data": "2025-12-15",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Explicando suas crenças",
+      "titular": "Gisele",
+      "ajudante": "Vera Bizerra"
+    },
+    {
+      "data": "2025-12-15",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Vinicius",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-12-15",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Ricardo Neri",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-12-15",
+      "numero": "9",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "João Bizerra",
+      "ajudante": "Erik Gransiero"
+    },
+    {
+      "data": "2025-12-22",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "José Carlos",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-12-22",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Daniel",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-12-22",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Valmir Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-12-22",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Cesar Viana",
+      "ajudante": "Vinicius"
+    },
+    {
+      "data": "2025-12-22",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Lucas Soares",
+      "ajudante": "Valter Soares"
+    },
+    {
+      "data": "2025-12-22",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Fazendo discípulos",
+      "titular": "Elizene",
+      "ajudante": "Helena"
+    },
+    {
+      "data": "2025-12-22",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Lucas Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-12-22",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Dorival",
+      "ajudante": "Paulo G."
+    },
+    {
+      "data": "2025-12-29",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Anderson",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-12-29",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Roberto Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-12-29",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Orlando",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-12-29",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Graziele",
+      "ajudante": "Luana"
+    },
+    {
+      "data": "2025-12-29",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Sarah",
+      "ajudante": "Margareth"
+    },
+    {
+      "data": "2025-12-29",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Discurso",
+      "titular": "Erik Gransiero",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-12-29",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Necessidades locais",
+      "titular": "Valter Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2025-12-29",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Ricardo Neri",
+      "ajudante": "José Carlos"
+    },
+    {
+      "data": "2026-01-05",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Daniel",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-01-05",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Lucas Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-01-05",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Lucas Santana",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-01-05",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Layana",
+      "ajudante": "Aline"
+    },
+    {
+      "data": "2026-01-05",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Marina",
+      "ajudante": "Raquel"
+    },
+    {
+      "data": "2026-01-05",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Discurso",
+      "titular": "João Bizerra",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-01-05",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Roberto Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-01-05",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Ademir Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-01-05",
+      "numero": "9",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "José Carlos",
+      "ajudante": "Wellington"
+    },
+    {
+      "data": "2026-01-12",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Valter Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-01-12",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Dorival",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-01-12",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Bryan",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-01-12",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Dayane",
+      "ajudante": "Beatriz"
+    },
+    {
+      "data": "2026-01-12",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Mariana",
+      "ajudante": "Priscilla"
+    },
+    {
+      "data": "2026-01-12",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Vinicius",
+      "ajudante": "Orlando"
+    },
+    {
+      "data": "2026-01-12",
+      "numero": "7",
+      "categoria": "Ministério",
+      "tipo": "Discurso",
+      "titular": "João Pedro",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-01-12",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Necessidades locais",
+      "titular": "Filipe Donizete",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-01-12",
+      "numero": "9",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Wellington",
+      "ajudante": "Paulo G."
+    },
+    {
+      "data": "2026-01-19",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Ricardo Neri",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-01-19",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "José Vicente",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-01-19",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Fernando Gonçalves",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-01-19",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Rebeca",
+      "ajudante": "Vera Freires"
+    },
+    {
+      "data": "2026-01-19",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Rita",
+      "ajudante": "Auricelia"
+    },
+    {
+      "data": "2026-01-19",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Explicando suas crenças",
+      "titular": "Verra Bizerra",
+      "ajudante": "Roberta"
+    },
+    {
+      "data": "2026-01-19",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Rogério",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-01-19",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Rodrigo Soares",
+      "ajudante": "João Pedro"
+    },
+    {
+      "data": "2026-01-26",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Lucas Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-01-26",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Ricardo Neri",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-01-26",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Erik Gransiero",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-01-26",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Sarah",
+      "ajudante": "Tamires"
+    },
+    {
+      "data": "2026-01-26",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Elaine Spaler",
+      "ajudante": "Gisele"
+    },
+    {
+      "data": "2026-01-26",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Fazendo discípulos",
+      "titular": "José Carlos",
+      "ajudante": "Marjorie / Cristiane"
+    },
+    {
+      "data": "2026-01-26",
+      "numero": "7",
+      "categoria": "Ministério",
+      "tipo": "Fazendo discípulos",
+      "titular": "Giuliana",
+      "ajudante": "Rosana"
+    },
+    {
+      "data": "2026-01-26",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "João Bizerra",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-01-26",
+      "numero": "9",
+      "categoria": "Vida Cristã",
+      "tipo": "Necessidades locais",
+      "titular": "Valter Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-01-26",
+      "numero": "10",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Anderson",
+      "ajudante": "Valmir Soares"
+    },
+    {
+      "data": "2026-02-02",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Roberto Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-02-02",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Rogério",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-02-02",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Felipe Martines",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-02-02",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Regina",
+      "ajudante": "Luana"
+    },
+    {
+      "data": "2026-02-02",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Dorival",
+      "ajudante": "Elizene"
+    },
+    {
+      "data": "2026-02-02",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Valter Soares",
+      "ajudante": "Anderson"
+    },
+    {
+      "data": "2026-02-02",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Wellington",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-02-02",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Daniel",
+      "ajudante": "José Carlos"
+    },
+    {
+      "data": "2026-02-09",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Dorival",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-02-09",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Filipe Donizete",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-02-09",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "João Pedro",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-02-09",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Ariane e Cacilda",
+      "ajudante": "Luciana"
+    },
+    {
+      "data": "2026-02-09",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Beatriz",
+      "ajudante": "Mariana"
+    },
+    {
+      "data": "2026-02-09",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Discurso",
+      "titular": "Valmir Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-02-09",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Necessidades locais",
+      "titular": "Valter Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-02-09",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Lucas Soares",
+      "ajudante": "Erik Gransiero"
+    },
+    {
+      "data": "2026-02-16",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "José Carlos",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-02-16",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Wellington",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-02-16",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Jair Queiroz",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-02-16",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Aline",
+      "ajudante": "Marina"
+    },
+    {
+      "data": "2026-02-16",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Sarah",
+      "ajudante": "Grazielly"
+    },
+    {
+      "data": "2026-02-16",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Explicando suas crenças",
+      "titular": "Margarete",
+      "ajudante": "Jaqueline"
+    },
+    {
+      "data": "2026-02-16",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Valter Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-02-16",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Roberto Soares",
+      "ajudante": "Lucas Soares"
+    },
+    {
+      "data": "2026-02-23",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Ademir Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-02-23",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "José Vicente",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-02-23",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Arthur",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-02-23",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Layana",
+      "ajudante": "Ricardo Neri"
+    },
+    {
+      "data": "2026-02-23",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Daniel",
+      "ajudante": "Bryan"
+    },
+    {
+      "data": "2026-02-23",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Vinicio",
+      "ajudante": "Kelly"
+    },
+    {
+      "data": "2026-02-23",
+      "numero": "7",
+      "categoria": "Ministério",
+      "tipo": "Fazendo discípulos",
+      "titular": "Priscilla",
+      "ajudante": "Roberta"
+    },
+    {
+      "data": "2026-02-23",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Filipe Donizete",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-02-23",
+      "numero": "9",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Anderson",
+      "ajudante": "Lucas Santana"
+    },
+    {
+      "data": "2026-03-02",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Roberto Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-03-02",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Lucas Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-03-02",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Daniel",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-03-02",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Ademir Soares",
+      "ajudante": "João Pedro"
+    },
+    {
+      "data": "2026-03-02",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Sarah",
+      "ajudante": "Ariane e Cacilda"
+    },
+    {
+      "data": "2026-03-02",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Explicando suas crenças",
+      "titular": "Erik Gransiero",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-03-02",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Filipe Donizete",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-03-02",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Ricardo Neri",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-03-02",
+      "numero": "9",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Dorival",
+      "ajudante": "João Pedro"
+    },
+    {
+      "data": "2026-03-09",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Anderson",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-03-09",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "José Carlos",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-03-09",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Orlando",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-03-09",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Fernando e Paulo",
+      "ajudante": "Giuliana"
+    },
+    {
+      "data": "2026-03-09",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Sheila",
+      "ajudante": "Claudia"
+    },
+    {
+      "data": "2026-03-09",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Bryan",
+      "ajudante": "Rodrigo Soares"
+    },
+    {
+      "data": "2026-03-09",
+      "numero": "7",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Priscilla",
+      "ajudante": "Elaine Spaler"
+    },
+    {
+      "data": "2026-03-09",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Necessidades locais",
+      "titular": "Valter Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-03-09",
+      "numero": "9",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "João Bizerra",
+      "ajudante": "Valmir Soares"
+    },
+    {
+      "data": "2026-03-16",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Lucas Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-03-16",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Ricardo Neri",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-03-16",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "José Vicente",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-03-16",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Gisele",
+      "ajudante": "Wellington"
+    },
+    {
+      "data": "2026-03-16",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Kelly",
+      "ajudante": "Monica"
+    },
+    {
+      "data": "2026-03-16",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Fazendo discípulos",
+      "titular": "Regina",
+      "ajudante": "Judite"
+    },
+    {
+      "data": "2026-03-16",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Dorval",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-03-16",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Valter Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-03-16",
+      "numero": "9",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Rogério",
+      "ajudante": "José Carlos"
+    },
+    {
+      "data": "2026-03-23",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Rodrigo Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-03-23",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Wellington",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-03-23",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Lucas Santana",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-03-23",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Raquel",
+      "ajudante": "Mirna"
+    },
+    {
+      "data": "2026-03-23",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Roberta",
+      "ajudante": "Rosana"
+    },
+    {
+      "data": "2026-03-23",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Margareth",
+      "ajudante": "Elizene"
+    },
+    {
+      "data": "2026-03-23",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Filipe Donizete",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-03-23",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Ademir Soares",
+      "ajudante": "Paulo G."
+    },
+    {
+      "data": "2026-04-06",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Wellington",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-04-06",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "João Bizerra",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-04-06",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Roberto Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-04-06",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Felipe M. / Aline",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-04-06",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Vera Freires",
+      "ajudante": "Layane"
+    },
+    {
+      "data": "2026-04-06",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Explicando suas crenças",
+      "titular": "Marina",
+      "ajudante": "Mariana"
+    },
+    {
+      "data": "2026-04-06",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Necessidades locais",
+      "titular": "Rodrigo Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-04-06",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Vinicio",
+      "ajudante": "Erik Gransiero"
+    },
+    {
+      "data": "2026-04-13",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Daniel",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-04-13",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "José Vicente",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-04-13",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Fernando",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-04-13",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Vera Bizerra",
+      "ajudante": "Auricelia"
+    },
+    {
+      "data": "2026-04-13",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Rebeca",
+      "ajudante": "Cristiane Ribeiro"
+    },
+    {
+      "data": "2026-04-13",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Dayane",
+      "ajudante": "Ariane e Cacilda"
+    },
+    {
+      "data": "2026-04-13",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Anderson",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-04-13",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Valter Soares",
+      "ajudante": "Lucas Santana"
+    },
+    {
+      "data": "2026-04-20",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "José Carlos",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-04-20",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Dorival",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-04-20",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Vinicio",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-04-20",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Lucas Soares",
+      "ajudante": "Elaine C."
+    },
+    {
+      "data": "2026-04-20",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Tamires",
+      "ajudante": "Anderson"
+    },
+    {
+      "data": "2026-04-20",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Jaqueline",
+      "ajudante": "Priscilla"
+    },
+    {
+      "data": "2026-04-20",
+      "numero": "7",
+      "categoria": "Ministério",
+      "tipo": "Discurso",
+      "titular": "Valmir Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-04-20",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Roberto Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-04-20",
+      "numero": "9",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Ricardo Neri",
+      "ajudante": "Dorival"
+    },
+    {
+      "data": "2026-04-27",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Rogério",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-04-27",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Valter Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-04-27",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Cesar Viana",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-04-27",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Luana",
+      "ajudante": "Beatriz"
+    },
+    {
+      "data": "2026-04-27",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Explicando suas crenças",
+      "titular": "Bryan",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-04-27",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Fazendo discípulos",
+      "titular": "Giuliana",
+      "ajudante": "Helena"
+    },
+    {
+      "data": "2026-04-27",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Filipe Donizete",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-04-27",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Rodrigo Soares",
+      "ajudante": "Lucas Soares"
+    },
+    {
+      "data": "2026-05-11",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Ricardo Neri",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-05-11",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Wellington",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-05-11",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Lucas Santana",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-05-11",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Bryan",
+      "ajudante": "João Pedro"
+    },
+    {
+      "data": "2026-05-11",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Claudia",
+      "ajudante": "Luciana"
+    },
+    {
+      "data": "2026-05-11",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Fazendo discípulos",
+      "titular": "Regina",
+      "ajudante": "Raquel"
+    },
+    {
+      "data": "2026-05-11",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Necessidades locais",
+      "titular": "Filipe Donizete",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-05-11",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Anderson",
+      "ajudante": "Erik Gransiero"
+    },
+    {
+      "data": "2026-05-18",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Lucas Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-05-18",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "José Carlos",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-05-18",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Fernando",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-05-18",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Marina",
+      "ajudante": "Giuliana"
+    },
+    {
+      "data": "2026-05-18",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Roberta",
+      "ajudante": "Mariana"
+    },
+    {
+      "data": "2026-05-18",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Fazendo discípulos",
+      "titular": "Gisele",
+      "ajudante": "Rebeca"
+    },
+    {
+      "data": "2026-05-18",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Rodrigo Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-05-18",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Daniel",
+      "ajudante": "Wellington"
+    },
+    {
+      "data": "2026-05-25",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Anderson",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-05-25",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "José Vicente",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-05-25",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Orlando",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-05-25",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Elaine Spaler",
+      "ajudante": "Layana"
+    },
+    {
+      "data": "2026-05-25",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Ricardo Neri",
+      "ajudante": "Paulo G."
+    },
+    {
+      "data": "2026-05-25",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Helena",
+      "ajudante": "Vera Bizerra"
+    },
+    {
+      "data": "2026-05-25",
+      "numero": "7",
+      "categoria": "Ministério",
+      "tipo": "Explicando suas crenças",
+      "titular": "Kelly",
+      "ajudante": "Elaine Campoio"
+    },
+    {
+      "data": "2026-05-25",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Vinicio",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-05-25",
+      "numero": "9",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Rogério",
+      "ajudante": "João Pedro"
+    },
+    {
+      "data": "2026-06-01",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Wellington",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-06-01",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Daniel",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-06-01",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Erik Gransiero",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-06-01",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Ariane e Cacilda",
+      "ajudante": "Roberto Soares"
+    },
+    {
+      "data": "2026-06-01",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Graziela",
+      "ajudante": "Elizene"
+    },
+    {
+      "data": "2026-06-01",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Fazendo discípulos",
+      "titular": "Priscilla",
+      "ajudante": "Luana"
+    },
+    {
+      "data": "2026-06-01",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Dorival",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-06-01",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "João Bizerra",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-06-01",
+      "numero": "9",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Roberto Soares",
+      "ajudante": "Fernando"
+    },
+    {
+      "data": "2026-06-08",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Daniel",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-06-08",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Rogério",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-06-08",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "José Carlos",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-06-08",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Beatriz",
+      "ajudante": "Dayane"
+    },
+    {
+      "data": "2026-06-08",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Felipe M. / Aline",
+      "ajudante": "Valmir Soares"
+    },
+    {
+      "data": "2026-06-08",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Sarah",
+      "ajudante": "Aline"
+    },
+    {
+      "data": "2026-06-08",
+      "numero": "7",
+      "categoria": "Ministério",
+      "tipo": "Explicando suas crenças",
+      "titular": "Vera Freires",
+      "ajudante": "Cristiane Ribeiro"
+    },
+    {
+      "data": "2026-06-08",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Anderson",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-06-08",
+      "numero": "9",
+      "categoria": "Vida Cristã",
+      "tipo": "Necessidades locais",
+      "titular": "Rodrigo Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-06-08",
+      "numero": "10",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Fipile",
+      "ajudante": "Lucas Soares"
+    },
+    {
+      "data": "2026-06-15",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Valter Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-06-15",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Dorival",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-06-15",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Vinicio",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-06-15",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Monica",
+      "ajudante": "Giuliana"
+    },
+    {
+      "data": "2026-06-15",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Wellington",
+      "ajudante": "Filipe Donizete"
+    },
+    {
+      "data": "2026-06-15",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Fazendo discípulos",
+      "titular": "Margareth",
+      "ajudante": "Regina"
+    },
+    {
+      "data": "2026-06-15",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "José Carlos",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-06-15",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Lucas Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-06-15",
+      "numero": "9",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Ademir Soares",
+      "ajudante": "Daniel"
+    },
+    {
+      "data": "2026-06-22",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Roberto Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-06-22",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Valter Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-06-22",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Cesar Viana",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-06-22",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Mirna",
+      "ajudante": "Raquel"
+    },
+    {
+      "data": "2026-06-22",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Rosana",
+      "ajudante": "Claudia"
+    },
+    {
+      "data": "2026-06-22",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Auricelia",
+      "ajudante": "Judite"
+    },
+    {
+      "data": "2026-06-22",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Ademir Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-06-22",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Lucas Soares",
+      "ajudante": "Vinicio"
+    },
+    {
+      "data": "2026-06-29",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Rodrigo Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-06-29",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Vinicio",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-06-29",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Wellington",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-06-29",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Daniel",
+      "ajudante": "Lucas Soares"
+    },
+    {
+      "data": "2026-06-29",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Ricardo Neri",
+      "ajudante": "Layana"
+    },
+    {
+      "data": "2026-06-29",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Discurso",
+      "titular": "Dorival",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-06-29",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Necessidades locais",
+      "titular": "Rogério",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-06-29",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Valter Soares",
+      "ajudante": "Erik Gransiero"
+    },
+    {
+      "data": "2026-07-06",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Daniel",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-07-06",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Wellington",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-07-06",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Fernando",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-07-06",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Priscilla",
+      "ajudante": "Karla"
+    },
+    {
+      "data": "2026-07-06",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Roberta",
+      "ajudante": "Jessica"
+    },
+    {
+      "data": "2026-07-06",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Discurso",
+      "titular": "Erik Gransiero",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-07-06",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Rogério",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-07-06",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Ricardo Neri",
+      "ajudante": "Paulo G."
+    },
+    {
+      "data": "2026-07-13",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Anderson",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-07-13",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "José Vicente",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-07-13",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Orlando",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-07-13",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Monica",
+      "ajudante": "Tamires"
+    },
+    {
+      "data": "2026-07-13",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Sheila",
+      "ajudante": "Kelly"
+    },
+    {
+      "data": "2026-07-13",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Fazendo discípulos",
+      "titular": "Elizene",
+      "ajudante": "Ariane e Cacilda"
+    },
+    {
+      "data": "2026-07-13",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Rodrigo Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-07-13",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "João Bizerra",
+      "ajudante": "Erik Gransiero"
+    },
+    {
+      "data": "2026-07-20",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Lucas Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-07-20",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "José Carlos",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-07-20",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Paulo G.",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-07-20",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Dayane",
+      "ajudante": "Margareth"
+    },
+    {
+      "data": "2026-07-20",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Judite",
+      "ajudante": "Marina"
+    },
+    {
+      "data": "2026-07-20",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Explicando suas crenças",
+      "titular": "Bryan",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-07-20",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Dorival",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-07-20",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Valter Soares",
+      "ajudante": "João Pedro"
+    },
+    {
+      "data": "2026-07-27",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Wellington",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-07-27",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Ricardo Neri",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-07-27",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "José Vicente",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-07-27",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Vera Bizerra",
+      "ajudante": "Regina"
+    },
+    {
+      "data": "2026-07-27",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Aline",
+      "ajudante": "Layane"
+    },
+    {
+      "data": "2026-07-27",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Explicando suas crenças",
+      "titular": "Rebeca",
+      "ajudante": "Erik Gransiero"
+    },
+    {
+      "data": "2026-07-27",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Filipe Donizete",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-07-27",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Ademir Soares",
+      "ajudante": "Bryan"
+    },
+    {
+      "data": "2026-08-03",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Dorival",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-08-03",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Lucas Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-08-03",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Lucas Santana",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-08-03",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Giuliana",
+      "ajudante": "Helena"
+    },
+    {
+      "data": "2026-08-03",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Gisele",
+      "ajudante": "Priscilla"
+    },
+    {
+      "data": "2026-08-03",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Discurso",
+      "titular": "Paulo G.",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-08-03",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Vinicio",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-08-03",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Roberto Soares",
+      "ajudante": "Fernando"
+    },
+    {
+      "data": "2026-08-10",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "João Bizerra",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-08-10",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Daniel",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-08-10",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Bryan",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-08-10",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Vera Freires",
+      "ajudante": "Jaqueline"
+    },
+    {
+      "data": "2026-08-10",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Cultivando interesse",
+      "titular": "Claudia",
+      "ajudante": "Mariana"
+    },
+    {
+      "data": "2026-08-10",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Fazendo discípulos",
+      "titular": "Lucas Soares",
+      "ajudante": "Lucas Santana"
+    },
+    {
+      "data": "2026-08-10",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Necessidades locais",
+      "titular": "Rogério",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-08-10",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Rodrigo Soares",
+      "ajudante": "Cesar Viana"
+    },
+    {
+      "data": "2026-08-24",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Valter Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-08-24",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "João Bizerra",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-08-24",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Jair Queiroz",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-08-24",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Grazyele",
+      "ajudante": "Luciana"
+    },
+    {
+      "data": "2026-08-24",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Wellington",
+      "ajudante": "Anderson"
+    },
+    {
+      "data": "2026-08-24",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Discurso",
+      "titular": "Daniel",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-08-24",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Vinicius",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-08-31",
+      "numero": "1",
+      "categoria": "Tesouros",
+      "tipo": "Tesouros (discurso)",
+      "titular": "Ricardo Neri",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-08-31",
+      "numero": "2",
+      "categoria": "Tesouros",
+      "tipo": "Joias espirituais",
+      "titular": "Anderson",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-08-31",
+      "numero": "3",
+      "categoria": "Tesouros",
+      "tipo": "Leitura da Bíblia",
+      "titular": "Cesar Viana",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-08-31",
+      "numero": "4",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Layane",
+      "ajudante": "Luana"
+    },
+    {
+      "data": "2026-08-31",
+      "numero": "5",
+      "categoria": "Ministério",
+      "tipo": "Iniciando conversas",
+      "titular": "Sarah",
+      "ajudante": "Rebeca"
+    },
+    {
+      "data": "2026-08-31",
+      "numero": "6",
+      "categoria": "Ministério",
+      "tipo": "Explicando suas crenças",
+      "titular": "Erik Gransiero",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-08-31",
+      "numero": "7",
+      "categoria": "Vida Cristã",
+      "tipo": "Vida Cristã (discurso)",
+      "titular": "Roberto Soares",
+      "ajudante": ""
+    },
+    {
+      "data": "2026-08-31",
+      "numero": "8",
+      "categoria": "Vida Cristã",
+      "tipo": "Estudo bíblico de congregação",
+      "titular": "Vinicius",
+      "ajudante": "Lucas Santana"
+    }
+  ]
+}

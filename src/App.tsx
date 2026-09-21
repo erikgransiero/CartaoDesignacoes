@@ -6,6 +6,7 @@ import React, { useState, useRef, useEffect } from "react";
 // recebe, edite estes arquivos e publique uma nova versão.
 import PUBLICADORES_INICIAL from "./data/publicadores.json";
 import CALENDARIO_INICIAL from "./data/calendario.json";
+import DESIGNACOES_HISTORICO from "./data/designacoes.json";
 
 /**
  * Gerenciador de Documentos — Congregação Parque Scaffid
@@ -50,8 +51,12 @@ const MENU_LATERAL_EXTRA = [
 // de Estatísticas ainda não foi construída (pronto: false), então o item fica
 // esmaecido e o clique não navega — mesmo padrão dos itens em construção.
 const MENU_ESTATISTICAS = [
-  { id: "estatisticas", titulo: "Estatísticas", icone: "grafico", pronto: false },
+  { id: "estatisticas", titulo: "Estatísticas", icone: "grafico", pronto: true },
 ];
+
+// Grupos de elegibilidade usados nos rankings de justiça (nunca se compara
+// entre grupos diferentes). "Não definido" é o padrão até a classificação.
+const ELEGIBILIDADES = ["Não definido", "Ancião", "Servo ministerial", "Publicador batizado", "Irmã"];
 
 /* ---------------- persistência no navegador ---------------- */
 // Cada tela guarda o que foi preenchido no próprio navegador. Além de não
@@ -180,7 +185,7 @@ export default function App() {
   const [tela, setTela] = useState("menu");
 
   function navega(destino) {
-    if (destino === "menu" || destino === "usuarios" || destino === "cadastro-publicadores" || destino === "enviar-cartao") { setTela(destino); return; }
+    if (destino === "menu" || destino === "usuarios" || destino === "cadastro-publicadores" || destino === "enviar-cartao" || destino === "estatisticas") { setTela(destino); return; }
     const doc = DOCUMENTOS.find((d) => d.id === destino);
     if (doc && doc.pronto) setTela(destino);
   }
@@ -211,6 +216,7 @@ export default function App() {
       {tela === "usuarios" && <TelaUsuarios onNavega={navega} sessao={sessao} onSair={sair} />}
       {tela === "cadastro-publicadores" && <TelaPublicadores onNavega={navega} sessao={sessao} onSair={sair} />}
       {tela === "enviar-cartao" && <TelaEnviarCartao onNavega={navega} sessao={sessao} onSair={sair} />}
+      {tela === "estatisticas" && <TelaEstatisticas onNavega={navega} sessao={sessao} onSair={sair} />}
     </div>
   );
 }
@@ -785,13 +791,15 @@ function TelaPublicadores({ onNavega, sessao, onSair }) {
   const [dados, setDados] = useEstadoSalvo("publicadores", PUBLICADORES_INICIAL);
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
+  const [elegibilidade, setElegibilidade] = useState("Não definido");
+  const [ativo, setAtivo] = useState(true);
   const [editandoId, setEditandoId] = useState(null);
   const [erro, setErro] = useState("");
   const [busca, setBusca] = useState("");
   const [pagina, setPagina] = useState(1);
   const [avisoExportar, setAvisoExportar] = useState("");
 
-  function limpar() { setNome(""); setTelefone(""); setEditandoId(null); setErro(""); }
+  function limpar() { setNome(""); setTelefone(""); setElegibilidade("Não definido"); setAtivo(true); setEditandoId(null); setErro(""); }
 
   // Ainda não há backend: o site não tem como gravar sozinho de volta no
   // arquivo publicadores.json do Git (exigiria expor uma credencial de
@@ -820,14 +828,14 @@ function TelaPublicadores({ onNavega, sessao, onSair }) {
     const duplicado = dados.publicadores.find((p) => p.id !== editandoId && p.telefone.replace(/\D/g, "") === digitos);
     if (duplicado) { setErro(`Este contato já existe: ${duplicado.nome}.`); return; }
     if (editandoId) {
-      setDados((d) => ({ ...d, publicadores: d.publicadores.map((p) => (p.id === editandoId ? { ...p, nome: nomeOk, telefone } : p)) }));
+      setDados((d) => ({ ...d, publicadores: d.publicadores.map((p) => (p.id === editandoId ? { ...p, nome: nomeOk, telefone, elegibilidade, ativo } : p)) }));
     } else {
-      setDados((d) => ({ ...d, publicadores: [...d.publicadores, { id: novoIdCartao(), nome: nomeOk, telefone }] }));
+      setDados((d) => ({ ...d, publicadores: [...d.publicadores, { id: novoIdCartao(), nome: nomeOk, telefone, elegibilidade, ativo }] }));
     }
     limpar();
   }
 
-  function iniciarEdicao(p) { setNome(p.nome); setTelefone(p.telefone); setEditandoId(p.id); setErro(""); }
+  function iniciarEdicao(p) { setNome(p.nome); setTelefone(p.telefone); setElegibilidade(p.elegibilidade || "Não definido"); setAtivo(p.ativo !== false); setEditandoId(p.id); setErro(""); }
   function remover(id) { setDados((d) => ({ ...d, publicadores: d.publicadores.filter((p) => p.id !== id) })); if (editandoId === id) limpar(); }
   function mudaBusca(v) { setBusca(v); setPagina(1); }
 
@@ -888,6 +896,19 @@ function TelaPublicadores({ onNavega, sessao, onSair }) {
               </div>
               <div style={PUB.ajuda}>Informe o DDD e o número do celular com 9 dígitos.</div>
             </div>
+            <div style={PUB.campo}>
+              <label style={PUB.label}>Elegibilidade</label>
+              <select style={PUB.input} value={elegibilidade} onChange={(e) => setElegibilidade(e.target.value)}>
+                {ELEGIBILIDADES.map((el) => <option key={el} value={el}>{el}</option>)}
+              </select>
+              <div style={PUB.ajuda}>Grupo usado nos rankings de justiça das Estatísticas (não se compara entre grupos diferentes).</div>
+            </div>
+            <div style={PUB.campo}>
+              <label style={PUB.label}>Situação</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: UI.tinta, cursor: "pointer", padding: "8px 0" }}>
+                <input type="checkbox" checked={ativo} onChange={(e) => setAtivo(e.target.checked)} /> Ativo (disponível para designações)
+              </label>
+            </div>
           </div>
 
           {erro && <div style={PUB.erro}>{erro}</div>}
@@ -920,15 +941,17 @@ function TelaPublicadores({ onNavega, sessao, onSair }) {
           <div style={PUB.tabelaScroll}>
             <table style={PUB.tabela}>
               <thead>
-                <tr><th style={PUB.th}>Nome do publicador</th><th style={PUB.th}>Telefone</th><th style={{ ...PUB.th, textAlign: "right" }}>Ações</th></tr>
+                <tr><th style={PUB.th}>Nome do publicador</th><th style={PUB.th}>Telefone</th><th style={PUB.th}>Elegibilidade</th><th style={PUB.th}>Situação</th><th style={{ ...PUB.th, textAlign: "right" }}>Ações</th></tr>
               </thead>
               <tbody>
                 {paginaItens.length === 0 ? (
-                  <tr><td style={PUB.tdVazio} colSpan={3}>{busca ? "Nenhum publicador encontrado." : "Nenhum publicador cadastrado ainda."}</td></tr>
+                  <tr><td style={PUB.tdVazio} colSpan={5}>{busca ? "Nenhum publicador encontrado." : "Nenhum publicador cadastrado ainda."}</td></tr>
                 ) : paginaItens.map((p) => (
                   <tr key={p.id}>
                     <td style={PUB.td}>{p.nome}</td>
                     <td style={{ ...PUB.td, color: UI.cinza }}>{p.telefone}</td>
+                    <td style={{ ...PUB.td, color: (p.elegibilidade && p.elegibilidade !== "Não definido") ? UI.tinta : "#b06a00" }}>{p.elegibilidade || "Não definido"}</td>
+                    <td style={{ ...PUB.td, color: p.ativo === false ? "#9a3b3b" : "#1f6b45" }}>{p.ativo === false ? "Inativo" : "Ativo"}</td>
                     <td style={{ ...PUB.td, textAlign: "right" }}>
                       <div style={PUB.acoes}>
                         <button style={PUB.btnAcao} onClick={() => iniciarEdicao(p)} title="Editar"><Icone nome="editar" size={16} color="#5b6472" /></button>
@@ -3952,6 +3975,596 @@ const CAL = {
   pvTexto: { fontSize: 6, lineHeight: 1.25, color: "#222", whiteSpace: "pre-wrap", overflow: "hidden", textAlign: "center" },
 };
 
+
+/* ==================== TELA ESTATÍSTICAS ==================== */
+// Lookup de apelidos normalizado (variante -> nome canônico) montado a partir
+// do aliasMap do histórico, para unificar nomes também nos dados que vierem
+// do Cartão de Designações.
+const ALIAS_NORM = (() => {
+  const m = {};
+  const am = (DESIGNACOES_HISTORICO && DESIGNACOES_HISTORICO.aliasMap) || {};
+  for (const orig in am) m[normaliza(orig)] = am[orig];
+  return m;
+})();
+function canonPessoa(nome) {
+  const n = (nome || "").trim();
+  if (!n) return "";
+  return ALIAS_NORM[normaliza(n)] || n;
+}
+// Peso de cada tipo de parte por "balde" (configurável na tela).
+const TIPO_BUCKET = {
+  "Tesouros (discurso)": "ensino", "Vida Cristã (discurso)": "ensino",
+  "Estudo bíblico de congregação": "ensino", "Explicando suas crenças": "ensino",
+  "Discurso": "ensino", "Necessidades locais": "ensino",
+  "Iniciando conversas": "demo", "Cultivando interesse": "demo",
+  "Fazendo discípulos": "demo", "O que você diria?": "demo",
+  "Joias espirituais": "joias", "Leitura da Bíblia": "leitura",
+};
+const CATEGORIAS_EST = ["Tesouros", "Ministério", "Vida Cristã"];
+function tipoMinisterioCanon(titulo) {
+  const t = normaliza(titulo);
+  if (!t) return "";
+  if (t.includes("iniciando")) return "Iniciando conversas";
+  if (t.includes("cultivando")) return "Cultivando interesse";
+  if (t.includes("fazendo")) return "Fazendo discípulos";
+  if (t.includes("explicando")) return "Explicando suas crenças";
+  if (t.includes("que voce diria")) return "O que você diria?";
+  if (t.includes("discurso")) return "Discurso";
+  if (t.includes("leitura")) return "Leitura da Bíblia";
+  return titulo.trim();
+}
+function tipoVidaCristaCanon(titulo) {
+  const t = normaliza(titulo);
+  if (t.includes("estudo biblico")) return "Estudo bíblico de congregação";
+  if (t.includes("necessidades")) return "Necessidades locais";
+  return "Vida Cristã (discurso)";
+}
+function isoDaSemanaCartao(semana, mesAno) {
+  const label = semana.dataLabel || "";
+  const mDia = label.match(/\d{1,2}/);
+  const dia = mDia ? parseInt(mDia[0], 10) : 1;
+  let mesIdx = -1;
+  for (let i = 0; i < MESES_NOME.length; i++) {
+    if (normaliza(label).includes(normaliza(MESES_NOME[i]))) { mesIdx = i; break; }
+  }
+  const mAno = (mesAno || "").match(/(\d{4})/);
+  let ano = mAno ? parseInt(mAno[1], 10) : new Date().getFullYear();
+  if (mesIdx < 0) {
+    for (let i = 0; i < MESES_NOME.length; i++) if (normaliza(mesAno || "").includes(normaliza(MESES_NOME[i]))) { mesIdx = i; break; }
+  }
+  if (mesIdx < 0) mesIdx = 0;
+  return isoData(ano, mesIdx + 1, dia);
+}
+// Converte o Cartão de Designações (localStorage) em registros do mesmo
+// formato do histórico — EXCLUINDO presidente e orações (Regra 1).
+function registrosDoCartao(cartao) {
+  const out = [];
+  if (!cartao || !Array.isArray(cartao.semanas)) return out;
+  for (const s of cartao.semanas) {
+    if (s.semReuniao) continue;
+    const data = isoDaSemanaCartao(s, cartao.mesAno);
+    const push = (cat, tipo, designadoStr) => {
+      const partes = String(designadoStr || "").split("/").map((x) => x.trim()).filter(Boolean);
+      if (!partes.length) return;
+      out.push({ data, categoria: cat, tipo, titular: canonPessoa(partes[0]), ajudante: partes[1] ? canonPessoa(partes[1]) : "" });
+    };
+    if (s.tema1Designado) push("Tesouros", "Tesouros (discurso)", s.tema1Designado);
+    if (s.joiasDesignado) push("Tesouros", "Joias espirituais", s.joiasDesignado);
+    if (s.leituraDesignado) push("Tesouros", "Leitura da Bíblia", s.leituraDesignado);
+    (s.ministerio || []).forEach((p) => { if (p.designado) push("Ministério", tipoMinisterioCanon(p.titulo), p.designado); });
+    (s.vidaCrista || []).forEach((p) => { if (p.designado) push("Vida Cristã", tipoVidaCristaCanon(p.titulo), p.designado); });
+  }
+  return out;
+}
+function diasEntreISO(a, b) {
+  const da = new Date(a + "T00:00:00"), db = new Date(b + "T00:00:00");
+  return Math.round((db - da) / 86400000);
+}
+function gini(valores) {
+  const v = valores.filter((x) => x >= 0).slice().sort((a, b) => a - b);
+  const n = v.length;
+  if (n === 0) return 0;
+  const soma = v.reduce((a, b) => a + b, 0);
+  if (soma === 0) return 0;
+  let acum = 0;
+  for (let i = 0; i < n; i++) acum += (2 * (i + 1) - n - 1) * v[i];
+  return acum / (n * soma);
+}
+function desvioPadrao(valores) {
+  const n = valores.length;
+  if (n === 0) return 0;
+  const m = valores.reduce((a, b) => a + b, 0) / n;
+  return Math.sqrt(valores.reduce((a, b) => a + (b - m) * (b - m), 0) / n);
+}
+
+function TelaEstatisticas({ onNavega, sessao, onSair }) {
+  const cartao = React.useMemo(() => leSalvo("cartao", CARTAO_INICIAL), []);
+  const publicadores = React.useMemo(() => leSalvo("publicadores", PUBLICADORES_INICIAL).publicadores, []);
+
+  // configurações ajustáveis
+  const [pesos, setPesos] = useState({ ensino: 3, demo: 2, joias: 2, leitura: 1, ajudante: 0.5 });
+  const [semanasEsquecido, setSemanasEsquecido] = useState(8);
+  const [semanasDuplaAlerta, setSemanasDuplaAlerta] = useState(8);
+  const [scoreW, setScoreW] = useState({ intervalo: 0.4, carga: 0.3, tipo: 0.2, parceiro: 0.1 });
+  const [grupoFiltro, setGrupoFiltro] = useState("Todos");
+  const [tipoAlvo, setTipoAlvo] = useState("Iniciando conversas");
+  const [parceiroAlvo, setParceiroAlvo] = useState("");
+  const [heatTop, setHeatTop] = useState(18);
+
+  // simulação
+  const [simPessoa, setSimPessoa] = useState("");
+  const [simTipo, setSimTipo] = useState("Iniciando conversas");
+  const [simPapel, setSimPapel] = useState("titular");
+  const [simParceiro, setSimParceiro] = useState("");
+  const [simResultado, setSimResultado] = useState(null);
+
+  const hojeISO = isoData(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate());
+
+  const base = React.useMemo(() => {
+    // combina histórico + cartão (dedup por data|tipo|titular|ajudante)
+    const hist = (DESIGNACOES_HISTORICO.registros || []).map((r) => ({ ...r }));
+    const doCartao = registrosDoCartao(cartao);
+    const vistos = new Set(hist.map((r) => `${r.data}|${r.tipo}|${r.titular}|${r.ajudante}`));
+    const combinados = hist.slice();
+    for (const r of doCartao) {
+      const k = `${r.data}|${r.tipo}|${r.titular}|${r.ajudante}`;
+      if (!vistos.has(k)) { vistos.add(k); combinados.push(r); }
+    }
+    combinados.sort((a, b) => a.data.localeCompare(b.data));
+    return combinados;
+  }, [cartao]);
+
+  const elegDe = React.useMemo(() => {
+    const m = {};
+    for (const p of publicadores) m[normaliza(p.nome)] = { eleg: p.elegibilidade || "Não definido", ativo: p.ativo !== false };
+    return m;
+  }, [publicadores]);
+  const infoPessoa = (nome) => elegDe[normaliza(nome)] || { eleg: "Não definido", ativo: true };
+
+  function pesoDe(tipo, papel) {
+    if (papel === "ajudante") return pesos.ajudante;
+    return pesos[TIPO_BUCKET[tipo]] != null ? pesos[TIPO_BUCKET[tipo]] : 1;
+  }
+
+  const an = React.useMemo(() => {
+    const registros = base;
+    const datasSemana = Array.from(new Set(registros.map((r) => r.data))).sort();
+    const periodo = { de: datasSemana[0] || "", ate: datasSemana[datasSemana.length - 1] || "" };
+    const totalMeses = periodo.de ? Math.max(1, (diasEntreISO(periodo.de, periodo.ate) / 30.44) + 0.001) : 1;
+
+    // fatos: uma linha por pessoa+parte+semana+papel
+    const fatos = [];
+    for (const r of registros) {
+      fatos.push({ pessoa: r.titular, papel: "titular", tipo: r.tipo, categoria: r.categoria, data: r.data });
+      if (r.ajudante) fatos.push({ pessoa: r.ajudante, papel: "ajudante", tipo: r.tipo, categoria: r.categoria, data: r.data });
+    }
+
+    // agregação por pessoa
+    const P = {};
+    for (const f of fatos) {
+      const p = P[f.pessoa] || (P[f.pessoa] = {
+        nome: f.pessoa, total: 0, titular: 0, ajudante: 0, carga: 0,
+        porCategoria: { Tesouros: 0, "Ministério": 0, "Vida Cristã": 0 },
+        porTipo: {}, datas: [], ultimaPorTipo: {},
+      });
+      p.total++;
+      p[f.papel]++;
+      p.carga += pesoDe(f.tipo, f.papel);
+      p.porCategoria[f.categoria] = (p.porCategoria[f.categoria] || 0) + 1;
+      p.porTipo[f.tipo] = (p.porTipo[f.tipo] || 0) + 1;
+      p.datas.push(f.data);
+      if (!p.ultimaPorTipo[f.tipo] || f.data > p.ultimaPorTipo[f.tipo]) p.ultimaPorTipo[f.tipo] = f.data;
+    }
+    const pessoas = Object.values(P);
+    for (const p of pessoas) {
+      p.datas.sort();
+      p.ultima = p.datas[p.datas.length - 1];
+      p.diasDesde = diasEntreISO(p.ultima, hojeISO);
+      // intervalo médio (dias) entre designações consecutivas
+      let somaIntervalos = 0, n = 0;
+      for (let i = 1; i < p.datas.length; i++) { somaIntervalos += diasEntreISO(p.datas[i - 1], p.datas[i]); n++; }
+      p.intervaloMedio = n ? Math.round(somaIntervalos / n) : null;
+      p.mediaMensal = +(p.total / totalMeses).toFixed(1);
+      const inf = infoPessoa(p.nome);
+      p.eleg = inf.eleg; p.ativo = inf.ativo;
+      // concentração: maior share de um tipo
+      const maxTipo = Math.max(0, ...Object.values(p.porTipo));
+      p.concentracao = p.total ? maxTipo / p.total : 0;
+      p.tipoDominante = Object.keys(p.porTipo).sort((a, b) => p.porTipo[b] - p.porTipo[a])[0] || "";
+    }
+    pessoas.sort((a, b) => b.total - a.total);
+
+    // duplas (titular + ajudante)
+    const duplas = {};
+    for (const r of registros) {
+      if (!r.ajudante) continue;
+      const par = [r.titular, r.ajudante].sort();
+      const k = par.join(" | ");
+      const d = duplas[k] || (duplas[k] = { a: par[0], b: par[1], n: 0, ultima: "" });
+      d.n++;
+      if (r.data > d.ultima) d.ultima = r.data;
+    }
+    const listaDuplas = Object.values(duplas).sort((x, y) => y.n - x.n || y.ultima.localeCompare(x.ultima));
+    // parceiros distintos por pessoa
+    const parceiros = {};
+    for (const d of listaDuplas) {
+      (parceiros[d.a] || (parceiros[d.a] = new Set())).add(d.b);
+      (parceiros[d.b] || (parceiros[d.b] = new Set())).add(d.a);
+    }
+
+    // dispersão por grupo elegível (carga dos ativos)
+    const gruposEleg = {};
+    for (const p of pessoas) {
+      if (!p.ativo) continue;
+      (gruposEleg[p.eleg] || (gruposEleg[p.eleg] = [])).push(p.carga);
+    }
+    const dispersao = Object.keys(gruposEleg).map((g) => ({
+      grupo: g, n: gruposEleg[g].length,
+      desvio: +desvioPadrao(gruposEleg[g]).toFixed(2), gini: +gini(gruposEleg[g]).toFixed(3),
+    })).sort((a, b) => b.n - a.n);
+
+    // tipos existentes (ordem estável)
+    const tiposUsados = Array.from(new Set(registros.map((r) => r.tipo)));
+    tiposUsados.sort((a, b) => (TIPO_BUCKET[a] ? 0 : 1) - (TIPO_BUCKET[b] ? 0 : 1) || a.localeCompare(b));
+
+    // partes no mês corrente (para alerta "mais de 2 no mês") — mês de referência = último mês com dados
+    const ultimoMes = (periodo.ate || "").slice(0, 7);
+    const noMes = {};
+    for (const f of fatos) if (f.data.slice(0, 7) === ultimoMes) noMes[f.pessoa] = (noMes[f.pessoa] || 0) + 1;
+
+    return { registros, periodo, totalMeses, fatos, pessoas, listaDuplas, parceiros, dispersao, tiposUsados, ultimoMes, noMes, P };
+  }, [base, pesos, publicadores]);
+
+  const gruposDisponiveis = ["Todos", ...ELEGIBILIDADES];
+  const pessoasFiltradas = an.pessoas.filter((p) => grupoFiltro === "Todos" || p.eleg === grupoFiltro);
+
+  // ---- Relatório B: esquecidos ----
+  const limiteDias = semanasEsquecido * 7;
+  const esquecidos = an.pessoas.filter((p) => p.ativo && p.diasDesde > limiteDias).sort((a, b) => b.diasDesde - a.diasDesde);
+
+  // ---- Relatório C: duplas recentes (alerta) ----
+  const duplasRecentes = an.listaDuplas.filter((d) => diasEntreISO(d.ultima, hojeISO) < semanasDuplaAlerta * 7);
+
+  // ---- Relatório E: score de sugestão para o tipo alvo ----
+  const candidatos = React.useMemo(() => {
+    const pool = an.pessoas.filter((p) => p.ativo && (grupoFiltro === "Todos" || p.eleg === grupoFiltro));
+    const maxDias = Math.max(1, ...pool.map((p) => p.diasDesde));
+    const maxCarga = Math.max(1, ...pool.map((p) => p.carga));
+    const maxParc = Math.max(1, ...pool.map((p) => (an.parceiros[p.nome] ? an.parceiros[p.nome].size : 0)));
+    return pool.map((p) => {
+      const intervaloNorm = p.diasDesde / maxDias;
+      const cargaNorm = 1 - p.carga / maxCarga;
+      const ultimaTipo = p.ultimaPorTipo[tipoAlvo];
+      const diasTipo = ultimaTipo ? diasEntreISO(ultimaTipo, hojeISO) : maxDias * 2;
+      const tipoNorm = Math.min(1, diasTipo / (maxDias * 2));
+      let parceiroNorm = 0;
+      if (parceiroAlvo) {
+        const par = [p.nome, parceiroAlvo].sort().join(" | ");
+        const d = an.listaDuplas.find((x) => [x.a, x.b].sort().join(" | ") === par);
+        const diasDupla = d ? diasEntreISO(d.ultima, hojeISO) : maxDias * 2;
+        parceiroNorm = Math.min(1, diasDupla / (maxDias * 2));
+      }
+      const score = scoreW.intervalo * intervaloNorm + scoreW.carga * cargaNorm + scoreW.tipo * tipoNorm + scoreW.parceiro * parceiroNorm;
+      return { nome: p.nome, eleg: p.eleg, score: +score.toFixed(3), diasDesde: p.diasDesde, carga: +p.carga.toFixed(1), diasTipo: diasTipo, fezTipo: p.porTipo[tipoAlvo] || 0 };
+    }).sort((a, b) => b.score - a.score);
+  }, [an, grupoFiltro, tipoAlvo, parceiroAlvo, scoreW]);
+
+  // heatmap: pessoas mais ativas em duplas
+  const heatPessoas = React.useMemo(() => {
+    const cont = {};
+    for (const d of an.listaDuplas) { cont[d.a] = (cont[d.a] || 0) + d.n; cont[d.b] = (cont[d.b] || 0) + d.n; }
+    return Object.keys(cont).sort((a, b) => cont[b] - cont[a]).slice(0, heatTop);
+  }, [an, heatTop]);
+  const duplaEntre = (a, b) => {
+    const k = [a, b].sort().join(" | ");
+    const d = an.listaDuplas.find((x) => [x.a, x.b].sort().join(" | ") === k);
+    return d ? d.n : 0;
+  };
+
+  const todosNomes = React.useMemo(() => an.pessoas.map((p) => p.nome).sort((a, b) => a.localeCompare(b)), [an]);
+
+  function simular() {
+    const alvo = simPessoa;
+    if (!alvo) { setSimResultado({ erro: "Escolha um irmão." }); return; }
+    const p = an.P[alvo];
+    const cargaAtual = p ? p.carga : 0;
+    const totalAtual = p ? p.total : 0;
+    const cargaNova = cargaAtual + pesoDe(simTipo, simPapel);
+    const noMesAtual = an.noMes[alvo] || 0;
+    const alertas = [];
+    if (noMesAtual + 1 > 2) alertas.push(`${alvo} ficaria com ${noMesAtual + 1} partes no mês de referência (acima de 2).`);
+    if (simParceiro) {
+      const k = [alvo, simParceiro].sort().join(" | ");
+      const d = an.listaDuplas.find((x) => [x.a, x.b].sort().join(" | ") === k);
+      if (d) {
+        const semanas = Math.round(diasEntreISO(d.ultima, hojeISO) / 7);
+        if (semanas < semanasDuplaAlerta) alertas.push(`Dupla ${alvo} + ${simParceiro} trabalhou junta há ${semanas} semana(s) (limite ${semanasDuplaAlerta}).`);
+      }
+    }
+    setSimResultado({
+      alvo, totalAntes: totalAtual, totalDepois: totalAtual + 1,
+      cargaAntes: +cargaAtual.toFixed(1), cargaDepois: +cargaNova.toFixed(1),
+      diasAntes: p ? p.diasDesde : "—", diasDepois: 0, alertas,
+    });
+  }
+
+  function exportarDadosJSON() {
+    baixarJSON("designacoes.json", { periodo: an.periodo, geradoEm: hojeISO, registros: an.registros });
+  }
+
+  const fmtData = (iso) => { if (!iso) return "—"; const [a, m, d] = iso.split("-"); return `${d}/${m}/${a.slice(2)}`; };
+
+  return (
+    <div style={M.layout}>
+      <Sidebar atual="estatisticas" onNavega={onNavega} sessao={sessao} onSair={onSair} />
+      <main style={M.main}>
+        <div style={M.topbar}><div /><div style={M.topbarIcons}><span style={M.iconBtn}><Icone nome="sino" size={22} color="#5b6472" /></span><span style={M.avatar} /></div></div>
+
+        <div style={M.hero}>
+          <div style={M.heroText}>
+            <h1 style={M.h1}>Estatísticas de Designações</h1>
+            <p style={M.heroSub}>Painel de equilíbrio para distribuir as partes de forma justa e variada. Ferramenta de apoio à decisão — não gera designações automaticamente.</p>
+          </div>
+          <div style={M.heroArt}><img src={IMG_HERO} alt="" style={M.heroImg} /></div>
+        </div>
+
+        <div style={EST.wrap}>
+          {/* resumo topo */}
+          <div style={EST.kpis}>
+            <div style={EST.kpi}><div style={EST.kpiN}>{an.registros.length}</div><div style={EST.kpiL}>designações</div></div>
+            <div style={EST.kpi}><div style={EST.kpiN}>{an.pessoas.length}</div><div style={EST.kpiL}>irmãos</div></div>
+            <div style={EST.kpi}><div style={EST.kpiN}>{fmtData(an.periodo.de)}</div><div style={EST.kpiL}>início</div></div>
+            <div style={EST.kpi}><div style={EST.kpiN}>{fmtData(an.periodo.ate)}</div><div style={EST.kpiL}>fim</div></div>
+            <div style={EST.kpi}><div style={EST.kpiN}>{an.listaDuplas.length}</div><div style={EST.kpiL}>duplas distintas</div></div>
+            <button style={EST.btnExport} onClick={exportarDadosJSON}><Icone nome="baixar" size={14} color={UI.azul} /> Exportar JSON</button>
+          </div>
+          <p style={EST.aviso}>Presidente e orações estão <strong>fora</strong> de todas as contagens (Regra 1). Dados do histórico + do Cartão de Designações atual (append).</p>
+
+          {/* CONFIG */}
+          <details style={EST.sec} open>
+            <summary style={EST.secTit}>⚙️ Configurações (pesos e limites)</summary>
+            <div style={EST.cfgGrid}>
+              <div><div style={EST.cfgLab}>Peso ensino/discurso</div><input type="number" step="0.5" style={EST.cfgInput} value={pesos.ensino} onChange={(e) => setPesos({ ...pesos, ensino: +e.target.value })} /></div>
+              <div><div style={EST.cfgLab}>Peso demonstração</div><input type="number" step="0.5" style={EST.cfgInput} value={pesos.demo} onChange={(e) => setPesos({ ...pesos, demo: +e.target.value })} /></div>
+              <div><div style={EST.cfgLab}>Peso joias</div><input type="number" step="0.5" style={EST.cfgInput} value={pesos.joias} onChange={(e) => setPesos({ ...pesos, joias: +e.target.value })} /></div>
+              <div><div style={EST.cfgLab}>Peso leitura</div><input type="number" step="0.5" style={EST.cfgInput} value={pesos.leitura} onChange={(e) => setPesos({ ...pesos, leitura: +e.target.value })} /></div>
+              <div><div style={EST.cfgLab}>Peso ajudante</div><input type="number" step="0.5" style={EST.cfgInput} value={pesos.ajudante} onChange={(e) => setPesos({ ...pesos, ajudante: +e.target.value })} /></div>
+              <div><div style={EST.cfgLab}>"Esquecido" após (semanas)</div><input type="number" style={EST.cfgInput} value={semanasEsquecido} onChange={(e) => setSemanasEsquecido(+e.target.value || 0)} /></div>
+              <div><div style={EST.cfgLab}>Alerta dupla &lt; (semanas)</div><input type="number" style={EST.cfgInput} value={semanasDuplaAlerta} onChange={(e) => setSemanasDuplaAlerta(+e.target.value || 0)} /></div>
+              <div><div style={EST.cfgLab}>Filtrar grupo</div>
+                <select style={EST.cfgInput} value={grupoFiltro} onChange={(e) => setGrupoFiltro(e.target.value)}>{gruposDisponiveis.map((g) => <option key={g} value={g}>{g}</option>)}</select>
+              </div>
+            </div>
+            <div style={EST.cfgNota}>Carga ponderada = soma dos pesos das partes. Titular usa o peso do tipo; ajudante usa o peso de ajudante. Ensino inclui Tesouros/Vida Cristã (discurso), Estudo, Necessidades, Explicando, Discurso.</div>
+          </details>
+
+          {/* A. VOLUME */}
+          <details style={EST.sec} open>
+            <summary style={EST.secTit}>A. Volume por irmão {grupoFiltro !== "Todos" ? `— grupo: ${grupoFiltro}` : ""}</summary>
+            <div style={EST.tabScroll}>
+              <table style={EST.tab}>
+                <thead><tr>
+                  <th style={EST.th}>Irmão</th><th style={EST.th}>Grupo</th><th style={EST.thN}>Total</th><th style={EST.thN}>Tit.</th><th style={EST.thN}>Ajud.</th>
+                  <th style={EST.thN}>Méd/mês</th><th style={EST.thN}>Carga</th><th style={EST.thN}>Tesouros</th><th style={EST.thN}>Minist.</th><th style={EST.thN}>V.Cristã</th>
+                </tr></thead>
+                <tbody>
+                  {pessoasFiltradas.map((p) => (
+                    <tr key={p.nome} style={p.ativo ? undefined : { opacity: .5 }}>
+                      <td style={EST.td}>{p.nome}{p.ativo ? "" : " (inativo)"}</td>
+                      <td style={EST.tdMini}>{p.eleg === "Não definido" ? "—" : p.eleg}</td>
+                      <td style={EST.tdN}>{p.total}</td><td style={EST.tdN}>{p.titular}</td><td style={EST.tdN}>{p.ajudante}</td>
+                      <td style={EST.tdN}>{p.mediaMensal}</td><td style={EST.tdN}><strong>{p.carga.toFixed(1)}</strong></td>
+                      <td style={EST.tdN}>{p.porCategoria["Tesouros"] || 0}</td><td style={EST.tdN}>{p.porCategoria["Ministério"] || 0}</td><td style={EST.tdN}>{p.porCategoria["Vida Cristã"] || 0}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+
+          {/* B. RODÍZIO E RECÊNCIA */}
+          <details style={EST.sec} open>
+            <summary style={EST.secTit}>B. Rodízio e recência</summary>
+            <div style={EST.duasColunas}>
+              <div>
+                <div style={EST.subTit}>Fila de escolha (mais tempo sem designação primeiro)</div>
+                <div style={EST.tabScrollAlto}>
+                  <table style={EST.tab}>
+                    <thead><tr><th style={EST.th}>Irmão</th><th style={EST.thN}>Dias s/ parte</th><th style={EST.thN}>Última</th><th style={EST.thN}>Interv. médio</th></tr></thead>
+                    <tbody>
+                      {pessoasFiltradas.slice().sort((a, b) => b.diasDesde - a.diasDesde).map((p) => (
+                        <tr key={p.nome}><td style={EST.td}>{p.nome}</td><td style={EST.tdN}>{p.diasDesde}</td><td style={EST.tdMini}>{fmtData(p.ultima)}</td><td style={EST.tdN}>{p.intervaloMedio == null ? "—" : p.intervaloMedio + "d"}</td></tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div>
+                <div style={EST.subTit}>Esquecidos (&gt; {semanasEsquecido} semanas) — {esquecidos.length}</div>
+                <div style={EST.chips}>
+                  {esquecidos.length ? esquecidos.map((p) => <span key={p.nome} style={EST.chipAlerta}>{p.nome} · {Math.round(p.diasDesde / 7)}sem</span>) : <span style={EST.vazio}>Ninguém acima do limite.</span>}
+                </div>
+                <div style={{ ...EST.subTit, marginTop: 12 }}>Dispersão por grupo (justiça)</div>
+                <table style={EST.tab}>
+                  <thead><tr><th style={EST.th}>Grupo</th><th style={EST.thN}>Nº</th><th style={EST.thN}>Desvio carga</th><th style={EST.thN}>Gini</th></tr></thead>
+                  <tbody>{an.dispersao.map((g) => <tr key={g.grupo}><td style={EST.td}>{g.grupo}</td><td style={EST.tdN}>{g.n}</td><td style={EST.tdN}>{g.desvio}</td><td style={EST.tdN}>{g.gini}</td></tr>)}</tbody>
+                </table>
+                <div style={EST.cfgNota}>Gini 0 = perfeitamente igual; quanto maior, mais desigual a carga dentro do grupo.</div>
+              </div>
+            </div>
+          </details>
+
+          {/* C. MATRIZ DE DUPLAS */}
+          <details style={EST.sec}>
+            <summary style={EST.secTit}>C. Duplas (parcerias)</summary>
+            <div style={EST.duasColunas}>
+              <div>
+                <div style={EST.subTit}>Duplas mais repetidas</div>
+                <div style={EST.tabScrollAlto}>
+                  <table style={EST.tab}>
+                    <thead><tr><th style={EST.th}>Dupla</th><th style={EST.thN}>Vezes</th><th style={EST.thN}>Última</th></tr></thead>
+                    <tbody>{an.listaDuplas.slice(0, 40).map((d) => (
+                      <tr key={d.a + d.b} style={diasEntreISO(d.ultima, hojeISO) < semanasDuplaAlerta * 7 ? { background: "#fdeaea" } : undefined}>
+                        <td style={EST.td}>{d.a} + {d.b}</td><td style={EST.tdN}>{d.n}</td><td style={EST.tdMini}>{fmtData(d.ultima)}</td></tr>
+                    ))}</tbody>
+                  </table>
+                </div>
+              </div>
+              <div>
+                <div style={EST.subTit}>Parceiros distintos por irmão</div>
+                <div style={EST.tabScrollAlto}>
+                  <table style={EST.tab}>
+                    <thead><tr><th style={EST.th}>Irmão</th><th style={EST.thN}>Parceiros</th></tr></thead>
+                    <tbody>{an.pessoas.filter((p) => an.parceiros[p.nome]).sort((a, b) => (an.parceiros[b.nome].size) - (an.parceiros[a.nome].size)).map((p) => (
+                      <tr key={p.nome}><td style={EST.td}>{p.nome}</td><td style={EST.tdN}>{an.parceiros[p.nome].size}</td></tr>
+                    ))}</tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div style={EST.subTit}>Mapa de calor — vezes que trabalharam juntos (top {heatTop} mais ativos){" "}
+              <select style={EST.cfgInputMini} value={heatTop} onChange={(e) => setHeatTop(+e.target.value)}>{[12, 18, 24, 30].map((n) => <option key={n} value={n}>{n}</option>)}</select>
+            </div>
+            <div style={EST.tabScroll}>
+              <table style={EST.tab}>
+                <thead><tr><th style={EST.thCanto}></th>{heatPessoas.map((n) => <th key={n} style={EST.thVert}><span>{n}</span></th>)}</tr></thead>
+                <tbody>
+                  {heatPessoas.map((a) => (
+                    <tr key={a}>
+                      <td style={EST.tdHeadRow}>{a}</td>
+                      {heatPessoas.map((b) => {
+                        if (a === b) return <td key={b} style={{ ...EST.cell, background: "#e9edf3" }} />;
+                        const n = duplaEntre(a, b);
+                        const bg = n === 0 ? "#fff" : n === 1 ? "#e4ecfb" : n === 2 ? "#b9cef1" : n <= 4 ? "#f3c9a6" : "#e88b6a";
+                        return <td key={b} style={{ ...EST.cell, background: bg }}>{n || ""}</td>;
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+
+          {/* D. VARIEDADE DE PARTES */}
+          <details style={EST.sec}>
+            <summary style={EST.secTit}>D. Variedade de partes (pessoa × tipo)</summary>
+            <div style={EST.tabScroll}>
+              <table style={EST.tab}>
+                <thead><tr><th style={EST.th}>Irmão</th>{an.tiposUsados.map((t) => <th key={t} style={EST.thVert}><span>{t}</span></th>)}<th style={EST.thN}>Conc.</th></tr></thead>
+                <tbody>
+                  {pessoasFiltradas.map((p) => (
+                    <tr key={p.nome}>
+                      <td style={EST.td}>{p.nome}</td>
+                      {an.tiposUsados.map((t) => { const c = p.porTipo[t] || 0; return <td key={t} style={{ ...EST.tdN, background: c === 0 ? "#fff" : c === 1 ? "#eef3fb" : c <= 3 ? "#cfe0f7" : "#f3c9a6" }}>{c || ""}</td>; })}
+                      <td style={{ ...EST.tdN, color: p.concentracao >= 0.6 && p.total >= 4 ? "#9a3b3b" : UI.cinza, fontWeight: p.concentracao >= 0.6 && p.total >= 4 ? 700 : 400 }}>{p.total ? Math.round(p.concentracao * 100) + "%" : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={EST.cfgNota}>"Conc." = % das partes da pessoa concentradas no tipo dominante. Vermelho = ≥60% (concentrado num único tipo, com 4+ partes).</div>
+          </details>
+
+          {/* E. APOIO AO PRÓXIMO MÊS */}
+          <details style={EST.sec} open>
+            <summary style={EST.secTit}>E. Apoio à montagem do próximo mês</summary>
+            <div style={EST.duasColunas}>
+              <div>
+                <div style={EST.subTit}>Ranque de candidatos</div>
+                <div style={EST.cfgGrid}>
+                  <div><div style={EST.cfgLab}>Tipo de parte</div><select style={EST.cfgInput} value={tipoAlvo} onChange={(e) => setTipoAlvo(e.target.value)}>{an.tiposUsados.map((t) => <option key={t} value={t}>{t}</option>)}</select></div>
+                  <div><div style={EST.cfgLab}>Parceiro (opcional)</div><select style={EST.cfgInput} value={parceiroAlvo} onChange={(e) => setParceiroAlvo(e.target.value)}><option value="">—</option>{todosNomes.map((n) => <option key={n} value={n}>{n}</option>)}</select></div>
+                  <div><div style={EST.cfgLab}>Peso intervalo</div><input type="number" step="0.1" style={EST.cfgInput} value={scoreW.intervalo} onChange={(e) => setScoreW({ ...scoreW, intervalo: +e.target.value })} /></div>
+                  <div><div style={EST.cfgLab}>Peso carga</div><input type="number" step="0.1" style={EST.cfgInput} value={scoreW.carga} onChange={(e) => setScoreW({ ...scoreW, carga: +e.target.value })} /></div>
+                  <div><div style={EST.cfgLab}>Peso tipo recente</div><input type="number" step="0.1" style={EST.cfgInput} value={scoreW.tipo} onChange={(e) => setScoreW({ ...scoreW, tipo: +e.target.value })} /></div>
+                  <div><div style={EST.cfgLab}>Peso parceiro</div><input type="number" step="0.1" style={EST.cfgInput} value={scoreW.parceiro} onChange={(e) => setScoreW({ ...scoreW, parceiro: +e.target.value })} /></div>
+                </div>
+                <div style={EST.cfgNota}>Score = pInterv·(dias sem parte) + pCarga·(1−carga) + pTipo·(tempo sem fazer esse tipo) + pParceiro·(tempo desde a última dupla com o parceiro). Tudo normalizado 0–1. Maior score = melhor candidato.</div>
+                <div style={EST.tabScrollAlto}>
+                  <table style={EST.tab}>
+                    <thead><tr><th style={EST.th}>Irmão</th><th style={EST.thN}>Score</th><th style={EST.thN}>Dias</th><th style={EST.thN}>Carga</th><th style={EST.thN}>Fez o tipo</th></tr></thead>
+                    <tbody>{candidatos.slice(0, 25).map((c, i) => (
+                      <tr key={c.nome} style={i < 3 ? { background: "#eaf6ee" } : undefined}><td style={EST.td}>{c.nome}</td><td style={EST.tdN}><strong>{c.score}</strong></td><td style={EST.tdN}>{c.diasDesde}</td><td style={EST.tdN}>{c.carga}</td><td style={EST.tdN}>{c.fezTipo}×</td></tr>
+                    ))}</tbody>
+                  </table>
+                </div>
+              </div>
+              <div>
+                <div style={EST.subTit}>Alertas</div>
+                <div style={EST.chips}>
+                  {an.pessoas.filter((p) => (an.noMes[p.nome] || 0) > 2).map((p) => <span key={p.nome} style={EST.chipAlerta}>{p.nome}: {an.noMes[p.nome]} partes no mês ({an.ultimoMes})</span>)}
+                  {duplasRecentes.slice(0, 15).map((d) => <span key={d.a + d.b} style={EST.chipAviso}>{d.a} + {d.b}: dupla há {Math.round(diasEntreISO(d.ultima, hojeISO) / 7)} sem</span>)}
+                  {esquecidos.slice(0, 10).map((p) => <span key={p.nome} style={EST.chipInfo}>{p.nome}: {Math.round(p.diasDesde / 7)} sem sem parte</span>)}
+                  {!an.pessoas.some((p) => (an.noMes[p.nome] || 0) > 2) && !duplasRecentes.length && !esquecidos.length && <span style={EST.vazio}>Sem alertas.</span>}
+                </div>
+
+                <div style={{ ...EST.subTit, marginTop: 12 }}>Simulação de designação hipotética</div>
+                <div style={EST.cfgGrid}>
+                  <div><div style={EST.cfgLab}>Irmão</div><select style={EST.cfgInput} value={simPessoa} onChange={(e) => setSimPessoa(e.target.value)}><option value="">Selecione…</option>{todosNomes.map((n) => <option key={n} value={n}>{n}</option>)}</select></div>
+                  <div><div style={EST.cfgLab}>Tipo</div><select style={EST.cfgInput} value={simTipo} onChange={(e) => setSimTipo(e.target.value)}>{an.tiposUsados.map((t) => <option key={t} value={t}>{t}</option>)}</select></div>
+                  <div><div style={EST.cfgLab}>Papel</div><select style={EST.cfgInput} value={simPapel} onChange={(e) => setSimPapel(e.target.value)}><option value="titular">Titular</option><option value="ajudante">Ajudante</option></select></div>
+                  <div><div style={EST.cfgLab}>Parceiro (opcional)</div><select style={EST.cfgInput} value={simParceiro} onChange={(e) => setSimParceiro(e.target.value)}><option value="">—</option>{todosNomes.map((n) => <option key={n} value={n}>{n}</option>)}</select></div>
+                </div>
+                <button style={EST.btnSim} onClick={simular}>Simular impacto</button>
+                {simResultado && (simResultado.erro ? <div style={EST.vazio}>{simResultado.erro}</div> : (
+                  <div style={EST.simBox}>
+                    <div><strong>{simResultado.alvo}</strong></div>
+                    <div>Total: {simResultado.totalAntes} → <strong>{simResultado.totalDepois}</strong></div>
+                    <div>Carga: {simResultado.cargaAntes} → <strong>{simResultado.cargaDepois}</strong></div>
+                    <div>Dias sem parte: {simResultado.diasAntes} → <strong>{simResultado.diasDepois}</strong></div>
+                    {simResultado.alertas.length ? simResultado.alertas.map((a, i) => <div key={i} style={EST.simAlerta}>⚠️ {a}</div>) : <div style={{ color: "#1f6b45" }}>Sem alertas para esta designação.</div>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </details>
+
+          <p style={EST.rodape}>Painel de apoio à decisão. Ele ranqueia e sinaliza — a escolha final é sempre sua.</p>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+const EST = {
+  wrap: { padding: "0 4px 40px" },
+  kpis: { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 8 },
+  kpi: { background: "#fff", border: "1px solid " + UI.borda, borderRadius: 10, padding: "8px 14px", minWidth: 84, textAlign: "center" },
+  kpiN: { fontSize: 16, fontWeight: 800, color: UI.azul },
+  kpiL: { fontSize: 10, color: UI.cinza, textTransform: "uppercase", letterSpacing: .5 },
+  btnExport: { marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, padding: "9px 14px", border: "1px solid " + UI.borda, borderRadius: 10, background: "#fff", color: UI.azul, cursor: "pointer" },
+  aviso: { fontSize: 11, color: UI.cinza, margin: "0 0 12px" },
+  sec: { background: "#fff", border: "1px solid " + UI.borda, borderRadius: 12, padding: "10px 14px", marginBottom: 12 },
+  secTit: { fontSize: 13, fontWeight: 800, color: UI.azul, cursor: "pointer", listStyle: "none" },
+  subTit: { fontSize: 11, fontWeight: 700, color: UI.tinta, margin: "10px 0 6px", textTransform: "uppercase", letterSpacing: .5 },
+  duasColunas: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, alignItems: "start" },
+  cfgGrid: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, margin: "8px 0" },
+  cfgLab: { fontSize: 10, color: UI.cinza, marginBottom: 2 },
+  cfgInput: { width: "100%", padding: "5px 7px", border: "1px solid " + UI.borda, borderRadius: 6, fontSize: 12, boxSizing: "border-box" },
+  cfgInputMini: { padding: "2px 4px", border: "1px solid " + UI.borda, borderRadius: 4, fontSize: 11 },
+  cfgNota: { fontSize: 10, color: UI.cinza, lineHeight: 1.5, marginTop: 6, fontStyle: "italic" },
+  tabScroll: { overflowX: "auto", border: "1px solid " + UI.borda, borderRadius: 8, marginTop: 4 },
+  tabScrollAlto: { overflow: "auto", maxHeight: 300, border: "1px solid " + UI.borda, borderRadius: 8, marginTop: 4 },
+  tab: { borderCollapse: "collapse", width: "100%", fontSize: 10 },
+  th: { position: "sticky", top: 0, background: UI.azul, color: "#fff", fontSize: 9.5, fontWeight: 700, padding: "5px 6px", textAlign: "left", whiteSpace: "nowrap", zIndex: 1 },
+  thN: { position: "sticky", top: 0, background: UI.azul, color: "#fff", fontSize: 9.5, fontWeight: 700, padding: "5px 6px", textAlign: "center", whiteSpace: "nowrap", zIndex: 1 },
+  thVert: { position: "sticky", top: 0, background: UI.azul, color: "#fff", fontSize: 8.5, fontWeight: 700, padding: "4px 3px", textAlign: "center", height: 78, whiteSpace: "nowrap", verticalAlign: "bottom", zIndex: 1 },
+  thCanto: { position: "sticky", top: 0, left: 0, background: UI.azul, zIndex: 2, minWidth: 90 },
+  td: { padding: "3px 6px", borderBottom: "1px solid #eef0f4", whiteSpace: "nowrap" },
+  tdMini: { padding: "3px 6px", borderBottom: "1px solid #eef0f4", whiteSpace: "nowrap", fontSize: 9, color: UI.cinza },
+  tdN: { padding: "3px 6px", borderBottom: "1px solid #eef0f4", textAlign: "center", whiteSpace: "nowrap" },
+  tdHeadRow: { padding: "3px 6px", borderBottom: "1px solid #eef0f4", whiteSpace: "nowrap", fontSize: 9, fontWeight: 700, position: "sticky", left: 0, background: "#fff" },
+  cell: { width: 22, minWidth: 22, textAlign: "center", fontSize: 9, border: "1px solid #eef0f4", padding: 0, height: 20 },
+  chips: { display: "flex", flexWrap: "wrap", gap: 6 },
+  chipAlerta: { fontSize: 10, background: "#fdeaea", border: "1px solid #e3b6b6", color: "#9a3b3b", borderRadius: 20, padding: "3px 8px" },
+  chipAviso: { fontSize: 10, background: "#fff6e5", border: "1px solid #e6cf9a", color: "#8a5a00", borderRadius: 20, padding: "3px 8px" },
+  chipInfo: { fontSize: 10, background: "#eef2fb", border: "1px solid #c9d6ee", color: UI.azul, borderRadius: 20, padding: "3px 8px" },
+  vazio: { fontSize: 11, color: UI.cinza, fontStyle: "italic" },
+  btnSim: { marginTop: 8, fontSize: 12, fontWeight: 700, padding: "8px 14px", background: UI.azul, color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" },
+  simBox: { marginTop: 8, background: "#f7f9fc", border: "1px solid " + UI.borda, borderRadius: 8, padding: 10, fontSize: 12, lineHeight: 1.6 },
+  simAlerta: { color: "#9a3b3b", marginTop: 4 },
+  rodape: { fontSize: 11, color: UI.cinza, textAlign: "center", marginTop: 8, fontStyle: "italic" },
+};
 
 const M = {
   appShell: { minHeight: "100vh", background: UI.fundo, color: UI.tinta, fontFamily: "'Segoe UI', system-ui, sans-serif" },
