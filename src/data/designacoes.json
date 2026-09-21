@@ -24,8 +24,7 @@
     "Roberto Soares": "Roberto Soares",
     "Roberto": "Roberto Soares",
     "Wellington": "Wellington",
-    "Ariane e Cacilda": "Ariane e Cacilda",
-    "Ariane": "Ariane e Cacilda",
+    "Ariane": "Ariane",
     "Graziele": "Graziele",
     "Mariana": "Mariana",
     "Sheila": "Sheila",
@@ -39,7 +38,6 @@
     "Rodrigo Soares": "Rodrigo Soares",
     "Rodrigo": "Rodrigo Soares",
     "Fernando Gonçalves": "Fernando Gonçalves",
-    "Fernando e Paulo": "Fernando e Paulo",
     "Fernando": "Fernando",
     "Vera Bizerra": "Vera Bizerra",
     "Vera Freires": "Vera Freires",
@@ -52,8 +50,7 @@
     "Vinicius": "Vinicius",
     "Felipe Donizete": "Felipe Donizete",
     "Felipe Martines": "Felipe Martines",
-    "Felipe M. / Aline": "Felipe M. / Aline",
-    "Felipe M.": "Felipe M. / Aline",
+    "Felipe M.": "Felipe M.",
     "Erik Gransiero": "Erik Gransiero",
     "Erik": "Erik Gransiero",
     "Dorival": "Dorival",
@@ -64,23 +61,21 @@
     "Ricardo Neri": "Ricardo Neri",
     "Ricardo": "Ricardo Neri",
     "José Carlos": "José Carlos",
-    "José Vicente": "José Vicente",
+    "José Vicente": "Vicente",
     "Arthur": "Arthur",
     "Paulo G.": "Paulo G.",
     "Paulo": "Paulo G.",
-    "Vicente": "José Vicente",
+    "Vicente": "Vicente",
     "Auricélia": "Auricelia",
     "Auricelia": "Auricelia",
     "Rosana": "Rosana",
     "Cristiane Ribeiro": "Cristiane Ribeiro",
     "Cristiane": "Cristiane Ribeiro",
-    "Marjore/Zé Carlos": "Marjore/Zé Carlos",
     "Luana": "Luana",
     "Elizene": "Elizene",
     "Monica": "Monica",
     "Mônica": "Monica",
     "Luciana": "Luciana",
-    "#N/A": "#N/A",
     "Ademir Soares": "Ademir Soares",
     "Ademir": "Ademir Soares",
     "Mirna": "Mirna",
@@ -95,7 +90,6 @@
     "Verra Bizerra": "Verra Bizerra",
     "Roberta": "Roberta",
     "Tamires": "Tamires",
-    "Marjorie / Cristiane": "Marjorie / Cristiane",
     "Jair Queiroz": "Jair Queiroz",
     "Jair": "Jair Queiroz",
     "Grazielly": "Grazielly",
@@ -211,8 +205,8 @@
       "numero": "4",
       "categoria": "Ministério",
       "tipo": "Iniciando conversas",
-      "titular": "Ariane e Cacilda",
-      "ajudante": "Graziele"
+      "titular": "Ariane",
+      "ajudante": "Cacilda"
     },
     {
       "data": "2025-10-13",
@@ -547,8 +541,8 @@
       "numero": "5",
       "categoria": "Ministério",
       "tipo": "Iniciando conversas",
-      "titular": "Cristiane Ribeiro",
-      "ajudante": "Marjore/Zé Carlos"
+      "titular": "Marjore",
+      "ajudante": "Zé Carlos"
     },
     {
       "data": "2025-11-17",
@@ -675,8 +669,8 @@
       "numero": "4",
       "categoria": "Ministério",
       "tipo": "Iniciando conversas",
-      "titular": "Ariane e Cacilda",
-      "ajudante": "Monica"
+      "titular": "Ariane",
+      "ajudante": "Cacilda"
     },
     {
       "data": "2025-12-08",
@@ -1163,8 +1157,8 @@
       "numero": "6",
       "categoria": "Ministério",
       "tipo": "Fazendo discípulos",
-      "titular": "José Carlos",
-      "ajudante": "Marjorie / Cristiane"
+      "titular": "Marjorie",
+      "ajudante": "Cristiane"
     },
     {
       "data": "2026-01-26",
@@ -1291,8 +1285,8 @@
       "numero": "4",
       "categoria": "Ministério",
       "tipo": "Iniciando conversas",
-      "titular": "Ariane e Cacilda",
-      "ajudante": "Luciana"
+      "titular": "Ariane",
+      "ajudante": "Cacilda"
     },
     {
       "data": "2026-02-09",
@@ -1499,8 +1493,8 @@
       "numero": "5",
       "categoria": "Ministério",
       "tipo": "Iniciando conversas",
-      "titular": "Sarah",
-      "ajudante": "Ariane e Cacilda"
+      "titular": "Ariane",
+      "ajudante": "Cacilda"
     },
     {
       "data": "2026-03-02",
@@ -1563,8 +1557,8 @@
       "numero": "4",
       "categoria": "Ministério",
       "tipo": "Iniciando conversas",
-      "titular": "Fernando e Paulo",
-      "ajudante": "Giuliana"
+      "titular": "Fernando",
+      "ajudante": "Paulo"
     },
     {
       "data": "2026-03-09",
@@ -1771,8 +1765,8 @@
       "numero": "4",
       "categoria": "Ministério",
       "tipo": "Iniciando conversas",
-      "titular": "Felipe M. / Aline",
-      "ajudante": ""
+      "titular": "Felipe M.",
+      "ajudante": "Aline"
     },
     {
       "data": "2026-04-06",
@@ -1851,8 +1845,8 @@
       "numero": "6",
       "categoria": "Ministério",
       "tipo": "Cultivando interesse",
-      "titular": "Dayane",
-      "ajudante": "Ariane e Cacilda"
+      "titular": "Ariane",
+      "ajudante": "Cacilda"
     },
     {
       "data": "2026-04-13",
@@ -2235,8 +2229,8 @@
       "numero": "4",
       "categoria": "Ministério",
       "tipo": "Iniciando conversas",
-      "titular": "Ariane e Cacilda",
-      "ajudante": "Roberto Soares"
+      "titular": "Ariane",
+      "ajudante": "Cacilda"
     },
     {
       "data": "2026-06-01",
@@ -2315,8 +2309,8 @@
       "numero": "5",
       "categoria": "Ministério",
       "tipo": "Iniciando conversas",
-      "titular": "Felipe M. / Aline",
-      "ajudante": "Valmir Soares"
+      "titular": "Felipe M.",
+      "ajudante": "Aline"
     },
     {
       "data": "2026-06-08",
@@ -2667,8 +2661,8 @@
       "numero": "6",
       "categoria": "Ministério",
       "tipo": "Fazendo discípulos",
-      "titular": "Elizene",
-      "ajudante": "Ariane e Cacilda"
+      "titular": "Ariane",
+      "ajudante": "Cacilda"
     },
     {
       "data": "2026-07-13",
