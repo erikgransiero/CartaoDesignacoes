@@ -1,7 +1,7 @@
 # Gerenciador de Documentos — Congregação Parque Scaffid
 
 Documento de registro do projeto (memória técnica e funcional).
-Última atualização: 21/09/2026.
+Última atualização: 22/09/2026.
 
 > **Como usar este arquivo:** no início de qualquer sessão nova (ou quando a
 > conversa for compactada), leia este arquivo primeiro. Ele evita ter que reler
@@ -70,6 +70,15 @@ Enter no campo do designado do Cartão adiciona nova parte (funciona no
 Safari) e destaque na tabela de Bastidores ao clicar num nome do resumo
 de participações. Ver §3, §5.3/§5.4/§5.5 e §6.
 
+**Atualização 22/09/2026:** construída e publicada em produção a tela de
+**Estatísticas de Designações** — painel de apoio à decisão com 5
+relatórios (volume por irmão, rodízio/recência, duplas, variedade de
+partes, apoio à montagem do próximo mês), fusão manual de nomes com
+recálculo real (não cosmético), exportar/importar backup das correções, e
+uma rodada de correções na base histórica de dados feita junto com o
+usuário (nomes que deveriam estar fundidos e registros com dois nomes numa
+única célula). Ver §5.10 e §6.
+
 | Tela | Situação |
 |---|---|
 | Login | Concluída e em produção |
@@ -82,7 +91,7 @@ de participações. Ver §3, §5.3/§5.4/§5.5 e §6.
 | Configurações → Usuários | Concluída e em produção |
 | Cadastro de Publicadores | Construída e em produção (nova, ver §5.8) |
 | Enviar Cartão de Designação | Construída e em produção · **em desenvolvimento incremental** (ver §5.9/§6) |
-| Estatísticas | **Só o item de menu** (esmaecido, sem tela) — ver §5.10 |
+| Estatísticas | Construída e em produção · uso incremental contínuo (ver §5.10) |
 
 **Ordem da revisão escolhida pelo usuário:** Discurso Público → Reunião A
 Sentinela → Cartão de Designações → Calendário de Pregação → Bastidores.
@@ -454,18 +463,88 @@ Fonte padrão dos documentos: Arial.
   vai continuar mandando pontos de ajuste incrementalmente para esta
   tela — **não considerar esta tela "fechada"**.
 
-### 5.10 Estatísticas (só item de menu, 20/09/2026)
-- Item novo no menu lateral (`MENU_ESTATISTICAS`, terceiro grupo, abaixo
-  de "Cadastro Publicadores" com sua própria divisória; ícone `grafico`
-  novo). Está com `pronto: false` — **esmaecido e sem navegação**, no mesmo
-  padrão dos itens em construção.
-- **Ainda não há tela.** A ideia é aproveitar o histórico de cartões
-  exportados (`cartao.json`, ver §5.3) para futuras análises/estatísticas
-  de partes dos publicadores (quem fez o quê, com que frequência). O
-  usuário ainda vai definir o que essa tela deve mostrar; quando definir,
-  construir a tela e virar o item para `pronto: true`, adicionando o
-  `id: "estatisticas"` à navegação em `App` (mesmo padrão de
-  `cadastro-publicadores`/`enviar-cartao`).
+### 5.10 Estatísticas de Designações (construída 21-22/09/2026)
+- Item de menu (`MENU_ESTATISTICAS`, ícone `grafico`) virou `pronto: true`
+  e ganhou tela própria (`TelaEstatisticas`, padrão Sidebar/`M.layout`).
+  Painel analítico de equilíbrio de designações, para ajudar a distribuir
+  as partes dos meses seguintes de forma justa e variada. **Ferramenta de
+  apoio à decisão — nunca gera designações automaticamente.**
+- **Fonte de dados**: histórico de uma planilha (2025-2026) convertido
+  para `src/data/designacoes.json` (git-tracked, **380 registros** depois
+  das correções abaixo) + os dados do Cartão de Designações atual
+  (`registrosDoCartao(cartao)`, em append) — combinados e deduplicados
+  (`data|tipo|titular|ajudante`) num único `useMemo` (`an`). Presidente e
+  orações ficam **fora de toda análise** (regra obrigatória do usuário).
+- **Segmentação de elegibilidade**: o Cadastro de Publicadores ganhou os
+  campos `elegibilidade` (Não definido / Ancião / Servo ministerial /
+  Publicador batizado / Irmã) e `ativo`, para nunca comparar pessoas de
+  grupos diferentes no mesmo ranking de justiça.
+- **A. Volume por irmão**: total/média mensal, titular×ajudante, carga por
+  categoria (Tesouros/Ministério/Vida Cristã). Colunas "Irmão" e "Grupo"
+  são **editáveis**, todas as colunas têm ordenação por clique (ícone ⇅).
+  Editar o nome funde de verdade os dados (ver "Fusão manual" abaixo).
+- **B. Rodízio e recência** — tabela "FILA DE DESIGNAÇÃO": dias sem parte
+  e última data **separados por papel** (titular × ajudante, colunas de
+  titular com fundo azul claro), ignorando designações futuras já
+  adiantadas no cartão (nunca aparece número negativo); ordenação por
+  clique em qualquer coluna; clicar numa linha destaca ela inteira em
+  vermelho claro. ("Esquecidos" e "Dispersão por grupo" foram retirados
+  desta tela a pedido do usuário — ficam para uma rodada futura.)
+- **C. Duplas (parcerias)**: "Duplas mais repetidas" e o mapa de calor
+  (irmão × irmão) sem mudança de comportamento. "Parceiros distintos por
+  irmão" — ordenado alfabeticamente, 8 linhas visíveis com rolagem;
+  clicar no nome (marcado com +/−) expande quem já fez parte com a pessoa
+  (e quando); a lista de quem **nunca** fez parte fica numa caixa própria
+  abaixo da tabela (mesma largura, até 4 linhas com rolagem), em
+  vermelho, **ordenada por gênero** — primeiro o mesmo gênero da pessoa
+  selecionada, depois gênero indefinido (a transição) e por último o
+  outro gênero. Gênero usa o grupo "Irmã" do Cadastro de Publicadores e o
+  mesmo mecanismo de adivinhação/confirmação já usado no envio por
+  WhatsApp (§5.9).
+- **D. Variedade de partes** (pessoa × tipo): ordenação só na coluna
+  "Irmão"; cabeçalhos dos tipos quebram linha sem quebrar palavra (fonte
+  menor, nomes completos); "Conc." virou "Concentração" por extenso;
+  clicar na linha destaca em vermelho claro; coluna "Irmão" fica fixa ao
+  rolar a tabela na horizontal; tabela limitada a ~20 linhas visíveis com
+  rolagem vertical.
+- **E. Apoio à montagem do próximo mês**: score de sugestão configurável
+  (intervalo/carga/tipo/parceiro), alertas (dupla repetida, +2 partes no
+  mês, esquecido há muito tempo) e simulação de designação hipotética.
+- **Fusão manual de nomes (recálculo real)**: `fusoesNome` e
+  `gruposOverride` (`useEstadoSalvo`) guardam as correções feitas na
+  tabela A; `resolveNomeFinal()` aplica a cadeia de fusões (protegida
+  contra ciclo) dentro do `useMemo` de agregação — corrigir "Lucas S."
+  para "Lucas Soares" soma de verdade tudo que era do nome antigo no nome
+  novo, refletindo em todos os relatórios (A-E). Commit só ao sair da
+  célula (Enter/blur/setas); inputs não-controlados (`defaultValue`+`key`)
+  para não perder foco durante a digitação. Navegação por teclado nas
+  células Irmão/Grupo: setas cima/baixo e Enter vão para a mesma coluna na
+  linha seguinte/anterior; esquerda/direita só trocam de célula quando o
+  cursor já está na ponta do texto.
+- **Exportar/Importar JSON**: "Exportar JSON" baixa `periodo`, `registros`,
+  `fusoesNome` e `gruposOverride`; "Importar JSON" restaura só as duas
+  últimas chaves (as correções manuais) — nunca apaga o que já existe se
+  o arquivo não trouxer essas chaves (ex.: backup de versão antiga só com
+  `registros`), sempre avisando o que foi ou não alterado.
+- **Correções feitas na base histórica** (`src/data/designacoes.json`,
+  durante validação com o usuário):
+  - "Vicente" (2 designações) e "José Vicente" (7, incluindo a mais
+    recente) eram pessoas separadas por um limite do script original de
+    clusterização (só juntava nomes com o mesmo primeiro nome) —
+    corrigido via `aliasMap` (`"José Vicente": "Vicente"`).
+  - 12 registros tinham **dois nomes numa única célula** (ex.: "Ariane e
+    Cacilda", "Felipe M. / Aline", "Marjore/Zé Carlos") — separados em
+    titular+ajudante reais. Numa primeira tentativa, a separação
+    sobrescreveu sem querer o nome que já estava correto no outro campo
+    (perdendo "Elizene", "Cristiane Ribeiro", "José Carlos", "Sarah" e
+    "Dayane" como titulares); corrigido preservando o nome já existente e
+    duplicando a designação para cada nome do campo composto.
+  - O mesmo padrão apareceu também no Cartão de Designações atual ("Sarah
+    / Priscilla e Rebeca"): `registrosDoCartao()` agora separa um campo
+    de ajudante com "e" em duas designações de ajudante para o mesmo
+    titular.
+- Ver §6 para o histórico detalhado desta construção, incluindo os bugs
+  encontrados e corrigidos no processo.
 
 ---
 
@@ -698,6 +777,55 @@ produção.)*
 *(Validados em `preview` via Playwright; publicados em produção em
 21/09/2026.)*
 
+### Estatísticas de Designações — construção da tela (produção, 21-22/09/2026)
+1. ~~Construir o painel do zero (planilha + regras obrigatórias do
+   usuário)~~ — **feito**: histórico convertido para `designacoes.json`,
+   5 relatórios (A-E), segmentação de elegibilidade no Cadastro de
+   Publicadores. Ver §5.10.
+2. ~~1ª rodada: fonte/tamanho, colunas Irmão/Grupo editáveis, ordenação
+   por coluna, remover o quadro de pesos/limites~~ — **feito**.
+3. ~~Editar um nome deve recalcular de verdade, não só trocar o texto
+   exibido~~ — **feito**: redesenhado para `fusoesNome`/`resolveNomeFinal`
+   real, aplicado dentro da agregação. Corrigido também um risco de perda
+   de foco no input durante a digitação (inputs não-controlados).
+4. ~~Navegação por teclado (setas/Enter) nas células Irmão/Grupo~~ —
+   **feito**.
+5. ~~Verificar/corrigir "Vicente" na Fila de escolha~~ — investigado a
+   fundo: era bug de **dado** (clusterização incompleta no histórico), não
+   de código. Corrigido na fonte (`aliasMap`), e aproveitado para escanear
+   e corrigir mais 12 registros com nomes compostos numa única célula.
+   Nessa correção inicial, um descuido meu sobrescreveu por engano nomes
+   que já estavam certos no campo oposto (ex.: "Elizene" sumiu como
+   titular); o usuário percebeu e a correção foi refeita preservando o
+   nome existente e duplicando a designação por nome do campo composto.
+6. ~~Botão "Importar JSON"~~ — **feito**, mas a 1ª versão tinha um bug
+   sério: importar um arquivo sem `fusoesNome`/`gruposOverride` (ex.: um
+   backup de versão antiga) **apagava silenciosamente** as correções já
+   feitas. Corrigido para nunca sobrescrever com `{}` — só atualiza as
+   chaves que o arquivo realmente trouxer, avisando o usuário do que
+   aconteceu.
+7. ~~Quadro B: fila de designação separada por titular/ajudante, com
+   linha clicável para destacar~~ — **feito**.
+8. ~~Quadro C: expandir parceiros/nunca-fez-parte, ordenado por gênero~~ —
+   **feito**, reaproveitando o mecanismo de gênero já usado no envio por
+   WhatsApp (§5.9).
+9. ~~Quadro D: ordenação só no Irmão, cabeçalhos com quebra de linha,
+   linha clicável, coluna Irmão fixa no scroll horizontal~~ — **feito**.
+10. ~~Quadros C/D: ajustar altura das tabelas (8/4/20 linhas com
+    rolagem)~~ — **feito**.
+11. **Pegadinha de infraestrutura registrada:** um deploy em `preview`
+    falhou não por causa do código, mas por um erro 403 transitório do
+    GitHub Actions ao subir o artefato de publicação
+    (`upload-pages-artifact`) — build e testes tinham passado
+    normalmente. Resolvido só re-executando o job que falhou
+    (`rerun_failed_jobs`); nenhuma mudança de código foi necessária. Se o
+    usuário relatar de novo "limpei o cache e não mudou nada", checar
+    primeiro o status do workflow no GitHub Actions antes de investigar
+    o código.
+
+*(Todos os itens validados em `preview` via Playwright antes de publicar;
+publicado em produção em 22/09/2026.)*
+
 ### Calendário de Pregação e Bastidores (Exportar PDF adiantado, 12/09/2026)
 1. ~~Adicionar botão "Exportar PDF" com garantia de 1 página~~ — **feito**
    nas duas telas, reaproveitando 100% do padrão zoom-to-fit já global
@@ -768,9 +896,10 @@ não como capítulo fechado.)*
    pontos de ajuste incrementais para **Enviar Cartão de Designação** (ver
    §5.9) — envio real por WhatsApp já feito (ligado ao Cadastro de
    Publicadores); falta o envio real por e-mail, quando o usuário pedir.
-7. **Nova frente aberta (aguardando definição):** construir a tela de
-   **Estatísticas** (item de menu já criado, ver §5.10) sobre o histórico
-   de cartões exportados — o usuário ainda vai dizer o que ela deve mostrar.
+7. ~~Construir a tela de Estatísticas~~ — **feito e em produção** (ver
+   §5.10/§6). Segue como frente incremental: o usuário vai mandando mais
+   pontos de ajuste, mesmo padrão de "Enviar Cartão de Designação"
+   (item 6) — não considerar esta tela "fechada".
 8. Somente depois da revisão completa: **backend/banco de dados**
    (o usuário já tem uma VM Ubuntu na Oracle Cloud com PostgreSQL
    configurado, falta liberar acesso externo — pode ser feito em paralelo,
