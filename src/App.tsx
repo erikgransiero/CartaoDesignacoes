@@ -4271,6 +4271,11 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
       p.datasPorPapel[f.papel].push(f.data);
       if (!p.ultimaPorTipo[f.tipo] || f.data > p.ultimaPorTipo[f.tipo]) p.ultimaPorTipo[f.tipo] = f.data;
     }
+    // tipos existentes (ordem estável) — calculado aqui porque a
+    // concentração de cada pessoa (abaixo) depende do total de tipos
+    const tiposUsados = Array.from(new Set(registros.map((r) => r.tipo)));
+    tiposUsados.sort((a, b) => (TIPO_BUCKET[a] ? 0 : 1) - (TIPO_BUCKET[b] ? 0 : 1) || a.localeCompare(b));
+
     const pessoas = Object.values(P);
     for (const p of pessoas) {
       p.datas.sort();
@@ -4291,9 +4296,12 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
       p.mediaMensal = +(p.total / totalMeses).toFixed(1);
       const inf = infoPessoa(p.nome);
       p.eleg = inf.eleg; p.ativo = inf.ativo;
-      // concentração: maior share de um tipo
-      const maxTipo = Math.max(0, ...Object.values(p.porTipo));
-      p.concentracao = p.total ? maxTipo / p.total : 0;
+      // concentração: variedade de tipos diferentes que a pessoa já fez,
+      // sobre o total de tipos existentes no período (ex.: 12 tipos hoje
+      // → cada tipo distinto vale ~8,3%; quem já fez todos chega a 100%).
+      // Serve para identificar os irmãos "chave" mais versáteis, não para
+      // marcar quem está preso a um único tipo (era o cálculo antigo).
+      p.concentracao = tiposUsados.length ? Object.keys(p.porTipo).length / tiposUsados.length : 0;
       p.tipoDominante = Object.keys(p.porTipo).sort((a, b) => p.porTipo[b] - p.porTipo[a])[0] || "";
     }
     pessoas.sort((a, b) => b.total - a.total);
@@ -4326,10 +4334,6 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
       grupo: g, n: gruposEleg[g].length,
       desvio: +desvioPadrao(gruposEleg[g]).toFixed(2), gini: +gini(gruposEleg[g]).toFixed(3),
     })).sort((a, b) => b.n - a.n);
-
-    // tipos existentes (ordem estável)
-    const tiposUsados = Array.from(new Set(registros.map((r) => r.tipo)));
-    tiposUsados.sort((a, b) => (TIPO_BUCKET[a] ? 0 : 1) - (TIPO_BUCKET[b] ? 0 : 1) || a.localeCompare(b));
 
     // partes no mês corrente (para alerta "mais de 2 no mês") — mês de referência = último mês com dados
     const ultimoMes = (periodo.ate || "").slice(0, 7);
@@ -4525,6 +4529,16 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
   }
 
   const fmtData = (iso) => { if (!iso) return "—"; const [a, m, d] = iso.split("-"); return `${d}/${m}/${a.slice(2)}`; };
+
+  // Faixas de destaque da coluna "Concentração" (quadro D): quanto maior,
+  // mais tipos diferentes de parte a pessoa já fez — identifica os irmãos
+  // "chave" mais versáteis da congregação.
+  function estiloConcentracao(pct) {
+    if (pct > 60) return { background: "#fdeaea", color: "#9a3b3b", fontWeight: 700 };
+    if (pct >= 40) return { background: "#fff6e5", color: "#8a5a00", fontWeight: 700 };
+    if (pct >= 20) return { background: "#eaf6ee", color: UI.verde, fontWeight: 700 };
+    return { color: UI.cinza, fontWeight: 400 };
+  }
 
   return (
     <div style={M.layout}>
@@ -4735,14 +4749,16 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
                       <tr key={p.nome} style={EST.linhaClicavel} onClick={() => setLinhaMarcadaD(marcada ? "" : p.nome)}>
                         <td style={{ ...EST.tdIrmaoFixo, ...(marcada ? EST.tdMarcadaBg : null) }}>{p.nome}</td>
                         {an.tiposUsados.map((t) => { const c = p.porTipo[t] || 0; return <td key={t} style={{ ...EST.tdN, background: marcada ? EST.tdMarcadaBg.background : c === 0 ? "#fff" : c === 1 ? "#eef3fb" : c <= 3 ? "#cfe0f7" : "#f3c9a6" }}>{c || ""}</td>; })}
-                        <td style={{ ...EST.tdN, ...(marcada ? EST.tdMarcadaBg : null), color: p.concentracao >= 0.6 && p.total >= 4 ? "#9a3b3b" : UI.cinza, fontWeight: p.concentracao >= 0.6 && p.total >= 4 ? 700 : 400 }}>{p.total ? Math.round(p.concentracao * 100) + "%" : "—"}</td>
+                        {(() => { const pctConc = p.concentracao * 100; return (
+                          <td style={{ ...EST.tdN, ...estiloConcentracao(pctConc), ...(marcada ? { background: EST.tdMarcadaBg.background } : null) }}>{p.total ? pctConc.toFixed(1) + "%" : "—"}</td>
+                        ); })()}
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
             </div>
-            <div style={EST.cfgNota}>"Concentração" = % das partes da pessoa concentradas no tipo dominante. Vermelho = ≥60% (concentrado num único tipo, com 4+ partes).</div>
+            <div style={EST.cfgNota}>"Concentração" = quantos tipos diferentes de parte a pessoa já fez, sobre o total de {an.tiposUsados.length} tipos existentes no período (100% = já fez todos). Ajuda a identificar os irmãos mais versáteis. Vermelho: mais de 60% · Amarelo: 40% a 60% · Verde: 20% a 40%.</div>
           </details>
 
           {/* E. APOIO AO PRÓXIMO MÊS */}
