@@ -4459,10 +4459,19 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
   }
   // Restaura as correções manuais (fusão de nomes e grupo de elegibilidade)
   // de um backup exportado por "Exportar JSON" — é o que fica perdido
-  // quando o cache/localStorage do navegador é limpo.
+  // quando o cache/localStorage do navegador é limpo. Um arquivo sem essas
+  // chaves (ex.: backup de uma versão antiga da tela, só com "registros")
+  // não altera nada — nunca apaga as correções atuais por engano.
   function importarDadosJSON(obj) {
-    setFusoesNome(obj.fusoesNome && typeof obj.fusoesNome === "object" ? obj.fusoesNome : {});
-    setGruposOverride(obj.gruposOverride && typeof obj.gruposOverride === "object" ? obj.gruposOverride : {});
+    const temFusoes = obj.fusoesNome && typeof obj.fusoesNome === "object";
+    const temGrupos = obj.gruposOverride && typeof obj.gruposOverride === "object";
+    if (!temFusoes && !temGrupos) {
+      window.alert("Este arquivo não tem as correções manuais (nomes fundidos/grupos) — parece ser um backup de uma versão antiga desta tela, que só guardava os registros. Nada foi alterado.");
+      return;
+    }
+    if (temFusoes) setFusoesNome(obj.fusoesNome);
+    if (temGrupos) setGruposOverride(obj.gruposOverride);
+    window.alert("Correções importadas: " + [temFusoes && "nomes fundidos", temGrupos && "grupos ajustados"].filter(Boolean).join(" e ") + ".");
   }
 
   const fmtData = (iso) => { if (!iso) return "—"; const [a, m, d] = iso.split("-"); return `${d}/${m}/${a.slice(2)}`; };
