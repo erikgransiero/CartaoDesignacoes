@@ -4046,7 +4046,13 @@ function registrosDoCartao(cartao) {
     const push = (cat, tipo, designadoStr) => {
       const partes = String(designadoStr || "").split("/").map((x) => x.trim()).filter(Boolean);
       if (!partes.length) return;
-      out.push({ data, categoria: cat, tipo, titular: canonPessoa(partes[0]), ajudante: partes[1] ? canonPessoa(partes[1]) : "" });
+      const titular = canonPessoa(partes[0]);
+      // Quando o campo de ajudante traz mais de um nome (ex.: "Priscilla e
+      // Rebeca"), cada um conta como uma designação distinta de ajudante
+      // junto do mesmo titular, em vez de virar uma "pessoa" fictícia.
+      const ajudantes = partes[1] ? partes[1].split(/\s+e\s+/).map((x) => x.trim()).filter(Boolean) : [];
+      if (!ajudantes.length) { out.push({ data, categoria: cat, tipo, titular, ajudante: "" }); return; }
+      ajudantes.forEach((aj) => out.push({ data, categoria: cat, tipo, titular, ajudante: canonPessoa(aj) }));
     };
     if (s.tema1Designado) push("Tesouros", "Tesouros (discurso)", s.tema1Designado);
     if (s.joiasDesignado) push("Tesouros", "Joias espirituais", s.joiasDesignado);
