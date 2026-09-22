@@ -4086,6 +4086,7 @@ function desvioPadrao(valores) {
 function TelaEstatisticas({ onNavega, sessao, onSair }) {
   const cartao = React.useMemo(() => leSalvo("cartao", CARTAO_INICIAL), []);
   const publicadores = React.useMemo(() => leSalvo("publicadores", PUBLICADORES_INICIAL).publicadores, []);
+  const generosSalvos = React.useMemo(() => leSalvo("generos-publicadores", GENEROS_INICIAL).mapa || {}, []);
 
   // configurações ajustáveis (o quadro de pesos/limites foi removido da tela
   // a pedido do usuário — a congregação usa quantidade, não peso — mas os
@@ -4219,6 +4220,15 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
     const base = elegDe[normaliza(nome)] || { eleg: "Não definido", ativo: true };
     const grupo = gruposOverride[chaveNome(nome)];
     return grupo ? { ...base, eleg: grupo } : base;
+  }
+  // Gênero (M/F) usado para ordenar a lista de "nunca fez parte com" no
+  // relatório C: "Irmã" no grupo de elegibilidade é o sinal mais confiável;
+  // senão usa o gênero já confirmado/adivinhado pelo recurso de WhatsApp do
+  // Cadastro de Publicadores; sem nenhum dos dois, o gênero fica indefinido.
+  function generoDe(nomeCompleto) {
+    if (infoPessoa(nomeCompleto).eleg === "Irmã") return "F";
+    const primeiro = (nomeCompleto || "").split(" ")[0];
+    return generosSalvos[normaliza(primeiro)] || adivinharGenero(primeiro) || null;
   }
 
   function pesoDe(tipo, papel) {
@@ -4427,6 +4437,36 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
     return d ? d.n : 0;
   };
 
+  // "Parceiros distintos por irmão" (relatório C): linha expandida ao clicar
+  // no nome — mostra quem já fez parte com a pessoa (com a última data) e,
+  // em vermelho, quem nunca fez. A lista de "nunca fez" começa pelo mesmo
+  // gênero da pessoa selecionada, depois os de gênero indefinido (a
+  // "transição") e por último o outro gênero.
+  const [duplaExpandida, setDuplaExpandida] = useState("");
+  const detalheDuplas = React.useMemo(() => {
+    const nome = duplaExpandida;
+    if (!nome) return null;
+    const parceirosSet = an.parceiros[nome] || new Set();
+    const parceirosList = Array.from(parceirosSet).map((outro) => ({ nome: outro, ultima: duplaUltima(nome, outro) }))
+      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+    const generoAlvo = generoDe(nome);
+    function grupoOrdem(n) {
+      if (generoAlvo == null) return 0;
+      const g = generoDe(n);
+      if (g === generoAlvo) return 0;
+      if (g == null) return 1;
+      return 2;
+    }
+    const nuncaFez = an.pessoas.map((p) => p.nome).filter((n) => n !== nome && !parceirosSet.has(n))
+      .sort((a, b) => { const d = grupoOrdem(a) - grupoOrdem(b); return d !== 0 ? d : a.localeCompare(b, "pt-BR"); });
+    return { parceirosList, nuncaFez };
+  }, [duplaExpandida, an]);
+  function duplaUltima(a, b) {
+    const k = [a, b].sort().join(" | ");
+    const d = an.listaDuplas.find((x) => [x.a, x.b].sort().join(" | ") === k);
+    return d ? d.ultima : "";
+  }
+
   const todosNomes = React.useMemo(() => an.pessoas.map((p) => p.nome).sort((a, b) => a.localeCompare(b)), [an]);
 
   function simular() {
@@ -4600,12 +4640,40 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
               </div>
               <div>
                 <div style={EST.subTit}>Parceiros distintos por irmão</div>
+                <div style={EST.cfgNota}>Clique no nome para ver quem já fez parte com a pessoa (e quando) e, em vermelho, quem nunca fez.</div>
                 <div style={EST.tabScrollAlto}>
                   <table style={EST.tab}>
                     <thead><tr><th style={EST.th}>Irmão</th><th style={EST.thN}>Parceiros</th></tr></thead>
-                    <tbody>{an.pessoas.filter((p) => an.parceiros[p.nome]).sort((a, b) => (an.parceiros[b.nome].size) - (an.parceiros[a.nome].size)).map((p) => (
-                      <tr key={p.nome}><td style={EST.td}>{p.nome}</td><td style={EST.tdN}>{an.parceiros[p.nome].size}</td></tr>
-                    ))}</tbody>
+                    <tbody>
+                      {an.pessoas.filter((p) => an.parceiros[p.nome]).sort((a, b) => (an.parceiros[b.nome].size) - (an.parceiros[a.nome].size)).map((p) => {
+                        const expandido = duplaExpandida === p.nome;
+                        return (
+                          <React.Fragment key={p.nome}>
+                            <tr style={EST.linhaClicavel} onClick={() => setDuplaExpandida(expandido ? "" : p.nome)}>
+                              <td style={EST.td}>{expandido ? "− " : "+ "}{p.nome}</td>
+                              <td style={EST.tdN}>{an.parceiros[p.nome].size}</td>
+                            </tr>
+                            {expandido && detalheDuplas && (
+                              <tr>
+                                <td colSpan={2} style={EST.tdDetalhe}>
+                                  <table style={EST.tabInterna}>
+                                    <thead><tr><th style={EST.thMiniTab}>Parceiro</th><th style={EST.thMiniTabN}>Última</th></tr></thead>
+                                    <tbody>
+                                      {detalheDuplas.parceirosList.map((d) => (
+                                        <tr key={d.nome}><td style={EST.tdMiniTab}>{d.nome}</td><td style={EST.tdMiniTabN}>{fmtData(d.ultima)}</td></tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                  {detalheDuplas.nuncaFez.length > 0 && (
+                                    <div style={EST.textoNuncaFez}><strong>Nunca fez parte com:</strong> {detalheDuplas.nuncaFez.join(", ")}</div>
+                                  )}
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </tbody>
                   </table>
                 </div>
               </div>
@@ -4747,6 +4815,13 @@ const EST = {
   tdTitularBg: { background: UI.azulClaro },
   linhaClicavel: { cursor: "pointer" },
   tdMarcadaBg: { background: "#fdeaea" },
+  tdDetalhe: { padding: "8px 12px", background: "#f7f9fc", borderBottom: "1px solid " + UI.borda },
+  tabInterna: { borderCollapse: "collapse", width: "100%", fontSize: 12, marginBottom: 6 },
+  thMiniTab: { textAlign: "left", fontSize: 10.5, fontWeight: 700, color: UI.cinza, padding: "2px 6px", borderBottom: "1px solid " + UI.borda },
+  thMiniTabN: { textAlign: "center", fontSize: 10.5, fontWeight: 700, color: UI.cinza, padding: "2px 6px", borderBottom: "1px solid " + UI.borda },
+  tdMiniTab: { padding: "2px 6px", fontSize: 12 },
+  tdMiniTabN: { padding: "2px 6px", fontSize: 11, color: UI.cinza, textAlign: "center" },
+  textoNuncaFez: { color: "#9a3b3b", fontSize: 12, marginTop: 6, lineHeight: 1.6 },
   tdHeadRow: { padding: "4px 8px", borderBottom: "1px solid #eef0f4", whiteSpace: "nowrap", fontSize: 10.5, fontWeight: 700, position: "sticky", left: 0, background: "#fff" },
   cell: { width: 24, minWidth: 24, textAlign: "center", fontSize: 10.5, border: "1px solid #eef0f4", padding: 0, height: 22 },
   chips: { display: "flex", flexWrap: "wrap", gap: 6 },
