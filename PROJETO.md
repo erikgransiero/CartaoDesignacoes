@@ -813,7 +813,24 @@ produção.)*
    linha clicável, coluna Irmão fixa no scroll horizontal~~ — **feito**.
 10. ~~Quadros C/D: ajustar altura das tabelas (8/4/20 linhas com
     rolagem)~~ — **feito**.
-11. **Pegadinha de infraestrutura registrada:** um deploy em `preview`
+11. ~~Alinhar o cabeçalho de "Duplas mais repetidas" com "Parceiros
+    distintos por irmão" (quadro C)~~ — levou 2 tentativas. A 1ª
+    (adicionar uma nota abaixo do título, para as duas colunas terem a
+    mesma quantidade de linhas de texto antes da tabela) só alinhava por
+    **coincidência de largura de tela**: como as duas notas têm tamanhos
+    de texto diferentes, em certas larguras uma quebra em mais linhas que
+    a outra e o cabeçalho desalinha de novo — só não apareceu no primeiro
+    teste porque a largura usada por acaso não expunha o problema.
+    **Corrigido de verdade** reestruturando as duas colunas para
+    compartilharem o mesmo grid CSS por linha (título / nota / tabela como
+    linhas explícitas do grid, não blocos independentes por coluna) — a
+    altura de cada linha passa a acompanhar o maior conteúdo dos dois
+    lados automaticamente. Testado de 1100px a 1920px. **Lição para
+    qualquer layout de duas colunas lado a lado nesta tela:** não confiar
+    em "textos de tamanho parecido quebram do mesmo jeito" — usar linhas
+    de grid compartilhadas quando o cabeçalho/início do conteúdo precisa
+    alinhar entre colunas.
+12. **Pegadinha de infraestrutura registrada:** um deploy em `preview`
     falhou não por causa do código, mas por um erro 403 transitório do
     GitHub Actions ao subir o artefato de publicação
     (`upload-pages-artifact`) — build e testes tinham passado
