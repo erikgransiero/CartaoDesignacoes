@@ -4638,7 +4638,7 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
             <div style={EST.duasColunas}>
               <div>
                 <div style={EST.subTit}>Duplas mais repetidas</div>
-                <div style={EST.tabScrollAlto}>
+                <div style={EST.tabScrollDuplas}>
                   <table style={EST.tab}>
                     <thead><tr><th style={EST.th}>Dupla</th><th style={EST.thN}>Vezes</th><th style={EST.thN}>Última</th></tr></thead>
                     <tbody>{an.listaDuplas.slice(0, 40).map((d) => (
@@ -4650,12 +4650,12 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
               </div>
               <div>
                 <div style={EST.subTit}>Parceiros distintos por irmão</div>
-                <div style={EST.cfgNota}>Clique no nome para ver quem já fez parte com a pessoa (e quando) e, em vermelho, quem nunca fez.</div>
-                <div style={EST.tabScrollAlto}>
+                <div style={EST.cfgNota}>Clique no nome para ver quem já fez parte com a pessoa (e quando). Quem nunca fez aparece na caixa abaixo, em vermelho.</div>
+                <div style={EST.tabScrollC}>
                   <table style={EST.tab}>
                     <thead><tr><th style={EST.th}>Irmão</th><th style={EST.thN}>Parceiros</th></tr></thead>
                     <tbody>
-                      {an.pessoas.filter((p) => an.parceiros[p.nome]).sort((a, b) => (an.parceiros[b.nome].size) - (an.parceiros[a.nome].size)).map((p) => {
+                      {an.pessoas.filter((p) => an.parceiros[p.nome]).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")).map((p) => {
                         const expandido = duplaExpandida === p.nome;
                         return (
                           <React.Fragment key={p.nome}>
@@ -4674,9 +4674,6 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
                                       ))}
                                     </tbody>
                                   </table>
-                                  {detalheDuplas.nuncaFez.length > 0 && (
-                                    <div style={EST.textoNuncaFez}><strong>Nunca fez parte com:</strong> {detalheDuplas.nuncaFez.join(", ")}</div>
-                                  )}
                                 </td>
                               </tr>
                             )}
@@ -4686,6 +4683,11 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
                     </tbody>
                   </table>
                 </div>
+                {duplaExpandida && detalheDuplas && detalheDuplas.nuncaFez.length > 0 && (
+                  <div style={EST.caixaNuncaFez}>
+                    <div style={EST.textoNuncaFez}><strong>{duplaExpandida} nunca fez parte com:</strong> {detalheDuplas.nuncaFez.join(", ")}</div>
+                  </div>
+                )}
               </div>
             </div>
             <div style={EST.subTit}>Mapa de calor — vezes que trabalharam juntos (top {heatTop} mais ativos){" "}
@@ -4714,7 +4716,7 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
           {/* D. VARIEDADE DE PARTES */}
           <details style={EST.sec}>
             <summary style={EST.secTit}>D. Variedade de partes (pessoa × tipo)</summary>
-            <div style={EST.tabScroll}>
+            <div style={EST.tabScrollD}>
               <table style={EST.tab}>
                 <thead>
                   <tr>
@@ -4823,7 +4825,11 @@ const EST = {
   cfgInputMini: { padding: "3px 5px", border: "1px solid " + UI.borda, borderRadius: 4, fontSize: 12.5 },
   cfgNota: { fontSize: 11.5, color: UI.cinza, lineHeight: 1.5, marginTop: 6, fontStyle: "italic" },
   tabScroll: { overflowX: "auto", border: "1px solid " + UI.borda, borderRadius: 8, marginTop: 4 },
+  tabScrollD: { overflow: "auto", maxHeight: 512, border: "1px solid " + UI.borda, borderRadius: 8, marginTop: 4 },
   tabScrollAlto: { overflow: "auto", maxHeight: 320, border: "1px solid " + UI.borda, borderRadius: 8, marginTop: 4 },
+  tabScrollC: { overflow: "auto", maxHeight: 215, border: "1px solid " + UI.borda, borderRadius: 8, marginTop: 4 },
+  tabScrollDuplas: { overflow: "auto", maxHeight: 215, border: "1px solid " + UI.borda, borderRadius: 8, marginTop: 4 },
+  caixaNuncaFez: { marginTop: 8, background: "#fff", border: "1px solid " + UI.borda, borderRadius: 8, padding: "8px 10px", maxHeight: 94, overflowY: "auto" },
   tab: { borderCollapse: "collapse", width: "100%", fontSize: 12.5 },
   th: { position: "sticky", top: 0, background: UI.azul, color: "#fff", fontSize: 11.5, fontWeight: 700, padding: "6px 8px", textAlign: "left", whiteSpace: "nowrap", zIndex: 1 },
   thN: { position: "sticky", top: 0, background: UI.azul, color: "#fff", fontSize: 11.5, fontWeight: 700, padding: "6px 8px", textAlign: "center", whiteSpace: "nowrap", zIndex: 1 },
