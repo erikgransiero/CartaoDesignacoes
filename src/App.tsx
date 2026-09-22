@@ -4473,15 +4473,26 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
 
   const todosNomes = React.useMemo(() => an.pessoas.map((p) => p.nome).sort((a, b) => a.localeCompare(b)), [an]);
 
-  // Relatório D (variedade de partes): ordenação só pela coluna "Irmão" e
-  // linha marcada ao clicar (mesmo padrão do quadro B).
-  const [ordemAscD, setOrdemAscD] = useState(true);
+  // Relatório D (variedade de partes): ordenação pelas colunas "Irmão" e
+  // "Concentração", e linha marcada ao clicar (mesmo padrão do quadro B).
+  const [sortD, setSortD] = useState({ campo: "nome", dir: "asc" });
   const [linhaMarcadaD, setLinhaMarcadaD] = useState("");
+  function alternaOrdenacaoD(campo, numerica) {
+    setSortD((atual) => {
+      if (atual.campo !== campo) return { campo, dir: numerica ? "desc" : "asc" };
+      return { campo, dir: atual.dir === "asc" ? "desc" : "asc" };
+    });
+  }
   const pessoasTabelaD = React.useMemo(() => {
-    const lista = pessoasFiltradas.slice().sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
-    if (!ordemAscD) lista.reverse();
+    const lista = pessoasFiltradas.slice();
+    const { campo, dir } = sortD;
+    lista.sort((a, b) => {
+      const va = a[campo], vb = b[campo];
+      const cmp = typeof va === "string" ? va.localeCompare(vb, "pt-BR") : va - vb;
+      return dir === "asc" ? cmp : -cmp;
+    });
     return lista;
-  }, [pessoasFiltradas, ordemAscD]);
+  }, [pessoasFiltradas, sortD]);
 
   function simular() {
     const alvo = simPessoa;
@@ -4734,12 +4745,16 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
                 <thead>
                   <tr>
                     <th style={EST.thIrmaoFixo}>
-                      <button type="button" style={EST.btnOrdenar} onClick={() => setOrdemAscD((v) => !v)} title="Ordenar">
-                        Irmão <span style={EST.iconeOrdenar}>{ordemAscD ? "▲" : "▼"}</span>
+                      <button type="button" style={EST.btnOrdenar} onClick={() => alternaOrdenacaoD("nome", false)} title="Ordenar">
+                        Irmão <span style={EST.iconeOrdenar}>{sortD.campo === "nome" ? (sortD.dir === "asc" ? "▲" : "▼") : "⇅"}</span>
                       </button>
                     </th>
                     {an.tiposUsados.map((t) => <th key={t} style={EST.thVertQuebra}><span>{t}</span></th>)}
-                    <th style={EST.thVertQuebra}><span>Concentração</span></th>
+                    <th style={EST.thVertQuebra}>
+                      <button type="button" style={EST.btnOrdenar} onClick={() => alternaOrdenacaoD("concentracao", true)} title="Ordenar">
+                        Concentração <span style={EST.iconeOrdenar}>{sortD.campo === "concentracao" ? (sortD.dir === "asc" ? "▲" : "▼") : "⇅"}</span>
+                      </button>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
