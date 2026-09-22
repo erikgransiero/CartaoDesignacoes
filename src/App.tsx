@@ -4469,6 +4469,16 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
 
   const todosNomes = React.useMemo(() => an.pessoas.map((p) => p.nome).sort((a, b) => a.localeCompare(b)), [an]);
 
+  // Relatório D (variedade de partes): ordenação só pela coluna "Irmão" e
+  // linha marcada ao clicar (mesmo padrão do quadro B).
+  const [ordemAscD, setOrdemAscD] = useState(true);
+  const [linhaMarcadaD, setLinhaMarcadaD] = useState("");
+  const pessoasTabelaD = React.useMemo(() => {
+    const lista = pessoasFiltradas.slice().sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+    if (!ordemAscD) lista.reverse();
+    return lista;
+  }, [pessoasFiltradas, ordemAscD]);
+
   function simular() {
     const alvo = simPessoa;
     if (!alvo) { setSimResultado({ erro: "Escolha um irmão." }); return; }
@@ -4706,19 +4716,32 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
             <summary style={EST.secTit}>D. Variedade de partes (pessoa × tipo)</summary>
             <div style={EST.tabScroll}>
               <table style={EST.tab}>
-                <thead><tr><th style={EST.th}>Irmão</th>{an.tiposUsados.map((t) => <th key={t} style={EST.thVert}><span>{t}</span></th>)}<th style={EST.thN}>Conc.</th></tr></thead>
+                <thead>
+                  <tr>
+                    <th style={EST.thIrmaoFixo}>
+                      <button type="button" style={EST.btnOrdenar} onClick={() => setOrdemAscD((v) => !v)} title="Ordenar">
+                        Irmão <span style={EST.iconeOrdenar}>{ordemAscD ? "▲" : "▼"}</span>
+                      </button>
+                    </th>
+                    {an.tiposUsados.map((t) => <th key={t} style={EST.thVertQuebra}><span>{t}</span></th>)}
+                    <th style={EST.thVertQuebra}><span>Concentração</span></th>
+                  </tr>
+                </thead>
                 <tbody>
-                  {pessoasFiltradas.map((p) => (
-                    <tr key={p.nome}>
-                      <td style={EST.td}>{p.nome}</td>
-                      {an.tiposUsados.map((t) => { const c = p.porTipo[t] || 0; return <td key={t} style={{ ...EST.tdN, background: c === 0 ? "#fff" : c === 1 ? "#eef3fb" : c <= 3 ? "#cfe0f7" : "#f3c9a6" }}>{c || ""}</td>; })}
-                      <td style={{ ...EST.tdN, color: p.concentracao >= 0.6 && p.total >= 4 ? "#9a3b3b" : UI.cinza, fontWeight: p.concentracao >= 0.6 && p.total >= 4 ? 700 : 400 }}>{p.total ? Math.round(p.concentracao * 100) + "%" : "—"}</td>
-                    </tr>
-                  ))}
+                  {pessoasTabelaD.map((p) => {
+                    const marcada = linhaMarcadaD === p.nome;
+                    return (
+                      <tr key={p.nome} style={EST.linhaClicavel} onClick={() => setLinhaMarcadaD(marcada ? "" : p.nome)}>
+                        <td style={{ ...EST.tdIrmaoFixo, ...(marcada ? EST.tdMarcadaBg : null) }}>{p.nome}</td>
+                        {an.tiposUsados.map((t) => { const c = p.porTipo[t] || 0; return <td key={t} style={{ ...EST.tdN, background: marcada ? EST.tdMarcadaBg.background : c === 0 ? "#fff" : c === 1 ? "#eef3fb" : c <= 3 ? "#cfe0f7" : "#f3c9a6" }}>{c || ""}</td>; })}
+                        <td style={{ ...EST.tdN, ...(marcada ? EST.tdMarcadaBg : null), color: p.concentracao >= 0.6 && p.total >= 4 ? "#9a3b3b" : UI.cinza, fontWeight: p.concentracao >= 0.6 && p.total >= 4 ? 700 : 400 }}>{p.total ? Math.round(p.concentracao * 100) + "%" : "—"}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
-            <div style={EST.cfgNota}>"Conc." = % das partes da pessoa concentradas no tipo dominante. Vermelho = ≥60% (concentrado num único tipo, com 4+ partes).</div>
+            <div style={EST.cfgNota}>"Concentração" = % das partes da pessoa concentradas no tipo dominante. Vermelho = ≥60% (concentrado num único tipo, com 4+ partes).</div>
           </details>
 
           {/* E. APOIO AO PRÓXIMO MÊS */}
@@ -4809,6 +4832,9 @@ const EST = {
   tdInput: { width: "100%", minWidth: 90, border: "none", borderBottom: "1px dashed " + UI.borda, background: "transparent", font: "inherit", color: "inherit", padding: "2px 4px", borderRadius: 0 },
   thVert: { position: "sticky", top: 0, background: UI.azul, color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 3px", textAlign: "center", height: 84, whiteSpace: "nowrap", verticalAlign: "bottom", zIndex: 1 },
   thCanto: { position: "sticky", top: 0, left: 0, background: UI.azul, zIndex: 2, minWidth: 90 },
+  thVertQuebra: { position: "sticky", top: 0, background: UI.azul, color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 5px", textAlign: "center", whiteSpace: "normal", wordBreak: "keep-all", overflowWrap: "normal", hyphens: "none", verticalAlign: "bottom", zIndex: 1, minWidth: 64 },
+  thIrmaoFixo: { position: "sticky", top: 0, left: 0, background: UI.azul, color: "#fff", fontSize: 11.5, fontWeight: 700, padding: "6px 8px", textAlign: "left", whiteSpace: "nowrap", zIndex: 3 },
+  tdIrmaoFixo: { padding: "4px 8px", borderBottom: "1px solid #eef0f4", whiteSpace: "nowrap", position: "sticky", left: 0, background: "#fff", zIndex: 1 },
   td: { padding: "4px 8px", borderBottom: "1px solid #eef0f4", whiteSpace: "nowrap" },
   tdMini: { padding: "4px 8px", borderBottom: "1px solid #eef0f4", whiteSpace: "nowrap", fontSize: 11, color: UI.cinza },
   tdN: { padding: "4px 8px", borderBottom: "1px solid #eef0f4", textAlign: "center", whiteSpace: "nowrap" },
