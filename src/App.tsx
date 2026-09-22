@@ -4175,6 +4175,14 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
       return { campo, dir: atual.dir === "asc" ? "desc" : "asc" };
     });
   }
+  // Ordenação clicável da tabela "Fila de designação" (relatório B)
+  const [sortB, setSortB] = useState({ campo: "diasDesdeTitular", dir: "desc" });
+  function alternaOrdenacaoB(campo, numerica) {
+    setSortB((atual) => {
+      if (atual.campo !== campo) return { campo, dir: numerica ? "desc" : "asc" };
+      return { campo, dir: atual.dir === "asc" ? "desc" : "asc" };
+    });
+  }
 
   // simulação
   const [simPessoa, setSimPessoa] = useState("");
@@ -4239,7 +4247,7 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
       const p = P[f.pessoa] || (P[f.pessoa] = {
         nome: f.pessoa, total: 0, titular: 0, ajudante: 0, carga: 0,
         porCategoria: { Tesouros: 0, "Ministério": 0, "Vida Cristã": 0 },
-        porTipo: {}, datas: [], ultimaPorTipo: {},
+        porTipo: {}, datas: [], datasPorPapel: { titular: [], ajudante: [] }, ultimaPorTipo: {},
       });
       p.total++;
       p[f.papel]++;
@@ -4247,6 +4255,7 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
       p.porCategoria[f.categoria] = (p.porCategoria[f.categoria] || 0) + 1;
       p.porTipo[f.tipo] = (p.porTipo[f.tipo] || 0) + 1;
       p.datas.push(f.data);
+      p.datasPorPapel[f.papel].push(f.data);
       if (!p.ultimaPorTipo[f.tipo] || f.data > p.ultimaPorTipo[f.tipo]) p.ultimaPorTipo[f.tipo] = f.data;
     }
     const pessoas = Object.values(P);
@@ -4254,6 +4263,14 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
       p.datas.sort();
       p.ultima = p.datas[p.datas.length - 1];
       p.diasDesde = diasEntreISO(p.ultima, hojeISO);
+      // última/dias por papel (titular e ajudante separados), ignorando
+      // designações futuras já adiantadas no cartão (dariam dias negativos)
+      for (const papel of ["titular", "ajudante"]) {
+        const passadas = p.datasPorPapel[papel].filter((d) => d <= hojeISO).sort();
+        const ultimaP = passadas.length ? passadas[passadas.length - 1] : null;
+        p["ultima" + papel[0].toUpperCase() + papel.slice(1)] = ultimaP;
+        p["diasDesde" + papel[0].toUpperCase() + papel.slice(1)] = ultimaP ? diasEntreISO(ultimaP, hojeISO) : null;
+      }
       // intervalo médio (dias) entre designações consecutivas
       let somaIntervalos = 0, n = 0;
       for (let i = 1; i < p.datas.length; i++) { somaIntervalos += diasEntreISO(p.datas[i - 1], p.datas[i]); n++; }
@@ -4343,6 +4360,26 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
     });
     return lista;
   }, [pessoasFiltradas, sortA]);
+
+  const COLS_TABELA_B = [
+    { campo: "nome", label: "Irmão", num: false },
+    { campo: "diasDesdeTitular", label: "Dias s/ parte", num: true },
+    { campo: "ultimaTitular", label: "Última", num: true },
+    { campo: "diasDesdeAjudante", label: "Dias s/ parte", num: true },
+    { campo: "ultimaAjudante", label: "Última", num: true },
+  ];
+  const pessoasTabelaB = React.useMemo(() => {
+    const lista = pessoasFiltradas.slice();
+    const { campo, dir } = sortB;
+    lista.sort((a, b) => {
+      const va = a[campo], vb = b[campo];
+      let cmp;
+      if (typeof va === "string" || typeof vb === "string") cmp = String(va || "").localeCompare(String(vb || ""), "pt-BR");
+      else cmp = (va == null ? -1 : va) - (vb == null ? -1 : vb);
+      return dir === "asc" ? cmp : -cmp;
+    });
+    return lista;
+  }, [pessoasFiltradas, sortB]);
 
   // ---- Relatório B: esquecidos ----
   const limiteDias = semanasEsquecido * 7;
@@ -4487,32 +4524,33 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
           {/* B. RODÍZIO E RECÊNCIA */}
           <details style={EST.sec} open>
             <summary style={EST.secTit}>B. Rodízio e recência</summary>
-            <div style={EST.duasColunas}>
-              <div>
-                <div style={EST.subTit}>Fila de escolha (mais tempo sem designação primeiro)</div>
-                <div style={EST.tabScrollAlto}>
-                  <table style={EST.tab}>
-                    <thead><tr><th style={EST.th}>Irmão</th><th style={EST.thN}>Dias s/ parte</th><th style={EST.thN}>Última</th><th style={EST.thN}>Interv. médio</th></tr></thead>
-                    <tbody>
-                      {pessoasFiltradas.slice().sort((a, b) => b.diasDesde - a.diasDesde).map((p) => (
-                        <tr key={p.nome}><td style={EST.td}>{p.nome}</td><td style={EST.tdN}>{p.diasDesde}</td><td style={EST.tdMini}>{fmtData(p.ultima)}</td><td style={EST.tdN}>{p.intervaloMedio == null ? "—" : p.intervaloMedio + "d"}</td></tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              <div>
-                <div style={EST.subTit}>Esquecidos (&gt; {semanasEsquecido} semanas) — {esquecidos.length}</div>
-                <div style={EST.chips}>
-                  {esquecidos.length ? esquecidos.map((p) => <span key={p.nome} style={EST.chipAlerta}>{p.nome} · {Math.round(p.diasDesde / 7)}sem</span>) : <span style={EST.vazio}>Ninguém acima do limite.</span>}
-                </div>
-                <div style={{ ...EST.subTit, marginTop: 12 }}>Dispersão por grupo (justiça)</div>
-                <table style={EST.tab}>
-                  <thead><tr><th style={EST.th}>Grupo</th><th style={EST.thN}>Nº</th><th style={EST.thN}>Desvio carga</th><th style={EST.thN}>Gini</th></tr></thead>
-                  <tbody>{an.dispersao.map((g) => <tr key={g.grupo}><td style={EST.td}>{g.grupo}</td><td style={EST.tdN}>{g.n}</td><td style={EST.tdN}>{g.desvio}</td><td style={EST.tdN}>{g.gini}</td></tr>)}</tbody>
-                </table>
-                <div style={EST.cfgNota}>Gini 0 = perfeitamente igual; quanto maior, mais desigual a carga dentro do grupo.</div>
-              </div>
+            <div style={EST.subTit}>FILA DE DESIGNAÇÃO - Mais tempo sem designação</div>
+            <div style={EST.cfgNota}>Dias e datas consideram só designações já realizadas — partes do próximo mês já adiantadas no cartão não entram na conta.</div>
+            <div style={EST.tabScrollAlto}>
+              <table style={EST.tab}>
+                <thead>
+                  <tr>
+                    {COLS_TABELA_B.map((c, i) => (
+                      <th key={c.campo} style={i === 0 ? EST.th : EST.thN}>
+                        <button type="button" style={EST.btnOrdenar} onClick={() => alternaOrdenacaoB(c.campo, c.num)} title="Ordenar">
+                          {c.label} <span style={EST.iconeOrdenar}>{sortB.campo === c.campo ? (sortB.dir === "asc" ? "▲" : "▼") : "⇅"}</span>
+                        </button>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {pessoasTabelaB.map((p) => (
+                    <tr key={p.nome}>
+                      <td style={EST.td}>{p.nome}</td>
+                      <td style={{ ...EST.tdN, ...EST.tdTitularBg }}>{p.diasDesdeTitular == null ? "—" : p.diasDesdeTitular}</td>
+                      <td style={{ ...EST.tdN, ...EST.tdTitularBg }}>{fmtData(p.ultimaTitular)}</td>
+                      <td style={EST.tdN}>{p.diasDesdeAjudante == null ? "—" : p.diasDesdeAjudante}</td>
+                      <td style={EST.tdN}>{fmtData(p.ultimaAjudante)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </details>
 
@@ -4678,6 +4716,7 @@ const EST = {
   td: { padding: "4px 8px", borderBottom: "1px solid #eef0f4", whiteSpace: "nowrap" },
   tdMini: { padding: "4px 8px", borderBottom: "1px solid #eef0f4", whiteSpace: "nowrap", fontSize: 11, color: UI.cinza },
   tdN: { padding: "4px 8px", borderBottom: "1px solid #eef0f4", textAlign: "center", whiteSpace: "nowrap" },
+  tdTitularBg: { background: UI.azulClaro },
   tdHeadRow: { padding: "4px 8px", borderBottom: "1px solid #eef0f4", whiteSpace: "nowrap", fontSize: 10.5, fontWeight: 700, position: "sticky", left: 0, background: "#fff" },
   cell: { width: 24, minWidth: 24, textAlign: "center", fontSize: 10.5, border: "1px solid #eef0f4", padding: 0, height: 22 },
   chips: { display: "flex", flexWrap: "wrap", gap: 6 },
