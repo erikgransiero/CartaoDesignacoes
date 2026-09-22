@@ -4175,6 +4175,9 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
       return { campo, dir: atual.dir === "asc" ? "desc" : "asc" };
     });
   }
+  // Linha marcada por clique na tabela "Fila de designação" (relatório B):
+  // clicar de novo na mesma linha desmarca.
+  const [linhaMarcadaB, setLinhaMarcadaB] = useState("");
   // Ordenação clicável da tabela "Fila de designação" (relatório B)
   const [sortB, setSortB] = useState({ campo: "diasDesdeTitular", dir: "desc" });
   function alternaOrdenacaoB(campo, numerica) {
@@ -4552,15 +4555,19 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {pessoasTabelaB.map((p) => (
-                    <tr key={p.nome}>
-                      <td style={EST.td}>{p.nome}</td>
-                      <td style={{ ...EST.tdN, ...EST.tdTitularBg }}>{p.diasDesdeTitular == null ? "—" : p.diasDesdeTitular}</td>
-                      <td style={{ ...EST.tdN, ...EST.tdTitularBg }}>{fmtData(p.ultimaTitular)}</td>
-                      <td style={EST.tdN}>{p.diasDesdeAjudante == null ? "—" : p.diasDesdeAjudante}</td>
-                      <td style={EST.tdN}>{fmtData(p.ultimaAjudante)}</td>
-                    </tr>
-                  ))}
+                  {pessoasTabelaB.map((p) => {
+                    const marcada = linhaMarcadaB === p.nome;
+                    const fundo = marcada ? EST.tdMarcadaBg : null;
+                    return (
+                      <tr key={p.nome} style={EST.linhaClicavel} onClick={() => setLinhaMarcadaB(marcada ? "" : p.nome)}>
+                        <td style={{ ...EST.td, ...fundo }}>{p.nome}</td>
+                        <td style={{ ...EST.tdN, ...(marcada ? fundo : EST.tdTitularBg) }}>{p.diasDesdeTitular == null ? "—" : p.diasDesdeTitular}</td>
+                        <td style={{ ...EST.tdN, ...(marcada ? fundo : EST.tdTitularBg) }}>{fmtData(p.ultimaTitular)}</td>
+                        <td style={{ ...EST.tdN, ...fundo }}>{p.diasDesdeAjudante == null ? "—" : p.diasDesdeAjudante}</td>
+                        <td style={{ ...EST.tdN, ...fundo }}>{fmtData(p.ultimaAjudante)}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -4729,6 +4736,8 @@ const EST = {
   tdMini: { padding: "4px 8px", borderBottom: "1px solid #eef0f4", whiteSpace: "nowrap", fontSize: 11, color: UI.cinza },
   tdN: { padding: "4px 8px", borderBottom: "1px solid #eef0f4", textAlign: "center", whiteSpace: "nowrap" },
   tdTitularBg: { background: UI.azulClaro },
+  linhaClicavel: { cursor: "pointer" },
+  tdMarcadaBg: { background: "#fdeaea" },
   tdHeadRow: { padding: "4px 8px", borderBottom: "1px solid #eef0f4", whiteSpace: "nowrap", fontSize: 10.5, fontWeight: 700, position: "sticky", left: 0, background: "#fff" },
   cell: { width: 24, minWidth: 24, textAlign: "center", fontSize: 10.5, border: "1px solid #eef0f4", padding: 0, height: 22 },
   chips: { display: "flex", flexWrap: "wrap", gap: 6 },
