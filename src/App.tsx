@@ -4376,9 +4376,9 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
 
   const COLS_TABELA_B = [
     { campo: "nome", label: "Irmão", num: false },
-    { campo: "diasDesdeTitular", label: "Dias s/ parte", num: true },
+    { campo: "diasDesdeTitular", label: "Dias s/parte Titular", num: true },
     { campo: "ultimaTitular", label: "Última", num: true },
-    { campo: "diasDesdeAjudante", label: "Dias s/ parte", num: true },
+    { campo: "diasDesdeAjudante", label: "Dias s/parte Ajudante", num: true },
     { campo: "ultimaAjudante", label: "Última", num: true },
   ];
   const pessoasTabelaB = React.useMemo(() => {
