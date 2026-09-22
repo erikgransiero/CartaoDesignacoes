@@ -4638,6 +4638,7 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
             <div style={EST.duasColunas}>
               <div>
                 <div style={EST.subTit}>Duplas mais repetidas</div>
+                <div style={EST.cfgNota}>Duplas com menos de {semanasDuplaAlerta} semanas desde a última vez juntas aparecem destacadas em vermelho.</div>
                 <div style={EST.tabScrollDuplas}>
                   <table style={EST.tab}>
                     <thead><tr><th style={EST.th}>Dupla</th><th style={EST.thN}>Vezes</th><th style={EST.thN}>Última</th></tr></thead>
