@@ -484,12 +484,13 @@ Fonte padrão dos documentos: Arial.
   são **editáveis**, todas as colunas têm ordenação por clique (ícone ⇅).
   Editar o nome funde de verdade os dados (ver "Fusão manual" abaixo).
 - **B. Rodízio e recência** — tabela "FILA DE DESIGNAÇÃO": dias sem parte
-  e última data **separados por papel** (titular × ajudante, colunas de
-  titular com fundo azul claro), ignorando designações futuras já
-  adiantadas no cartão (nunca aparece número negativo); ordenação por
-  clique em qualquer coluna; clicar numa linha destaca ela inteira em
-  vermelho claro. ("Esquecidos" e "Dispersão por grupo" foram retirados
-  desta tela a pedido do usuário — ficam para uma rodada futura.)
+  e última data **separados por papel** (colunas "Dias s/parte Titular" e
+  "Dias s/parte Ajudante", com fundo azul claro nas colunas de titular),
+  ignorando designações futuras já adiantadas no cartão (nunca aparece
+  número negativo); ordenação por clique em qualquer coluna; clicar numa
+  linha destaca ela inteira em vermelho claro. ("Esquecidos" e "Dispersão
+  por grupo" foram retirados desta tela a pedido do usuário — ficam para
+  uma rodada futura.)
 - **C. Duplas (parcerias)**: "Duplas mais repetidas" e o mapa de calor
   (irmão × irmão) sem mudança de comportamento. "Parceiros distintos por
   irmão" — ordenado alfabeticamente, 8 linhas visíveis com rolagem;
@@ -501,12 +502,23 @@ Fonte padrão dos documentos: Arial.
   outro gênero. Gênero usa o grupo "Irmã" do Cadastro de Publicadores e o
   mesmo mecanismo de adivinhação/confirmação já usado no envio por
   WhatsApp (§5.9).
-- **D. Variedade de partes** (pessoa × tipo): ordenação só na coluna
-  "Irmão"; cabeçalhos dos tipos quebram linha sem quebrar palavra (fonte
-  menor, nomes completos); "Conc." virou "Concentração" por extenso;
-  clicar na linha destaca em vermelho claro; coluna "Irmão" fica fixa ao
-  rolar a tabela na horizontal; tabela limitada a ~20 linhas visíveis com
-  rolagem vertical.
+- **D. Variedade de partes** (pessoa × tipo): ordenação por clique nas
+  colunas "Irmão" e "Concentração"; cabeçalhos dos tipos quebram linha
+  sem quebrar palavra (fonte menor, nomes completos); clicar na linha
+  destaca em vermelho claro; coluna "Irmão" fica fixa ao rolar a tabela
+  na horizontal; tabela limitada a ~20 linhas visíveis com rolagem
+  vertical. **Coluna "Concentração" (cálculo revisado 22/09/2026):**
+  mede quantos tipos de parte diferentes a pessoa já fez, sobre o total
+  de tipos que o **Grupo dela** (coluna "Grupo" da tabela A) pode
+  receber — não faz sentido comparar uma irmã com o total geral de tipos
+  quando vários são exclusivos de irmão. Mapa fixo em
+  `TIPOS_POR_GRUPO_CONCENTRACAO`: Irmã → 5 tipos de ministério (~20%
+  cada); Publicador batizado → 8 tipos (~12,5% cada); Ancião/Servo
+  ministerial/Não definido → sem restrição, todos os tipos existentes no
+  período (~8,3% cada hoje, com 12 tipos). 100% = já fez todos os tipos
+  do próprio grupo. Faixas de destaque: vermelho (negrito) acima de 60%,
+  amarelo (negrito) de 40% a 60%, verde (negrito) de 20% a 40%, sem
+  alteração abaixo de 20%. Percentual sempre com 1 casa decimal.
 - **E. Apoio à montagem do próximo mês**: score de sugestão configurável
   (intervalo/carga/tipo/parceiro), alertas (dupla repetida, +2 partes no
   mês, esquecido há muito tempo) e simulação de designação hipotética.
@@ -839,6 +851,26 @@ produção.)*
     usuário relatar de novo "limpei o cache e não mudou nada", checar
     primeiro o status do workflow no GitHub Actions antes de investigar
     o código.
+13. ~~Renomear as colunas "Dias s/ parte" do quadro B~~ — **feito**:
+    viraram "Dias s/parte Titular" e "Dias s/parte Ajudante".
+14. ~~Novo cálculo de "Concentração" (quadro D)~~ — pedido do usuário em
+    duas partes. Primeiro trocou o sentido da métrica: de "% de partes
+    presas no tipo dominante" para "quantos tipos diferentes a pessoa já
+    fez, sobre o total de tipos existentes" (identifica os irmãos mais
+    versáteis/"chave"), com faixas de destaque vermelho/amarelo/verde por
+    percentual e ordenação também nessa coluna. Depois, um **ajuste
+    importante**: o denominador deixou de ser sempre o total geral de
+    tipos e passou a depender do **Grupo** da pessoa (tabela A) — uma
+    irmã nunca é designada para tipos exclusivos de irmão, então não
+    pode ser comparada com o total geral. Mapa fixo por grupo (Irmã: 5
+    tipos; Publicador batizado: 8 tipos; Ancião/Servo
+    ministerial/Não definido: sem restrição). **Nota:** o usuário disse
+    "Irmão" para o segundo grupo, mas essa palavra não existe na lista de
+    elegibilidade (`ELEGIBILIDADES`) — assumi que era "Publicador
+    batizado" (a opção masculina equivalente a "Irmã" na mesma lista) e
+    avisei o usuário dessa interpretação, caso precise corrigir. Validado
+    com dois casos reais antes de publicar (mudando o Grupo de uma pessoa
+    e conferindo o percentual bate à mão). Ver §5.10.
 
 *(Todos os itens validados em `preview` via Playwright antes de publicar;
 publicado em produção em 22/09/2026.)*
