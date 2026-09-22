@@ -4635,23 +4635,21 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
           {/* C. MATRIZ DE DUPLAS */}
           <details style={EST.sec}>
             <summary style={EST.secTit}>C. Duplas (parcerias)</summary>
-            <div style={EST.duasColunas}>
-              <div>
-                <div style={EST.subTit}>Duplas mais repetidas</div>
-                <div style={EST.cfgNota}>Duplas com menos de {semanasDuplaAlerta} semanas desde a última vez juntas aparecem destacadas em vermelho.</div>
-                <div style={EST.tabScrollDuplas}>
-                  <table style={EST.tab}>
-                    <thead><tr><th style={EST.th}>Dupla</th><th style={EST.thN}>Vezes</th><th style={EST.thN}>Última</th></tr></thead>
-                    <tbody>{an.listaDuplas.slice(0, 40).map((d) => (
-                      <tr key={d.a + d.b} style={diasEntreISO(d.ultima, hojeISO) < semanasDuplaAlerta * 7 ? { background: "#fdeaea" } : undefined}>
-                        <td style={EST.td}>{d.a} + {d.b}</td><td style={EST.tdN}>{d.n}</td><td style={EST.tdMini}>{fmtData(d.ultima)}</td></tr>
-                    ))}</tbody>
-                  </table>
-                </div>
+            <div style={EST.duasColunasLinhas}>
+              <div style={EST.subTit}>Duplas mais repetidas</div>
+              <div style={EST.subTit}>Parceiros distintos por irmão</div>
+              <div style={EST.cfgNota}>Duplas com menos de {semanasDuplaAlerta} semanas desde a última vez juntas aparecem destacadas em vermelho.</div>
+              <div style={EST.cfgNota}>Clique no nome para ver quem já fez parte com a pessoa (e quando). Quem nunca fez aparece na caixa abaixo, em vermelho.</div>
+              <div style={EST.tabScrollDuplas}>
+                <table style={EST.tab}>
+                  <thead><tr><th style={EST.th}>Dupla</th><th style={EST.thN}>Vezes</th><th style={EST.thN}>Última</th></tr></thead>
+                  <tbody>{an.listaDuplas.slice(0, 40).map((d) => (
+                    <tr key={d.a + d.b} style={diasEntreISO(d.ultima, hojeISO) < semanasDuplaAlerta * 7 ? { background: "#fdeaea" } : undefined}>
+                      <td style={EST.td}>{d.a} + {d.b}</td><td style={EST.tdN}>{d.n}</td><td style={EST.tdMini}>{fmtData(d.ultima)}</td></tr>
+                  ))}</tbody>
+                </table>
               </div>
               <div>
-                <div style={EST.subTit}>Parceiros distintos por irmão</div>
-                <div style={EST.cfgNota}>Clique no nome para ver quem já fez parte com a pessoa (e quando). Quem nunca fez aparece na caixa abaixo, em vermelho.</div>
                 <div style={EST.tabScrollC}>
                   <table style={EST.tab}>
                     <thead><tr><th style={EST.th}>Irmão</th><th style={EST.thN}>Parceiros</th></tr></thead>
@@ -4820,6 +4818,13 @@ const EST = {
   secTit: { fontSize: 14, fontWeight: 800, color: UI.azul, cursor: "pointer", listStyle: "none" },
   subTit: { fontSize: 12, fontWeight: 700, color: UI.tinta, margin: "10px 0 6px", textTransform: "uppercase", letterSpacing: .5 },
   duasColunas: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, alignItems: "start" },
+  // Mesma ideia de "duasColunas", mas com título/nota/tabela como linhas
+  // explícitas do grid (preenchidas na ordem: os 2 títulos, depois as 2
+  // notas, depois as 2 tabelas) — assim a altura de cada linha acompanha
+  // o maior conteúdo dos dois lados, e a tabela das duas colunas sempre
+  // começa exatamente na mesma altura, mesmo que as notas tenham tamanhos
+  // de texto diferentes e quebrem em números de linhas diferentes.
+  duasColunasLinhas: { display: "grid", gridTemplateColumns: "1fr 1fr", gridAutoRows: "auto", columnGap: 18, rowGap: 0, alignItems: "start" },
   cfgGrid: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, margin: "8px 0" },
   cfgLab: { fontSize: 11, color: UI.cinza, marginBottom: 2 },
   cfgInput: { width: "100%", padding: "6px 8px", border: "1px solid " + UI.borda, borderRadius: 6, fontSize: 13, boxSizing: "border-box" },
