@@ -4452,7 +4452,14 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
   }
 
   function exportarDadosJSON() {
-    baixarJSON("designacoes.json", { periodo: an.periodo, geradoEm: hojeISO, registros: an.registros });
+    baixarJSON("designacoes.json", { periodo: an.periodo, geradoEm: hojeISO, registros: an.registros, fusoesNome, gruposOverride });
+  }
+  // Restaura as correções manuais (fusão de nomes e grupo de elegibilidade)
+  // de um backup exportado por "Exportar JSON" — é o que fica perdido
+  // quando o cache/localStorage do navegador é limpo.
+  function importarDadosJSON(obj) {
+    setFusoesNome(obj.fusoesNome && typeof obj.fusoesNome === "object" ? obj.fusoesNome : {});
+    setGruposOverride(obj.gruposOverride && typeof obj.gruposOverride === "object" ? obj.gruposOverride : {});
   }
 
   const fmtData = (iso) => { if (!iso) return "—"; const [a, m, d] = iso.split("-"); return `${d}/${m}/${a.slice(2)}`; };
@@ -4480,6 +4487,11 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
             <div style={EST.kpi}><div style={EST.kpiN}>{fmtData(an.periodo.ate)}</div><div style={EST.kpiL}>fim</div></div>
             <div style={EST.kpi}><div style={EST.kpiN}>{an.listaDuplas.length}</div><div style={EST.kpiL}>duplas distintas</div></div>
             <button style={EST.btnExport} onClick={exportarDadosJSON}><Icone nome="baixar" size={14} color={UI.azul} /> Exportar JSON</button>
+            <BotaoImportarJSON
+              label="Importar JSON"
+              confirmacao="Importar este arquivo vai substituir as correções manuais atuais (nomes fundidos e grupos ajustados) pelas do backup. Deseja continuar?"
+              onCarregado={importarDadosJSON}
+            />
           </div>
           <p style={EST.aviso}>Presidente e orações estão <strong>fora</strong> de todas as contagens (Regra 1). Dados do histórico + do Cartão de Designações atual (append).</p>
 
