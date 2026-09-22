@@ -4001,6 +4001,16 @@ const TIPO_BUCKET = {
   "Joias espirituais": "joias", "Leitura da Bíblia": "leitura",
 };
 const CATEGORIAS_EST = ["Tesouros", "Ministério", "Vida Cristã"];
+// Tipos de parte que cada grupo de elegibilidade (coluna "Grupo" da
+// tabela A) pode receber, usado para calcular a "Concentração" do
+// quadro D em cima do universo de partes correto de cada pessoa — uma
+// irmã, por exemplo, nunca é designada para "Discurso" ou "Joias
+// espirituais", então não faz sentido contar esses tipos contra ela.
+// "Irmão" aqui é o publicador batizado (não ancião/servo ministerial).
+const TIPOS_POR_GRUPO_CONCENTRACAO = {
+  "Irmã": ["Cultivando interesse", "Explicando suas crenças", "Fazendo discípulos", "Iniciando conversas", "O que você diria?"],
+  "Publicador batizado": ["Cultivando interesse", "Discurso", "Estudo bíblico de congregação", "Explicando suas crenças", "Fazendo discípulos", "Iniciando conversas", "Leitura da Bíblia", "O que você diria?"],
+};
 function tipoMinisterioCanon(titulo) {
   const t = normaliza(titulo);
   if (!t) return "";
@@ -4297,11 +4307,15 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
       const inf = infoPessoa(p.nome);
       p.eleg = inf.eleg; p.ativo = inf.ativo;
       // concentração: variedade de tipos diferentes que a pessoa já fez,
-      // sobre o total de tipos existentes no período (ex.: 12 tipos hoje
-      // → cada tipo distinto vale ~8,3%; quem já fez todos chega a 100%).
-      // Serve para identificar os irmãos "chave" mais versáteis, não para
-      // marcar quem está preso a um único tipo (era o cálculo antigo).
-      p.concentracao = tiposUsados.length ? Object.keys(p.porTipo).length / tiposUsados.length : 0;
+      // sobre o total de tipos que o grupo dela (coluna "Grupo" da tabela
+      // A) pode receber — não faz sentido comparar uma irmã com o total de
+      // 12 tipos quando vários deles são exclusivos de irmão. "Ancião",
+      // "Servo ministerial" e "Não definido" continuam sem restrição
+      // (todos os tipos existentes no período).
+      const tiposElegiveis = (TIPOS_POR_GRUPO_CONCENTRACAO[p.eleg] || tiposUsados).filter((t) => tiposUsados.includes(t));
+      const tiposFeitos = Object.keys(p.porTipo).filter((t) => tiposElegiveis.includes(t));
+      p.tiposElegiveisConcentracao = tiposElegiveis.length;
+      p.concentracao = tiposElegiveis.length ? tiposFeitos.length / tiposElegiveis.length : 0;
       p.tipoDominante = Object.keys(p.porTipo).sort((a, b) => p.porTipo[b] - p.porTipo[a])[0] || "";
     }
     pessoas.sort((a, b) => b.total - a.total);
@@ -4773,7 +4787,7 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
                 </tbody>
               </table>
             </div>
-            <div style={EST.cfgNota}>"Concentração" = quantos tipos diferentes de parte a pessoa já fez, sobre o total de {an.tiposUsados.length} tipos existentes no período (100% = já fez todos). Ajuda a identificar os irmãos mais versáteis. Vermelho: mais de 60% · Amarelo: 40% a 60% · Verde: 20% a 40%.</div>
+            <div style={EST.cfgNota}>"Concentração" = quantos tipos diferentes de parte a pessoa já fez, sobre o total de tipos que o Grupo dela (tabela A) pode receber — não o total geral. Irmã: 5 tipos (~20% cada). Publicador batizado: 8 tipos (~12,5% cada). Ancião/Servo ministerial/Não definido: todos os {an.tiposUsados.length} tipos existentes no período (~{(100 / an.tiposUsados.length).toFixed(1)}% cada). 100% = já fez todos os tipos do seu grupo. Vermelho: mais de 60% · Amarelo: 40% a 60% · Verde: 20% a 40%.</div>
           </details>
 
           {/* E. APOIO AO PRÓXIMO MÊS */}
