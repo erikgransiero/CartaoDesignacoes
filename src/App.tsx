@@ -4008,7 +4008,7 @@ const CATEGORIAS_EST = ["Tesouros", "Ministério", "Vida Cristã"];
 // espirituais", então não faz sentido contar esses tipos contra ela.
 // "Irmão" aqui é o publicador batizado (não ancião/servo ministerial).
 const TIPOS_POR_GRUPO_CONCENTRACAO = {
-  "Irmã": ["Cultivando interesse", "Explicando suas crenças", "Fazendo discípulos", "Iniciando conversas", "O que você diria?"],
+  "Irmã": ["Cultivando interesse", "Explicando suas crenças", "Fazendo discípulos", "Iniciando conversas"],
   "Publicador batizado": ["Cultivando interesse", "Discurso", "Estudo bíblico de congregação", "Explicando suas crenças", "Fazendo discípulos", "Iniciando conversas", "Leitura da Bíblia", "O que você diria?"],
 };
 function tipoMinisterioCanon(titulo) {
@@ -4787,7 +4787,7 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
                 </tbody>
               </table>
             </div>
-            <div style={EST.cfgNota}>"Concentração" = quantos tipos diferentes de parte a pessoa já fez, sobre o total de tipos que o Grupo dela (tabela A) pode receber — não o total geral. Irmã: 5 tipos (~20% cada). Publicador batizado: 8 tipos (~12,5% cada). Ancião/Servo ministerial/Não definido: todos os {an.tiposUsados.length} tipos existentes no período (~{(100 / an.tiposUsados.length).toFixed(1)}% cada). 100% = já fez todos os tipos do seu grupo. Vermelho: mais de 60% · Amarelo: 40% a 60% · Verde: 20% a 40%.</div>
+            <div style={EST.cfgNota}>"Concentração" = quantos tipos diferentes de parte a pessoa já fez, sobre o total de tipos que o Grupo dela (tabela A) pode receber — não o total geral. Irmã: 4 tipos (25% cada). Publicador batizado: 8 tipos (~12,5% cada). Ancião/Servo ministerial/Não definido: todos os {an.tiposUsados.length} tipos existentes no período (~{(100 / an.tiposUsados.length).toFixed(1)}% cada). 100% = já fez todos os tipos do seu grupo. Vermelho: mais de 60% · Amarelo: 40% a 60% · Verde: 20% a 40%.</div>
           </details>
 
           {/* E. APOIO AO PRÓXIMO MÊS */}
