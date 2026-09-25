@@ -4011,6 +4011,18 @@ const TIPOS_POR_GRUPO_CONCENTRACAO = {
   "Irmã": ["Cultivando interesse", "Explicando suas crenças", "Fazendo discípulos", "Iniciando conversas"],
   "Publicador batizado": ["Cultivando interesse", "Discurso", "Estudo bíblico de congregação", "Explicando suas crenças", "Fazendo discípulos", "Iniciando conversas", "Leitura da Bíblia", "O que você diria?"],
 };
+// Classificação dos tipos de parte para o quadro E (montagem do próximo
+// mês) — regra01 (elegibilidade do Titular) e regra02 (elegibilidade e
+// pontuação do Ajudante), definidas junto com o usuário.
+const E_REGRA01_MINISTERIO = ["Cultivando interesse", "Explicando suas crenças", "Fazendo discípulos", "Iniciando conversas"];
+const E_REGRA01_SEM_IRMA = ["Discurso", "Leitura da Bíblia", "O que você diria?"];
+const E_REGRA01_SERVO_OU_ANCIAO = ["Estudo bíblico de congregação", "Joias espirituais", "Tesouros (discurso)", "Vida Cristã (discurso)"];
+const E_REGRA01_SO_ANCIAO = ["Necessidades locais"];
+// Tipos de parte feitos sozinhos (sem ajudante). "Joias espirituais" não
+// foi citado explicitamente pelo usuário nas regras, mas segue o mesmo
+// padrão dos demais tipos do grupo Servo ministerial/Ancião — assumido
+// como sem ajudante também, igual acontece nos dados reais.
+const E_REGRA02_SEM_AJUDANTE = ["Discurso", "Leitura da Bíblia", "O que você diria?", "Necessidades locais", "Tesouros (discurso)", "Vida Cristã (discurso)", "Joias espirituais"];
 function tipoMinisterioCanon(titulo) {
   const t = normaliza(titulo);
   if (!t) return "";
@@ -4103,12 +4115,9 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
   // valores continuam fixos aqui para não quebrar as demais seções, que
   // serão revistas numa próxima rodada)
   const [pesos] = useState({ ensino: 3, demo: 2, joias: 2, leitura: 1, ajudante: 0.5 });
-  const [semanasEsquecido] = useState(8);
   const [semanasDuplaAlerta] = useState(8);
-  const [scoreW, setScoreW] = useState({ intervalo: 0.4, carga: 0.3, tipo: 0.2, parceiro: 0.1 });
   const [grupoFiltro] = useState("Todos");
   const [tipoAlvo, setTipoAlvo] = useState("Iniciando conversas");
-  const [parceiroAlvo, setParceiroAlvo] = useState("");
   const [heatTop, setHeatTop] = useState(18);
 
   // Fusão manual de nomes: ao editar a coluna "Irmão" e sair da célula
@@ -4270,13 +4279,14 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
       const p = P[f.pessoa] || (P[f.pessoa] = {
         nome: f.pessoa, total: 0, titular: 0, ajudante: 0, carga: 0,
         porCategoria: { Tesouros: 0, "Ministério": 0, "Vida Cristã": 0 },
-        porTipo: {}, datas: [], datasPorPapel: { titular: [], ajudante: [] }, ultimaPorTipo: {},
+        porTipo: {}, ajudantePorTipo: {}, datas: [], datasPorPapel: { titular: [], ajudante: [] }, ultimaPorTipo: {},
       });
       p.total++;
       p[f.papel]++;
       p.carga += pesoDe(f.tipo, f.papel);
       p.porCategoria[f.categoria] = (p.porCategoria[f.categoria] || 0) + 1;
       p.porTipo[f.tipo] = (p.porTipo[f.tipo] || 0) + 1;
+      if (f.papel === "ajudante") p.ajudantePorTipo[f.tipo] = (p.ajudantePorTipo[f.tipo] || 0) + 1;
       p.datas.push(f.data);
       p.datasPorPapel[f.papel].push(f.data);
       if (!p.ultimaPorTipo[f.tipo] || f.data > p.ultimaPorTipo[f.tipo]) p.ultimaPorTipo[f.tipo] = f.data;
@@ -4412,36 +4422,77 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
     return lista;
   }, [pessoasFiltradas, sortB]);
 
-  // ---- Relatório B: esquecidos ----
-  const limiteDias = semanasEsquecido * 7;
-  const esquecidos = an.pessoas.filter((p) => p.ativo && p.diasDesde > limiteDias).sort((a, b) => b.diasDesde - a.diasDesde);
+  // ---- Relatório E: montagem do próximo mês (titular + ajudante) ----
+  // Score = dias sem parte (geral) + dias sem fazer este tipo específico.
+  // Quem nunca fez o tipo conta como se estivesse sem fazê-lo desde o
+  // início do período analisado (o "tempo sem fazer" máximo possível).
+  function scoreParaTipo(p, tipo) {
+    const ultimaTipo = p.ultimaPorTipo[tipo];
+    const diasTipo = ultimaTipo ? diasEntreISO(ultimaTipo, hojeISO) : diasEntreISO(an.periodo.de, hojeISO);
+    return { diasTipo, score: p.diasDesde + diasTipo };
+  }
 
-  // ---- Relatório C: duplas recentes (alerta) ----
-  const duplasRecentes = an.listaDuplas.filter((d) => diasEntreISO(d.ultima, hojeISO) < semanasDuplaAlerta * 7);
+  const [titularEscolhido, setTitularEscolhido] = useState("");
+  const [ajudanteMarcado, setAjudanteMarcado] = useState("");
+  function escolheTipoAlvo(t) {
+    setTipoAlvo(t);
+    setTitularEscolhido("");
+    setAjudanteMarcado("");
+  }
 
-  // ---- Relatório E: score de sugestão para o tipo alvo ----
-  const candidatos = React.useMemo(() => {
-    const pool = an.pessoas.filter((p) => p.ativo && (grupoFiltro === "Todos" || p.eleg === grupoFiltro));
-    const maxDias = Math.max(1, ...pool.map((p) => p.diasDesde));
-    const maxCarga = Math.max(1, ...pool.map((p) => p.carga));
-    const maxParc = Math.max(1, ...pool.map((p) => (an.parceiros[p.nome] ? an.parceiros[p.nome].size : 0)));
-    return pool.map((p) => {
-      const intervaloNorm = p.diasDesde / maxDias;
-      const cargaNorm = 1 - p.carga / maxCarga;
-      const ultimaTipo = p.ultimaPorTipo[tipoAlvo];
-      const diasTipo = ultimaTipo ? diasEntreISO(ultimaTipo, hojeISO) : maxDias * 2;
-      const tipoNorm = Math.min(1, diasTipo / (maxDias * 2));
-      let parceiroNorm = 0;
-      if (parceiroAlvo) {
-        const par = [p.nome, parceiroAlvo].sort().join(" | ");
-        const d = an.listaDuplas.find((x) => [x.a, x.b].sort().join(" | ") === par);
-        const diasDupla = d ? diasEntreISO(d.ultima, hojeISO) : maxDias * 2;
-        parceiroNorm = Math.min(1, diasDupla / (maxDias * 2));
-      }
-      const score = scoreW.intervalo * intervaloNorm + scoreW.carga * cargaNorm + scoreW.tipo * tipoNorm + scoreW.parceiro * parceiroNorm;
-      return { nome: p.nome, eleg: p.eleg, score: +score.toFixed(3), diasDesde: p.diasDesde, carga: +p.carga.toFixed(1), diasTipo: diasTipo, fezTipo: p.porTipo[tipoAlvo] || 0 };
+  // Regra01: quem pode ser Titular do tipo escolhido, e se o quadro
+  // destaca o top 5 (maior score) em vermelho.
+  const candidatosTitular = React.useMemo(() => {
+    const tipo = tipoAlvo;
+    let pool = an.pessoas.filter((p) => p.ativo);
+    let destaqueTop5 = false;
+    if (E_REGRA01_MINISTERIO.includes(tipo)) {
+      destaqueTop5 = true;
+    } else if (E_REGRA01_SEM_IRMA.includes(tipo)) {
+      pool = pool.filter((p) => p.eleg !== "Irmã");
+      destaqueTop5 = true;
+    } else if (E_REGRA01_SERVO_OU_ANCIAO.includes(tipo)) {
+      pool = pool.filter((p) => p.eleg === "Servo ministerial" || p.eleg === "Ancião");
+    } else if (E_REGRA01_SO_ANCIAO.includes(tipo)) {
+      pool = pool.filter((p) => p.eleg === "Ancião");
+    }
+    const lista = pool.map((p) => {
+      const { diasTipo, score } = scoreParaTipo(p, tipo);
+      return { nome: p.nome, eleg: p.eleg, diasDesde: p.diasDesde, diasTipo, score };
     }).sort((a, b) => b.score - a.score);
-  }, [an, grupoFiltro, tipoAlvo, parceiroAlvo, scoreW]);
+    return { lista, destaqueTop5 };
+  }, [an, tipoAlvo]);
+
+  // Regra02: quem pode ser Ajudante, dado o tipo e o titular já escolhido.
+  // Bônus de variedade: quem nunca fez o tipo (nenhum papel) ganha +200;
+  // quem já fez o tipo mas nunca como ajudante ganha +100; quem já fez o
+  // tipo como ajudante ganha só +1 — favorece dar a chance a quem tem
+  // menos experiência nesse papel.
+  const candidatosAjudante = React.useMemo(() => {
+    const tipo = tipoAlvo;
+    if (!titularEscolhido) return null;
+    if (E_REGRA02_SEM_AJUDANTE.includes(tipo)) return { lista: [], vazioPorRegra: true };
+    const infoTitular = an.P[titularEscolhido];
+    const elegTitular = infoTitular ? infoTitular.eleg : infoPessoa(titularEscolhido).eleg;
+    let pool = an.pessoas.filter((p) => p.ativo && p.nome !== titularEscolhido);
+    let usaBonusTresNiveis = false;
+    if (E_REGRA01_MINISTERIO.includes(tipo)) {
+      if (elegTitular === "Irmã") pool = pool.filter((p) => p.eleg === "Irmã");
+      usaBonusTresNiveis = true;
+    } else if (tipo === "Estudo bíblico de congregação") {
+      pool = pool.filter((p) => p.eleg !== "Irmã");
+    } else {
+      return { lista: [], vazioPorRegra: true };
+    }
+    const lista = pool.map((p) => {
+      const { diasTipo, score: base } = scoreParaTipo(p, tipo);
+      const fezComoAjudante = p.ajudantePorTipo[tipo] || 0;
+      const fezOTipo = p.porTipo[tipo] || 0;
+      const bonus = fezComoAjudante > 0 ? 1 : (usaBonusTresNiveis && fezOTipo > 0) ? 100 : 200;
+      return { nome: p.nome, eleg: p.eleg, diasDesde: p.diasDesde, diasTipo, bonus, score: base + bonus };
+    }).sort((a, b) => b.score - a.score);
+    return { lista, vazioPorRegra: false };
+  }, [an, tipoAlvo, titularEscolhido]);
 
   // heatmap: pessoas mais ativas em duplas
   const heatPessoas = React.useMemo(() => {
@@ -4793,35 +4844,63 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
           {/* E. APOIO AO PRÓXIMO MÊS */}
           <details style={EST.sec} open>
             <summary style={EST.secTit}>E. Apoio à montagem do próximo mês</summary>
+            <div style={EST.cfgGrid}>
+              <div><div style={EST.cfgLab}>Tipo de parte</div><select style={EST.cfgInput} value={tipoAlvo} onChange={(e) => escolheTipoAlvo(e.target.value)}>{an.tiposUsados.map((t) => <option key={t} value={t}>{t}</option>)}</select></div>
+            </div>
+            <div style={EST.cfgNota}>Score = dias sem parte + dias sem fazer este tipo (quem nunca fez conta desde o início do período). Escolha o titular clicando no nome — a lista de ajudante aparece em seguida, se o tipo tiver.</div>
             <div style={EST.duasColunas}>
               <div>
-                <div style={EST.subTit}>Ranque de candidatos</div>
-                <div style={EST.cfgGrid}>
-                  <div><div style={EST.cfgLab}>Tipo de parte</div><select style={EST.cfgInput} value={tipoAlvo} onChange={(e) => setTipoAlvo(e.target.value)}>{an.tiposUsados.map((t) => <option key={t} value={t}>{t}</option>)}</select></div>
-                  <div><div style={EST.cfgLab}>Parceiro (opcional)</div><select style={EST.cfgInput} value={parceiroAlvo} onChange={(e) => setParceiroAlvo(e.target.value)}><option value="">—</option>{todosNomes.map((n) => <option key={n} value={n}>{n}</option>)}</select></div>
-                  <div><div style={EST.cfgLab}>Peso intervalo</div><input type="number" step="0.1" style={EST.cfgInput} value={scoreW.intervalo} onChange={(e) => setScoreW({ ...scoreW, intervalo: +e.target.value })} /></div>
-                  <div><div style={EST.cfgLab}>Peso carga</div><input type="number" step="0.1" style={EST.cfgInput} value={scoreW.carga} onChange={(e) => setScoreW({ ...scoreW, carga: +e.target.value })} /></div>
-                  <div><div style={EST.cfgLab}>Peso tipo recente</div><input type="number" step="0.1" style={EST.cfgInput} value={scoreW.tipo} onChange={(e) => setScoreW({ ...scoreW, tipo: +e.target.value })} /></div>
-                  <div><div style={EST.cfgLab}>Peso parceiro</div><input type="number" step="0.1" style={EST.cfgInput} value={scoreW.parceiro} onChange={(e) => setScoreW({ ...scoreW, parceiro: +e.target.value })} /></div>
-                </div>
-                <div style={EST.cfgNota}>Score = pInterv·(dias sem parte) + pCarga·(1−carga) + pTipo·(tempo sem fazer esse tipo) + pParceiro·(tempo desde a última dupla com o parceiro). Tudo normalizado 0–1. Maior score = melhor candidato.</div>
+                <div style={EST.subTit}>Titular</div>
                 <div style={EST.tabScrollAlto}>
                   <table style={EST.tab}>
-                    <thead><tr><th style={EST.th}>Irmão</th><th style={EST.thN}>Score</th><th style={EST.thN}>Dias</th><th style={EST.thN}>Carga</th><th style={EST.thN}>Fez o tipo</th></tr></thead>
-                    <tbody>{candidatos.slice(0, 25).map((c, i) => (
-                      <tr key={c.nome} style={i < 3 ? { background: "#eaf6ee" } : undefined}><td style={EST.td}>{c.nome}</td><td style={EST.tdN}><strong>{c.score}</strong></td><td style={EST.tdN}>{c.diasDesde}</td><td style={EST.tdN}>{c.carga}</td><td style={EST.tdN}>{c.fezTipo}×</td></tr>
-                    ))}</tbody>
+                    <thead><tr><th style={EST.th}>Irmão</th><th style={EST.thN}>Grupo</th><th style={EST.thN}>Dias s/parte</th><th style={EST.thN}>Dias s/tipo</th><th style={EST.thN}>Score</th></tr></thead>
+                    <tbody>
+                      {candidatosTitular.lista.map((c, i) => {
+                        const marcado = titularEscolhido === c.nome;
+                        const destaque = candidatosTitular.destaqueTop5 && i < 5;
+                        return (
+                          <tr key={c.nome} style={EST.linhaClicavel} onClick={() => setTitularEscolhido(marcado ? "" : c.nome)}>
+                            <td style={{ ...EST.td, ...(destaque ? EST.tdDestaqueVermelho : null), ...(marcado ? EST.tdSelecionadaE : null) }}>{marcado ? "✓ " : ""}{c.nome}</td>
+                            <td style={{ ...EST.tdN, ...(destaque ? EST.tdDestaqueVermelho : null), ...(marcado ? EST.tdSelecionadaE : null) }}>{c.eleg === "Não definido" ? "—" : c.eleg}</td>
+                            <td style={{ ...EST.tdN, ...(destaque ? EST.tdDestaqueVermelho : null), ...(marcado ? EST.tdSelecionadaE : null) }}>{c.diasDesde}</td>
+                            <td style={{ ...EST.tdN, ...(destaque ? EST.tdDestaqueVermelho : null), ...(marcado ? EST.tdSelecionadaE : null) }}>{c.diasTipo}</td>
+                            <td style={{ ...EST.tdN, ...(destaque ? EST.tdDestaqueVermelho : null), ...(marcado ? EST.tdSelecionadaE : null) }}><strong>{c.score}</strong></td>
+                          </tr>
+                        );
+                      })}
+                      {!candidatosTitular.lista.length && <tr><td colSpan={5} style={EST.td}><span style={EST.vazio}>Ninguém elegível para este tipo de parte.</span></td></tr>}
+                    </tbody>
                   </table>
                 </div>
               </div>
               <div>
-                <div style={EST.subTit}>Alertas</div>
-                <div style={EST.chips}>
-                  {an.pessoas.filter((p) => (an.noMes[p.nome] || 0) > 2).map((p) => <span key={p.nome} style={EST.chipAlerta}>{p.nome}: {an.noMes[p.nome]} partes no mês ({an.ultimoMes})</span>)}
-                  {duplasRecentes.slice(0, 15).map((d) => <span key={d.a + d.b} style={EST.chipAviso}>{d.a} + {d.b}: dupla há {Math.round(diasEntreISO(d.ultima, hojeISO) / 7)} sem</span>)}
-                  {esquecidos.slice(0, 10).map((p) => <span key={p.nome} style={EST.chipInfo}>{p.nome}: {Math.round(p.diasDesde / 7)} sem sem parte</span>)}
-                  {!an.pessoas.some((p) => (an.noMes[p.nome] || 0) > 2) && !duplasRecentes.length && !esquecidos.length && <span style={EST.vazio}>Sem alertas.</span>}
-                </div>
+                <div style={EST.subTit}>Ajudante{titularEscolhido ? " — para " + titularEscolhido : ""}</div>
+                {!titularEscolhido ? (
+                  <div style={EST.vazio}>Selecione um titular ao lado.</div>
+                ) : candidatosAjudante.vazioPorRegra ? (
+                  <div style={EST.vazio}>Este tipo de parte não tem ajudante.</div>
+                ) : (
+                  <div style={EST.tabScrollAlto}>
+                    <table style={EST.tab}>
+                      <thead><tr><th style={EST.th}>Irmão</th><th style={EST.thN}>Grupo</th><th style={EST.thN}>Dias s/tipo</th><th style={EST.thN}>Bônus</th><th style={EST.thN}>Score</th></tr></thead>
+                      <tbody>
+                        {candidatosAjudante.lista.map((c) => {
+                          const marcado = ajudanteMarcado === c.nome;
+                          return (
+                            <tr key={c.nome} style={EST.linhaClicavel} onClick={() => setAjudanteMarcado(marcado ? "" : c.nome)}>
+                              <td style={{ ...EST.td, ...(marcado ? EST.tdSelecionadaE : null) }}>{marcado ? "✓ " : ""}{c.nome}</td>
+                              <td style={{ ...EST.tdN, ...(marcado ? EST.tdSelecionadaE : null) }}>{c.eleg === "Não definido" ? "—" : c.eleg}</td>
+                              <td style={{ ...EST.tdN, ...(marcado ? EST.tdSelecionadaE : null) }}>{c.diasTipo}</td>
+                              <td style={{ ...EST.tdN, ...(marcado ? EST.tdSelecionadaE : null) }}>+{c.bonus}</td>
+                              <td style={{ ...EST.tdN, ...(marcado ? EST.tdSelecionadaE : null) }}><strong>{c.score}</strong></td>
+                            </tr>
+                          );
+                        })}
+                        {!candidatosAjudante.lista.length && <tr><td colSpan={5} style={EST.td}><span style={EST.vazio}>Ninguém elegível para ajudante.</span></td></tr>}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
 
                 <div style={{ ...EST.subTit, marginTop: 12 }}>Simulação de designação hipotética</div>
                 <div style={EST.cfgGrid}>
@@ -4898,6 +4977,8 @@ const EST = {
   tdTitularBg: { background: UI.azulClaro },
   linhaClicavel: { cursor: "pointer" },
   tdMarcadaBg: { background: "#fdeaea" },
+  tdDestaqueVermelho: { background: "#fdeaea", color: "#9a3b3b", fontWeight: 700 },
+  tdSelecionadaE: { background: UI.azulClaro, fontWeight: 700 },
   tdDetalhe: { padding: "8px 12px", background: "#f7f9fc", borderBottom: "1px solid " + UI.borda },
   tabInterna: { borderCollapse: "collapse", width: "100%", fontSize: 12, marginBottom: 6 },
   thMiniTab: { textAlign: "left", fontSize: 10.5, fontWeight: 700, color: UI.cinza, padding: "2px 6px", borderBottom: "1px solid " + UI.borda },
