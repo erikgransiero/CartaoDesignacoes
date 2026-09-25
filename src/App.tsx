@@ -57,6 +57,16 @@ const MENU_ESTATISTICAS = [
 // Grupos de elegibilidade usados nos rankings de justiça (nunca se compara
 // entre grupos diferentes). "Não definido" é o padrão até a classificação.
 const ELEGIBILIDADES = ["Não definido", "Ancião", "Servo ministerial", "Publicador batizado", "Irmã"];
+// A coluna "Grupo" da tabela A (Estatísticas) é um campo de texto livre,
+// não um <select> — o usuário pode digitar "irmã", "Irmã " ou "IRMÃ" e
+// todas devem valer como o mesmo grupo. Sem isso, comparações exatas tipo
+// `eleg === "Irmã"` (usadas nas regras dos quadros D e E) deixavam passar
+// grafias diferentes da esperada. Sem correspondência reconhecida, mantém
+// o texto digitado como está (não força "Não definido").
+function elegCanonica(bruto) {
+  const s = (bruto || "").trim();
+  return ELEGIBILIDADES.find((e) => normaliza(e) === normaliza(s)) || s;
+}
 
 /* ---------------- persistência no navegador ---------------- */
 // Cada tela guarda o que foi preenchido no próprio navegador. Além de não
@@ -4148,7 +4158,7 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
     setFusoesNome((d) => ({ ...d, [chaveNome(nomeAtual)]: novo }));
   }
   function commitGrupo(nomeAtual, valorDigitado) {
-    const novo = (valorDigitado || "").trim();
+    const novo = elegCanonica(valorDigitado);
     const chave = chaveNome(nomeAtual);
     setGruposOverride((d) => {
       if (!novo) { const cp = { ...d }; delete cp[chave]; return cp; }
@@ -4238,7 +4248,7 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
   function infoPessoa(nome) {
     const base = elegDe[normaliza(nome)] || { eleg: "Não definido", ativo: true };
     const grupo = gruposOverride[chaveNome(nome)];
-    return grupo ? { ...base, eleg: grupo } : base;
+    return grupo ? { ...base, eleg: elegCanonica(grupo) } : base;
   }
   // Gênero (M/F) usado para ordenar a lista de "nunca fez parte com" no
   // relatório C: "Irmã" no grupo de elegibilidade é o sinal mais confiável;
