@@ -4217,12 +4217,6 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
     });
   }
 
-  // simulação
-  const [simPessoa, setSimPessoa] = useState("");
-  const [simTipo, setSimTipo] = useState("Iniciando conversas");
-  const [simPapel, setSimPapel] = useState("titular");
-  const [simParceiro, setSimParceiro] = useState("");
-  const [simResultado, setSimResultado] = useState(null);
 
   const hojeISO = isoData(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate());
 
@@ -4289,14 +4283,13 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
       const p = P[f.pessoa] || (P[f.pessoa] = {
         nome: f.pessoa, total: 0, titular: 0, ajudante: 0, carga: 0,
         porCategoria: { Tesouros: 0, "Ministério": 0, "Vida Cristã": 0 },
-        porTipo: {}, ajudantePorTipo: {}, datas: [], datasPorPapel: { titular: [], ajudante: [] }, ultimaPorTipo: {},
+        porTipo: {}, datas: [], datasPorPapel: { titular: [], ajudante: [] }, ultimaPorTipo: {},
       });
       p.total++;
       p[f.papel]++;
       p.carga += pesoDe(f.tipo, f.papel);
       p.porCategoria[f.categoria] = (p.porCategoria[f.categoria] || 0) + 1;
       p.porTipo[f.tipo] = (p.porTipo[f.tipo] || 0) + 1;
-      if (f.papel === "ajudante") p.ajudantePorTipo[f.tipo] = (p.ajudantePorTipo[f.tipo] || 0) + 1;
       p.datas.push(f.data);
       p.datasPorPapel[f.papel].push(f.data);
       if (!p.ultimaPorTipo[f.tipo] || f.data > p.ultimaPorTipo[f.tipo]) p.ultimaPorTipo[f.tipo] = f.data;
@@ -4485,21 +4478,16 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
     const infoTitular = an.P[titularEscolhido];
     const elegTitular = infoTitular ? infoTitular.eleg : infoPessoa(titularEscolhido).eleg;
     let pool = an.pessoas.filter((p) => p.ativo && p.nome !== titularEscolhido);
-    let usaBonusTresNiveis = false;
     if (E_REGRA01_MINISTERIO.includes(tipo)) {
       if (elegTitular === "Irmã") pool = pool.filter((p) => p.eleg === "Irmã");
-      usaBonusTresNiveis = true;
     } else if (tipo === "Estudo bíblico de congregação") {
       pool = pool.filter((p) => p.eleg !== "Irmã");
     } else {
       return { lista: [], vazioPorRegra: true };
     }
     const lista = pool.map((p) => {
-      const { diasTipo, score: base } = scoreParaTipo(p, tipo);
-      const fezComoAjudante = p.ajudantePorTipo[tipo] || 0;
-      const fezOTipo = p.porTipo[tipo] || 0;
-      const bonus = fezComoAjudante > 0 ? 1 : (usaBonusTresNiveis && fezOTipo > 0) ? 100 : 200;
-      return { nome: p.nome, eleg: p.eleg, diasDesde: p.diasDesde, diasTipo, bonus, score: base + bonus };
+      const { diasTipo, score } = scoreParaTipo(p, tipo);
+      return { nome: p.nome, eleg: p.eleg, diasDesde: p.diasDesde, diasTipo, score };
     }).sort((a, b) => b.score - a.score);
     return { lista, vazioPorRegra: false };
   }, [an, tipoAlvo, titularEscolhido]);
@@ -4546,8 +4534,6 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
     return d ? d.ultima : "";
   }
 
-  const todosNomes = React.useMemo(() => an.pessoas.map((p) => p.nome).sort((a, b) => a.localeCompare(b)), [an]);
-
   // Relatório D (variedade de partes): ordenação pelas colunas "Irmão" e
   // "Concentração", e linha marcada ao clicar (mesmo padrão do quadro B).
   const [sortD, setSortD] = useState({ campo: "nome", dir: "asc" });
@@ -4568,31 +4554,6 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
     });
     return lista;
   }, [pessoasFiltradas, sortD]);
-
-  function simular() {
-    const alvo = simPessoa;
-    if (!alvo) { setSimResultado({ erro: "Escolha um irmão." }); return; }
-    const p = an.P[alvo];
-    const cargaAtual = p ? p.carga : 0;
-    const totalAtual = p ? p.total : 0;
-    const cargaNova = cargaAtual + pesoDe(simTipo, simPapel);
-    const noMesAtual = an.noMes[alvo] || 0;
-    const alertas = [];
-    if (noMesAtual + 1 > 2) alertas.push(`${alvo} ficaria com ${noMesAtual + 1} partes no mês de referência (acima de 2).`);
-    if (simParceiro) {
-      const k = [alvo, simParceiro].sort().join(" | ");
-      const d = an.listaDuplas.find((x) => [x.a, x.b].sort().join(" | ") === k);
-      if (d) {
-        const semanas = Math.round(diasEntreISO(d.ultima, hojeISO) / 7);
-        if (semanas < semanasDuplaAlerta) alertas.push(`Dupla ${alvo} + ${simParceiro} trabalhou junta há ${semanas} semana(s) (limite ${semanasDuplaAlerta}).`);
-      }
-    }
-    setSimResultado({
-      alvo, totalAntes: totalAtual, totalDepois: totalAtual + 1,
-      cargaAntes: +cargaAtual.toFixed(1), cargaDepois: +cargaNova.toFixed(1),
-      diasAntes: p ? p.diasDesde : "—", diasDepois: 0, alertas,
-    });
-  }
 
   function exportarDadosJSON() {
     baixarJSON("designacoes.json", { periodo: an.periodo, geradoEm: hojeISO, registros: an.registros, fusoesNome, gruposOverride });
@@ -4892,7 +4853,7 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
                 ) : (
                   <div style={EST.tabScrollAlto}>
                     <table style={EST.tab}>
-                      <thead><tr><th style={EST.th}>Irmão</th><th style={EST.thN}>Grupo</th><th style={EST.thN}>Dias s/tipo</th><th style={EST.thN}>Bônus</th><th style={EST.thN}>Score</th></tr></thead>
+                      <thead><tr><th style={EST.th}>Irmão</th><th style={EST.thN}>Grupo</th><th style={EST.thN}>Dias s/tipo</th><th style={EST.thN}>Score</th></tr></thead>
                       <tbody>
                         {candidatosAjudante.lista.map((c) => {
                           const marcado = ajudanteMarcado === c.nome;
@@ -4901,34 +4862,15 @@ function TelaEstatisticas({ onNavega, sessao, onSair }) {
                               <td style={{ ...EST.td, ...(marcado ? EST.tdSelecionadaE : null) }}>{marcado ? "✓ " : ""}{c.nome}</td>
                               <td style={{ ...EST.tdN, ...(marcado ? EST.tdSelecionadaE : null) }}>{c.eleg === "Não definido" ? "—" : c.eleg}</td>
                               <td style={{ ...EST.tdN, ...(marcado ? EST.tdSelecionadaE : null) }}>{c.diasTipo}</td>
-                              <td style={{ ...EST.tdN, ...(marcado ? EST.tdSelecionadaE : null) }}>+{c.bonus}</td>
                               <td style={{ ...EST.tdN, ...(marcado ? EST.tdSelecionadaE : null) }}><strong>{c.score}</strong></td>
                             </tr>
                           );
                         })}
-                        {!candidatosAjudante.lista.length && <tr><td colSpan={5} style={EST.td}><span style={EST.vazio}>Ninguém elegível para ajudante.</span></td></tr>}
+                        {!candidatosAjudante.lista.length && <tr><td colSpan={4} style={EST.td}><span style={EST.vazio}>Ninguém elegível para ajudante.</span></td></tr>}
                       </tbody>
                     </table>
                   </div>
                 )}
-
-                <div style={{ ...EST.subTit, marginTop: 12 }}>Simulação de designação hipotética</div>
-                <div style={EST.cfgGrid}>
-                  <div><div style={EST.cfgLab}>Irmão</div><select style={EST.cfgInput} value={simPessoa} onChange={(e) => setSimPessoa(e.target.value)}><option value="">Selecione…</option>{todosNomes.map((n) => <option key={n} value={n}>{n}</option>)}</select></div>
-                  <div><div style={EST.cfgLab}>Tipo</div><select style={EST.cfgInput} value={simTipo} onChange={(e) => setSimTipo(e.target.value)}>{an.tiposUsados.map((t) => <option key={t} value={t}>{t}</option>)}</select></div>
-                  <div><div style={EST.cfgLab}>Papel</div><select style={EST.cfgInput} value={simPapel} onChange={(e) => setSimPapel(e.target.value)}><option value="titular">Titular</option><option value="ajudante">Ajudante</option></select></div>
-                  <div><div style={EST.cfgLab}>Parceiro (opcional)</div><select style={EST.cfgInput} value={simParceiro} onChange={(e) => setSimParceiro(e.target.value)}><option value="">—</option>{todosNomes.map((n) => <option key={n} value={n}>{n}</option>)}</select></div>
-                </div>
-                <button style={EST.btnSim} onClick={simular}>Simular impacto</button>
-                {simResultado && (simResultado.erro ? <div style={EST.vazio}>{simResultado.erro}</div> : (
-                  <div style={EST.simBox}>
-                    <div><strong>{simResultado.alvo}</strong></div>
-                    <div>Total: {simResultado.totalAntes} → <strong>{simResultado.totalDepois}</strong></div>
-                    <div>Carga: {simResultado.cargaAntes} → <strong>{simResultado.cargaDepois}</strong></div>
-                    <div>Dias sem parte: {simResultado.diasAntes} → <strong>{simResultado.diasDepois}</strong></div>
-                    {simResultado.alertas.length ? simResultado.alertas.map((a, i) => <div key={i} style={EST.simAlerta}>⚠️ {a}</div>) : <div style={{ color: "#1f6b45" }}>Sem alertas para esta designação.</div>}
-                  </div>
-                ))}
               </div>
             </div>
           </details>
@@ -4998,14 +4940,7 @@ const EST = {
   textoNuncaFez: { color: "#9a3b3b", fontSize: 12, marginTop: 6, lineHeight: 1.6 },
   tdHeadRow: { padding: "4px 8px", borderBottom: "1px solid #eef0f4", whiteSpace: "nowrap", fontSize: 10.5, fontWeight: 700, position: "sticky", left: 0, background: "#fff" },
   cell: { width: 24, minWidth: 24, textAlign: "center", fontSize: 10.5, border: "1px solid #eef0f4", padding: 0, height: 22 },
-  chips: { display: "flex", flexWrap: "wrap", gap: 6 },
-  chipAlerta: { fontSize: 11, background: "#fdeaea", border: "1px solid #e3b6b6", color: "#9a3b3b", borderRadius: 20, padding: "3px 8px" },
-  chipAviso: { fontSize: 11, background: "#fff6e5", border: "1px solid #e6cf9a", color: "#8a5a00", borderRadius: 20, padding: "3px 8px" },
-  chipInfo: { fontSize: 11, background: "#eef2fb", border: "1px solid #c9d6ee", color: UI.azul, borderRadius: 20, padding: "3px 8px" },
   vazio: { fontSize: 12.5, color: UI.cinza, fontStyle: "italic" },
-  btnSim: { marginTop: 8, fontSize: 13, fontWeight: 700, padding: "8px 14px", background: UI.azul, color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" },
-  simBox: { marginTop: 8, background: "#f7f9fc", border: "1px solid " + UI.borda, borderRadius: 8, padding: 10, fontSize: 13, lineHeight: 1.6 },
-  simAlerta: { color: "#9a3b3b", marginTop: 4 },
   rodape: { fontSize: 12.5, color: UI.cinza, textAlign: "center", marginTop: 8, fontStyle: "italic" },
 };
 
