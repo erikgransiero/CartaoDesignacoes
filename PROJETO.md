@@ -519,9 +519,39 @@ Fonte padrão dos documentos: Arial.
   do próprio grupo. Faixas de destaque: vermelho (negrito) acima de 60%,
   amarelo (negrito) de 40% a 60%, verde (negrito) de 20% a 40%, sem
   alteração abaixo de 20%. Percentual sempre com 1 casa decimal.
-- **E. Apoio à montagem do próximo mês**: score de sugestão configurável
-  (intervalo/carga/tipo/parceiro), alertas (dupla repetida, +2 partes no
-  mês, esquecido há muito tempo) e simulação de designação hipotética.
+- **E. Apoio à montagem do próximo mês (reformulado 25/09/2026):**
+  montagem interativa de Titular + Ajudante para uma parte específica —
+  substituiu por completo o antigo "Ranque de candidatos" configurável,
+  o quadro "Alertas" e a "Simulação de designação hipotética" (os três
+  removidos). Único controle: um dropdown "Tipo de parte".
+  - **Score** = dias sem parte (geral) + dias sem fazer aquele tipo
+    específico (`scoreParaTipo`; quem nunca fez o tipo conta como se
+    fosse desde o início do período analisado).
+  - **Tabela Titular** (regra01, filtra por elegibilidade conforme o
+    tipo escolhido): tipos de ministério (Cultivando interesse/
+    Explicando suas crenças/Fazendo discípulos/Iniciando conversas) e
+    Discurso/Leitura da Bíblia/O que você diria (este último grupo
+    exclui o grupo Irmã) mostram todos os candidatos ordenados por
+    Score, com o **top 5 destacado em vermelho negrito**; Estudo
+    bíblico de congregação/Joias espirituais/Tesouros/Vida Cristã só
+    mostram Servo ministerial e Ancião (sem destaque); Necessidades
+    locais só mostra Ancião (sem destaque).
+  - Clicar num nome na tabela Titular **marca** a linha (fundo azul
+    claro, prefixo "✓") e escolhe o titular — só então a tabela
+    **Ajudante** aparece (regra02): fica vazia para tipos sem ajudante
+    (Discurso/Leitura da Bíblia/O que você diria/Necessidades locais/
+    Tesouros/Vida Cristã/Joias espirituais); para tipos de ministério,
+    se a titular escolhida for do grupo Irmã a lista mostra só Irmã,
+    senão mostra todos; para Estudo bíblico de congregação a lista
+    exclui o grupo Irmã. Ordenada pelo mesmo Score do Titular (sem
+    nenhum bônus). Clicar num nome na tabela Ajudante também marca
+    (toggle independente).
+  - Trocar o tipo de parte limpa as duas seleções.
+  - **Assunções documentadas no código** (regras que o usuário não
+    detalhou explicitamente): "Joias espirituais" tratado como sem
+    ajudante, igual aos outros tipos do grupo Servo/Ancião; tipos de
+    ministério com titular que **não** é do grupo Irmã mostram a lista
+    de Ajudante sem nenhuma restrição de gênero.
 - **Fusão manual de nomes (recálculo real)**: `fusoesNome` e
   `gruposOverride` (`useEstadoSalvo`) guardam as correções feitas na
   tabela A; `resolveNomeFinal()` aplica a cadeia de fusões (protegida
@@ -533,6 +563,15 @@ Fonte padrão dos documentos: Arial.
   células Irmão/Grupo: setas cima/baixo e Enter vão para a mesma coluna na
   linha seguinte/anterior; esquerda/direita só trocam de célula quando o
   cursor já está na ponta do texto.
+- **Coluna "Grupo" é texto livre, não `<select>` (bug corrigido
+  25/09/2026):** digitar "irmã", "IRMÃ" ou "Irmã " com espaço sobrando
+  não batia com as comparações exatas (`eleg === "Irmã"`) usadas nas
+  regras dos quadros D e E, deixando passar quem deveria ser excluído.
+  `elegCanonica()` reconhece qualquer grafia de maiúsculas/acentos/
+  espaços que corresponda a um dos grupos de `ELEGIBILIDADES` e devolve
+  sempre a forma canônica — aplicada tanto na leitura (`infoPessoa`,
+  corrige dados já digitados sem precisar reeditar) quanto na escrita
+  (`commitGrupo`).
 - **Exportar/Importar JSON**: "Exportar JSON" baixa `periodo`, `registros`,
   `fusoesNome` e `gruposOverride`; "Importar JSON" restaura só as duas
   últimas chaves (as correções manuais) — nunca apaga o que já existe se
@@ -871,9 +910,33 @@ produção.)*
     avisei o usuário dessa interpretação, caso precise corrigir. Validado
     com dois casos reais antes de publicar (mudando o Grupo de uma pessoa
     e conferindo o percentual bate à mão). Ver §5.10.
+15. ~~Correção: grupo Irmã tinha 1 tipo a mais~~ — **feito**: o usuário
+    ajustou a lista de tipos elegíveis do grupo Irmã de 5 para **4**
+    (remove "O que você diria?"; ficam Cultivando interesse/Explicando
+    suas crenças/Fazendo discípulos/Iniciando conversas), cada um
+    passando a valer 25% (antes ~20%). Grupo Publicador batizado não
+    mudou.
+16. ~~Reformular o quadro E (Titular/Ajudante interativo)~~ — **feito**:
+    substituiu por completo "Ranque de candidatos", "Alertas" e depois
+    também a "Simulação de designação hipotética" por duas tabelas
+    interativas com as regras de elegibilidade e pontuação (regra01/
+    regra02) definidas pelo usuário. Na 1ª versão a tabela Ajudante
+    ainda tinha uma coluna "Bônus" somada ao Score (regras de variedade
+    por experiência no papel) — o usuário pediu para remover essa coluna
+    e o bônus do cálculo — o Score do Ajudante passou a ser
+    idêntico ao do Titular (só dias sem parte + dias sem fazer o tipo).
+    Ver §5.10 para a descrição funcional completa e as duas assunções
+    documentadas no código (Joias espirituais sem ajudante; ministério
+    com titular não-Irmã sem restrição de gênero no Ajudante).
+17. ~~Bug: Grupo "Irmã" digitado com grafia diferente não era
+    reconhecido~~ — **feito**: a coluna "Grupo" é texto livre, então
+    "irmã"/"IRMÃ"/"Irmã " com espaço não batiam com a comparação exata
+    usada nas regras dos quadros D e E. `elegCanonica()` corrige isso
+    normalizando qualquer grafia reconhecível para a forma oficial, na
+    leitura e na escrita. Ver §5.10.
 
 *(Todos os itens validados em `preview` via Playwright antes de publicar;
-publicado em produção em 22/09/2026.)*
+publicado em produção em 25/09/2026.)*
 
 ### Calendário de Pregação e Bastidores (Exportar PDF adiantado, 12/09/2026)
 1. ~~Adicionar botão "Exportar PDF" com garantia de 1 página~~ — **feito**
