@@ -1929,23 +1929,48 @@ function extraiDiaMesTexto(linha) {
   if (idx < 0) return null;
   return { dia: parseInt(m[1], 10), mes: idx + 1 };
 }
-function achaCampoSemDoisPontos(linha) {
-  const m = (linha || "").trim().match(/^(\S+)\s+(.+)$/);
+// "Dia 04-10", "Dia 04/10", "Dia 04.10" (mês em número, não por extenso) —
+// mesmo padrão de "Dia DD mês", mas aceitando qualquer separador comum
+// entre dia e mês (e ano opcional no final, que é ignorado: o ano usado é
+// sempre o corrente).
+function extraiDiaMesNumerico(linha) {
+  const t = normaliza((linha || "").trim());
+  const m = t.match(/^dia\s+(\d{1,2})\s*[-\/.]\s*(\d{1,2})(?:\s*[-\/.]\s*\d{2,4})?\s*$/);
   if (!m) return null;
-  const rotulo = normaliza(m[1]);
-  const valor = m[2].trim();
-  if (rotulo === "presidente") return { campo: "presidente", valor };
-  if (rotulo === "estudo" || rotulo === "tudo") return { campo: "estudo", valor };
-  if (rotulo === "leitor" || rotulo === "leito") return { campo: "leitor", valor };
-  if (rotulo === "oracao") return { campo: "oracaoFinal", valor };
-  return null;
+  const dia = parseInt(m[1], 10);
+  const mes = parseInt(m[2], 10);
+  if (mes < 1 || mes > 12) return null;
+  return { dia, mes };
+}
+// Reconhece as designações curtas sem dois-pontos (Presidente/Estudo/
+// Leitor/Oração, com tolerância a erros comuns de digitação), inclusive
+// quando mais de uma aparece na MESMA linha (ex.: "Estudo Ademir leitor
+// Brian") — cada palavra-chave encontrada vira um campo, e o texto até a
+// próxima palavra-chave (ou o fim da linha) é o valor.
+const PALAVRAS_CAMPO_S = { presidente: "presidente", estudo: "estudo", tudo: "estudo", leitor: "leitor", leito: "leitor", oracao: "oracaoFinal", coracao: "oracaoFinal" };
+function extraiCamposSemDoisPontos(linha) {
+  const original = linha || "";
+  const norm = normaliza(original);
+  const regex = /\b(presidente|estudo|tudo|leitor|leito|oracao|coracao)\b/g;
+  const ocorrencias = [];
+  let m;
+  while ((m = regex.exec(norm))) ocorrencias.push({ palavra: m[1], inicio: m.index, fim: m.index + m[1].length });
+  if (!ocorrencias.length) return [];
+  const resultado = [];
+  for (let i = 0; i < ocorrencias.length; i++) {
+    const inicioValor = ocorrencias[i].fim;
+    const fimValor = i + 1 < ocorrencias.length ? ocorrencias[i + 1].inicio : original.length;
+    const valor = original.slice(inicioValor, fimValor).trim();
+    if (valor) resultado.push({ campo: PALAVRAS_CAMPO_S[ocorrencias[i].palavra], valor });
+  }
+  return resultado;
 }
 function processarSentinela(texto) {
   const anoAtual = new Date().getFullYear();
   const linhas = texto.split(/\r?\n/).map((l) => l.trim()).filter((x) => x !== "");
   const blocos = []; let atual = null; let mesAnoDetectado = null;
   for (const linha of linhas) {
-    const diaMes = extraiDiaMesTexto(linha);
+    const diaMes = extraiDiaMesTexto(linha) || extraiDiaMesNumerico(linha);
     if (diaMes) {
       if (!mesAnoDetectado) mesAnoDetectado = { mes: diaMes.mes, ano: anoAtual };
       atual = { data: `${String(diaMes.dia).padStart(2, "0")} – ${MESES_NOME[diaMes.mes - 1]} – ${anoAtual}`, campos: {} };
@@ -1956,8 +1981,7 @@ function processarSentinela(texto) {
     if (!atual) continue;
     const partes = linha.split(/:\s*/);
     if (partes.length >= 2) { const campo = achaCampoS(partes[0]); if (campo) { atual.campos[campo] = partes.slice(1).join(": "); continue; } }
-    const semDoisPontos = achaCampoSemDoisPontos(linha);
-    if (semDoisPontos) atual.campos[semDoisPontos.campo] = semDoisPontos.valor;
+    for (const { campo, valor } of extraiCamposSemDoisPontos(linha)) atual.campos[campo] = valor;
   }
   for (const b of blocos) { if (b.campos.presidente && !b.campos.oracaoInicial) b.campos.oracaoInicial = b.campos.presidente; }
   return { blocos, mesAno: mesAnoDetectado };
