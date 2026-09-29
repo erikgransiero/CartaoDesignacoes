@@ -1,7 +1,7 @@
 # Gerenciador de Documentos — Congregação Parque Scaffid
 
 Documento de registro do projeto (memória técnica e funcional).
-Última atualização: 22/09/2026.
+Última atualização: 29/09/2026.
 
 > **Como usar este arquivo:** no início de qualquer sessão nova (ou quando a
 > conversa for compactada), leia este arquivo primeiro. Ele evita ter que reler
@@ -228,12 +228,20 @@ Fonte padrão dos documentos: Arial.
   "27 – Setembro – 2026" com o ano corrente do sistema) e designações sem
   dois-pontos ("Presidente Nome", "Estudo Nome", "Leitor Nome", "Oração
   Nome"), com tolerância a erros de digitação comuns ("Tudo"→Estudo,
-  "Leito"→Leitor). "Oração Inicial" é preenchida automaticamente com o
-  mesmo nome do Presidente. Campo "Mês / Ano" detectado automaticamente.
-  Limite de 5 semanas / 3 observações por página.
+  "Leito"→Leitor, "Coração"→Oração). "Oração Inicial" é preenchida
+  automaticamente com o mesmo nome do Presidente. Campo "Mês / Ano"
+  detectado automaticamente. Limite de 5 semanas / 3 observações por
+  página.
+- **Data com mês numérico e linhas com múltiplos campos** (29/09/2026):
+  o cabeçalho de data também reconhece "Dia DD-MM" ou "Dia DD/MM" (mês em
+  número, com "-", "/" ou "." como separador; ano opcional é ignorado —
+  usa sempre o ano corrente), via `extraiDiaMesNumerico`. E uma mesma
+  linha sem dois-pontos com mais de uma designação (ex.: "Estudo Ademi
+  leitor Brian") agora é dividida corretamente em todos os campos que
+  contém, via `extraiCamposSemDoisPontos` (antes só o primeiro campo era
+  reconhecido e o resto virava lixo dentro do valor).
 - **Exportar PDF**: mesmo layout de página única A4 do Discurso Público.
-- Em **revisão** no ciclo atual (item 1 concluído, publicado em `preview`
-  — ver §6).
+- Em produção (ver §6).
 
 ### 5.3 Cartão de Designações
 - Preenchimento **100% manual**, em blocos semanais (import de PDF foi
@@ -313,6 +321,18 @@ Fonte padrão dos documentos: Arial.
   atualizar o site. Ver `salvarAgora`.
 - **Exportar / Importar** (21/09/2026): backup manual em `.json`
   (`calendario.json`) para não perder o conteúdo ao limpar o cache — ver §3.
+- **Layout de impressão ampliado** (29/09/2026): linhas da tabela bem mais
+  altas (58px → 90px), imagem do topo maior (260px → 300px) e fontes
+  proporcionalmente maiores, para aproveitar melhor a folha A4. Foi
+  preciso subir também o piso do quadro impresso (`min-height` de 200mm
+  para 230mm) e o alvo de "uma página" do ajuste automático de zoom (de
+  220mm para 265mm) — um primeiro aumento só de tamanho na tela não
+  bastava porque o PDF ficava "preso" nesse piso antigo, sobrando bastante
+  espaço em branco visível só na impressão/PDF (não na pré-visualização em
+  tela). Validado gerando o PDF de impressão real (Chromium headless) com
+  notas de rodapé padrão, bem mais longas e num excesso extremo de texto —
+  em todos os casos o conteúdo cabe em uma única página A4, encolhendo
+  automaticamente quando necessário.
 
 ### 5.5 Bastidores
 - Tabela por data: Áudio/Vídeo, Volantes, Indicadores, Limpeza
@@ -354,6 +374,10 @@ Fonte padrão dos documentos: Arial.
   `mudaDiaDaLinha`.
 - **Exportar / Importar** (21/09/2026): backup manual em `.json`
   (`bastidores.json`) para não perder o conteúdo ao limpar o cache — ver §3.
+- **Ordenar A-Z** (29/09/2026): botão ao lado do título "Irmãos disponíveis
+  para o trabalho" que reordena a lista alfabeticamente (acento/maiúscula
+  insensível), para localizar um irmão mais rápido visualmente. Ver
+  `ordenarIrmaosAlfabetico`.
 
 ### 5.6 Configurações → Usuários
 - Cadastro de usuários (nome, e-mail, senha com confirmação, perfil
@@ -937,6 +961,47 @@ produção.)*
 
 *(Todos os itens validados em `preview` via Playwright antes de publicar;
 publicado em produção em 25/09/2026.)*
+
+### Reunião A Sentinela, Calendário de Pregação e Bastidores (produção, 29/09/2026)
+1. ~~Colar do WhatsApp da Sentinela não reconhecia o texto real do
+   usuário~~ — **feito**: dois bugs corrigidos. Datas com mês em número
+   ("Dia 04-10", "Dia 11/10") não eram reconhecidas — só "Dia DD mês"
+   (por extenso); corrigido com `extraiDiaMesNumerico` (aceita "-", "/"
+   ou "." como separador, ano opcional sempre ignorado — usa o ano
+   corrente). E uma linha sem dois-pontos com mais de uma designação
+   (ex.: "Estudo Ademi leitor Brian") tinha o 2º nome engolido dentro do
+   valor do 1º campo; corrigido com `extraiCamposSemDoisPontos`, que agora
+   separa todos os campos da linha, não só o primeiro. Aproveitado para
+   adicionar "Coração" como tolerância a erro de digitação de "Oração".
+   Validado com o texto real enviado pelo usuário (4 semanas, todos os
+   campos batendo, incluindo os dois casos acima). Ver §5.2.
+2. ~~Calendário de Pregação: ampliar o layout de impressão~~ — levou 2
+   rodadas. Na 1ª, aumentei só os tamanhos (linhas, fontes, imagem) e o
+   `npm run build`/preview em tela pareciam corretos, mas o usuário
+   reportou que o PDF exportado continuava do mesmo tamanho de antes — o
+   quadro impresso tinha um piso fixo (`min-height: 200mm`) e o alvo de
+   "uma página" do zoom automático era de só 220mm, e o conteúdo real
+   (mesmo maior) nunca alcançava esse piso, sobrando bastante espaço em
+   branco **só no PDF** (a pré-visualização em tela não usa essas
+   restrições, por isso lá parecia certo). Na 2ª rodada, aumentei bem mais
+   as linhas/imagem/fontes e subi o piso/alvo do quadro (200mm/220mm →
+   230mm/265mm) para o conteúdo maior realmente preencher a folha A4.
+   **Lição registrada:** para telas com Exportar PDF via zoom-to-fit,
+   validar sempre gerando o PDF de impressão real (ex.: `page.pdf()` do
+   Playwright/Chromium headless), não só a pré-visualização em tela — foi
+   justamente essa diferença que fez o 1º ajuste parecer "sem efeito" para
+   o usuário. Testado com notas de rodapé padrão, bem mais longas e num
+   excesso extremo de texto — em todos os casos cabe em uma única página.
+   Ver §5.4.
+3. ~~Bastidores: botão para ordenar "Irmãos disponíveis" em ordem
+   alfabética~~ — **feito** (`ordenarIrmaosAlfabetico`). Foi pedido junto
+   com uma lista de conferência com o Cadastro de Publicadores (nomes com
+   Grupo diferente de "Irmã", para notar quem falta cadastrar), mas essa
+   segunda parte foi removida a pedido do usuário logo em seguida — ele já
+   tem outra forma de fazer essa conferência. Ver §5.5.
+
+*(Todos os itens validados em `preview` via Playwright antes de publicar;
+publicado em produção em 29/09/2026.)*
 
 ### Calendário de Pregação e Bastidores (Exportar PDF adiantado, 12/09/2026)
 1. ~~Adicionar botão "Exportar PDF" com garantia de 1 página~~ — **feito**
