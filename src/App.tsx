@@ -3502,6 +3502,24 @@ function TelaBastidores({ onVoltar }) {
     () => conflitosPorLinha(dados.linhas, cartao, sentinela),
     [dados.linhas, cartao, sentinela]
   );
+  // Comparação com o Cadastro de Publicadores (tela Estatísticas): nomes cujo
+  // GRUPO final (considerando também os ajustes manuais feitos na tabela
+  // Volume por irmão) não é "Irmã" — para conferir se falta cadastrar algum
+  // irmão na lista de disponíveis acima.
+  const irmaosForaDaListaIrmaAusente = React.useMemo(() => {
+    const publicadoresBase = leSalvo("publicadores", PUBLICADORES_INICIAL).publicadores || [];
+    const gruposOverride = leSalvo("estatisticas-grupos-override", {});
+    const chave = (s) => normaliza((s || "").trim().replace(/\s+/g, " "));
+    return publicadoresBase
+      .map((p) => {
+        const overridden = gruposOverride[chave(p.nome)];
+        const grupo = overridden ? elegCanonica(overridden) : (p.elegibilidade || "Não definido");
+        return { nome: p.nome, grupo };
+      })
+      .filter((p) => p.grupo !== "Irmã")
+      .map((p) => p.nome)
+      .sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
+  }, []);
   const impressaoRef = React.useRef(null);
 
   React.useEffect(() => {
@@ -3633,6 +3651,9 @@ function TelaBastidores({ onVoltar }) {
       const tem = (ir.funcoes || []).includes(funcao);
       return { ...ir, funcoes: tem ? ir.funcoes.filter((f) => f !== funcao) : [...(ir.funcoes || []), funcao] };
     }) }));
+  }
+  function ordenarIrmaosAlfabetico() {
+    setDados((d) => ({ ...d, irmaos: [...d.irmaos].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" })) }));
   }
 
   function editaOrientacao(id, texto) {
@@ -3853,7 +3874,10 @@ function TelaBastidores({ onVoltar }) {
             </div>
           </div>
 
-          <h3 style={S.h3}>Irmãos disponíveis para o trabalho</h3>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+            <h3 style={S.h3}>Irmãos disponíveis para o trabalho</h3>
+            <button type="button" style={S.btnGhost} onClick={ordenarIrmaosAlfabetico}>A-Z Ordenar</button>
+          </div>
           <p style={S.hint}>Marque em que posições cada irmão pode servir. O sorteio automático só usa quem estiver marcado.</p>
           {dados.irmaos.map((ir) => (
             <div key={ir.id} style={SB.irmaoRow}>
@@ -3871,6 +3895,18 @@ function TelaBastidores({ onVoltar }) {
             </div>
           ))}
           <button style={S.btnAdd} onClick={addIrmao}>+ Adicionar irmão</button>
+
+          <div style={{ marginTop: 14, padding: 12, background: "#f7f9fc", border: "1px solid " + UI.borda, borderRadius: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: UI.cinza, marginBottom: 6 }}>
+              Conferência com o Cadastro de Publicadores (Grupo ≠ Irmã) — {irmaosForaDaListaIrmaAusente.length}
+            </div>
+            <p style={{ ...S.hint, margin: "0 0 6px" }}>
+              Todos os nomes cadastrados na tela Estatísticas cujo GRUPO não é "Irmã". Use para conferir se algum irmão ainda não foi adicionado à lista acima.
+            </p>
+            <div style={{ fontSize: 13, color: UI.tinta, lineHeight: 1.7 }}>
+              {irmaosForaDaListaIrmaAusente.length ? irmaosForaDaListaIrmaAusente.join(", ") : "Nenhum nome encontrado no Cadastro de Publicadores."}
+            </div>
+          </div>
 
           <h3 style={S.h3}>Responsáveis</h3>
           <div style={SC.linha2}>
