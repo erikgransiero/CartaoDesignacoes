@@ -2520,7 +2520,7 @@ function PreviewCalendario({ dados, linhas, foto }) {
     <div className="pv-moldura-cal" style={{ ...PV.frameOuter, borderColor: "#7a1122" }}>
       <div style={{ padding: 12 }}>
         <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 8 }}>
-          <div style={{ width: 228, flexShrink: 0, padding: 3, borderRadius: 10, background: `linear-gradient(135deg, ${TEMPLATE.vinho}, ${TEMPLATE.dourado})` }}>
+          <div style={{ width: 260, flexShrink: 0, padding: 3, borderRadius: 10, background: `linear-gradient(135deg, ${TEMPLATE.vinho}, ${TEMPLATE.dourado})` }}>
             <img src={foto} alt="Ilustração" style={{ width: "100%", height: "auto", display: "block", borderRadius: 7 }} />
           </div>
           <div style={{ flex: 1, textAlign: "right" }}>
@@ -4003,10 +4003,10 @@ const CAL = {
   editorDia: { border: "1px solid " + UI.azul, borderRadius: 8, padding: 12, marginBottom: 12, background: "#fbfdff" },
   editorDiaTop: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, marginBottom: 8 },
   corBtn: { width: 26, height: 26, borderRadius: 6, border: "1px solid #ccc", cursor: "pointer", fontSize: 12, color: "#999" },
-  pvHead: { background: "#3a4a63", color: "#fff", fontSize: 6.5, fontWeight: 700, padding: "2px 1px", textAlign: "center", border: "1px solid #cfd6e0" },
-  pvCell: { border: "1px solid #cfd6e0", verticalAlign: "top", height: 46, padding: 2, overflow: "hidden" },
-  pvNum: { fontSize: 8, fontWeight: 700, textAlign: "right", color: "#333" },
-  pvTexto: { fontSize: 6, lineHeight: 1.25, color: "#222", whiteSpace: "pre-wrap", overflow: "hidden", textAlign: "center" },
+  pvHead: { background: "#3a4a63", color: "#fff", fontSize: 7, fontWeight: 700, padding: "3px 1px", textAlign: "center", border: "1px solid #cfd6e0" },
+  pvCell: { border: "1px solid #cfd6e0", verticalAlign: "top", height: 58, padding: 2, overflow: "hidden" },
+  pvNum: { fontSize: 9, fontWeight: 700, textAlign: "right", color: "#333" },
+  pvTexto: { fontSize: 6.5, lineHeight: 1.3, color: "#222", whiteSpace: "pre-wrap", overflow: "hidden", textAlign: "center" },
 };
 
 
