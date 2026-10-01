@@ -2304,6 +2304,19 @@ function TelaCalendario({ onVoltar }) {
   const [avisoSalvo, setAvisoSalvo] = React.useState("");
   const timeoutSalvoRef = React.useRef(null);
   const inputFileCal = React.useRef(null);
+  // Texto do campo "Dias no mês" fica em estado próprio, separado de
+  // dados.qtdDias: só confirmamos (e regeneramos a grade) no blur/Enter, com
+  // um valor já validado (28-31). Sem isso, cada tecla digitada (ex.: apagar
+  // "31" para digitar "30") passava por um valor intermediário inválido
+  // (ex.: "3"), que encolhia a grade e apagava para sempre o conteúdo dos
+  // dias fora do intervalo momentâneo — mesmo corrigindo o número em seguida.
+  const [qtdDiasTexto, setQtdDiasTexto] = React.useState(String(dados.qtdDias));
+  React.useEffect(() => { setQtdDiasTexto(String(dados.qtdDias)); }, [dados.qtdDias]);
+  function confirmaQtdDias() {
+    const n = Math.max(28, Math.min(31, parseInt(qtdDiasTexto, 10) || dados.qtdDias));
+    setQtdDiasTexto(String(n));
+    if (n !== dados.qtdDias) regenerarGrade(n, dados.inicioSemana);
+  }
   const impressaoRef = React.useRef(null);
 
   React.useEffect(() => {
@@ -2380,6 +2393,17 @@ function TelaCalendario({ onVoltar }) {
   function editaDia(numero, campo, valor) {
     setDados((d) => ({ ...d, dias: d.dias.map((c) => (c && c.numero === numero ? { ...c, [campo]: valor } : c)) }));
   }
+  function limparCalendario() {
+    if (!window.confirm("Limpar todos os dados do calendário (mês/ano, faixa, conteúdo dos dias e notas de rodapé)? Essa ação não pode ser desfeita.")) return;
+    setDados((d) => ({
+      ...d,
+      mesAno: "",
+      faixaTitulo: "",
+      faixaSub: "",
+      notas: [],
+      dias: d.dias.map((c) => (c ? { ...c, texto: "", cor: "" } : c)),
+    }));
+  }
 
   const linhas = [];
   for (let i = 0; i < dados.dias.length; i += 7) linhas.push(dados.dias.slice(i, i + 7));
@@ -2395,6 +2419,7 @@ function TelaCalendario({ onVoltar }) {
         <div style={S.appbarTag}>Validação</div>
         {avisoSalvo && <span style={S.avisoSalvoAppbar}>{avisoSalvo}</span>}
         <button style={S.btnSalvar} onClick={salvarAgora}><Icone nome="salvar" size={16} color="#fff" /> Salvar</button>
+        <button style={S.btnRemover} onClick={limparCalendario} title="Limpa mês/ano, faixa, dias e notas de rodapé (mantém a estrutura do mês)">Limpar</button>
         <button style={S.btnFoto} onClick={() => baixarJSON("calendario.json", dados)} title="Baixa um backup do calendário em .json"><Icone nome="baixar" size={16} color={UI.azul} /> Exportar</button>
         <BotaoImportarJSON confirmacao="Importar este arquivo vai substituir todos os dados atuais do Calendário de Pregação. Deseja continuar?" onCarregado={(obj) => setDados(obj)} />
         <button style={S.btnFoto} onClick={exportarPDF}><Icone nome="pdf" size={16} color={UI.azul} /> Exportar PDF</button>
@@ -2426,7 +2451,10 @@ function TelaCalendario({ onVoltar }) {
 
           <h3 style={S.h3}>Estrutura do mês</h3>
           <div style={{ display: "flex", gap: 12, alignItems: "flex-end", marginBottom: 8 }}>
-            <div><label style={S.lab}>Dias no mês</label><input type="number" min="28" max="31" style={{ ...S.input, width: 90 }} value={dados.qtdDias} onChange={(e) => regenerarGrade(Number(e.target.value) || 31, dados.inicioSemana)} /></div>
+            <div><label style={S.lab}>Dias no mês</label><input type="number" min="28" max="31" style={{ ...S.input, width: 90 }} value={qtdDiasTexto}
+              onChange={(e) => setQtdDiasTexto(e.target.value)}
+              onBlur={confirmaQtdDias}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.target.blur(); } }} /></div>
             <div><label style={S.lab}>Dia 1 cai em</label>
               <select style={S.tipoSelect} value={dados.inicioSemana} onChange={(e) => regenerarGrade(dados.qtdDias, Number(e.target.value))}>
                 {DIAS_SEMANA.map((d, i) => <option key={i} value={i}>{d.charAt(0) + d.slice(1).toLowerCase()}</option>)}
