@@ -2384,9 +2384,32 @@ function TelaCalendario({ onVoltar }) {
   }
   function regenerarGrade(qtd, inicio) {
     setDados((d) => {
-      const antigos = {};
-      d.dias.forEach((x) => { if (x) antigos[x.numero] = x; });
-      const novos = gerarDias(qtd, inicio).map((c) => (c && antigos[c.numero] ? antigos[c.numero] : c));
+      const novos = gerarDias(qtd, inicio);
+      if (inicio !== d.inicioSemana) {
+        // "Dia 1 cai em" mudou: preservar o conteúdo pela POSIÇÃO na grade
+        // (mesma coluna/linha visual), não pelo número do dia. Assim, se o
+        // usuário já preencheu texto/cor na coluna de sexta-feira, esse
+        // conteúdo continua aparecendo na coluna de sexta-feira — só muda
+        // o número do dia dentro da célula. Posições que viram "vazias"
+        // (antes do dia 1 ou depois do último) perdem o conteúdo, porque
+        // não há mais célula para exibi-lo.
+        for (let i = 0; i < novos.length; i++) {
+          const antigo = d.dias[i];
+          if (novos[i] && antigo && (antigo.texto || antigo.cor)) {
+            novos[i] = { ...novos[i], texto: antigo.texto || "", cor: antigo.cor || "" };
+          }
+        }
+      } else {
+        // Só a quantidade de dias mudou (ex.: 31 → 30 → 31): preservar
+        // pelo NÚMERO do dia, para que o dia 31 recupere o conteúdo ao
+        // voltar para um mês de 31 dias.
+        const antigos = {};
+        d.dias.forEach((x) => { if (x) antigos[x.numero] = x; });
+        for (let i = 0; i < novos.length; i++) {
+          const c = novos[i];
+          if (c && antigos[c.numero]) novos[i] = antigos[c.numero];
+        }
+      }
       return { ...d, qtdDias: qtd, inicioSemana: inicio, dias: novos };
     });
   }
