@@ -116,7 +116,7 @@ function baixarJSON(nomeArquivo, obj) {
 // Botão "Importar" reutilizável: abre um seletor de arquivo, lê o .json e
 // entrega o objeto para a tela restaurar. Pede confirmação antes, pois
 // substitui o conteúdo atual da tela.
-function BotaoImportarJSON({ onCarregado, label, confirmacao }) {
+function BotaoImportarJSON({ onCarregado, label, confirmacao, tabIndex }) {
   const inputRef = useRef(null);
   function aoEscolher(e) {
     const arquivo = e.target.files && e.target.files[0];
@@ -138,7 +138,7 @@ function BotaoImportarJSON({ onCarregado, label, confirmacao }) {
   return (
     <>
       <input ref={inputRef} type="file" accept="application/json,.json" style={{ display: "none" }} onChange={aoEscolher} />
-      <button style={S.btnFoto} onClick={() => inputRef.current && inputRef.current.click()}>
+      <button style={S.btnFoto} tabIndex={tabIndex} onClick={() => inputRef.current && inputRef.current.click()}>
         <Icone nome="baixar" size={16} color={UI.azul} /> {label || "Importar"}
       </button>
     </>
@@ -2910,16 +2910,16 @@ function TelaCartao({ onVoltar }) {
   return (
     <div className="pagina-com-impressao" style={S.page}>
       <header className="oculta-impressao" style={S.appbar}>
-        <button style={S.voltar} onClick={onVoltar}><Icone nome="voltar" size={18} color="#fff" /> Voltar ao menu principal</button>
+        <button style={S.voltar} tabIndex={-1} onClick={onVoltar}><Icone nome="voltar" size={18} color="#fff" /> Voltar ao menu principal</button>
         <div style={{ marginLeft: 14 }}>
           <div style={S.brandTitle}>Cartão de Designações</div>
           <div style={S.brandSub}>{dados.congregacao}</div>
         </div>
         <div style={S.appbarTag}>Validação</div>
-        <button style={S.btnRemover} onClick={limparCartao} title="Limpa mês/ano e semanas para inserir novos dados (não apaga as observações)">Limpar</button>
-        <button style={S.btnFoto} onClick={exportarCartaoJSON} title="Baixa os dados atuais do cartão em .json para atualizar o arquivo do projeto no Git"><Icone nome="baixar" size={16} color={UI.azul} /> Exportar JSON</button>
-        <BotaoImportarJSON label="Importar JSON" confirmacao="Importar este arquivo vai substituir todos os dados atuais do Cartão de Designações. Deseja continuar?" onCarregado={(obj) => setDados(obj)} />
-        <button style={S.btnFoto} onClick={exportarPDF}><Icone nome="pdf" size={16} color={UI.azul} /> Exportar PDF</button>
+        <button style={S.btnRemover} tabIndex={-1} onClick={limparCartao} title="Limpa mês/ano e semanas para inserir novos dados (não apaga as observações)">Limpar</button>
+        <button style={S.btnFoto} tabIndex={-1} onClick={exportarCartaoJSON} title="Baixa os dados atuais do cartão em .json para atualizar o arquivo do projeto no Git"><Icone nome="baixar" size={16} color={UI.azul} /> Exportar JSON</button>
+        <BotaoImportarJSON label="Importar JSON" tabIndex={-1} confirmacao="Importar este arquivo vai substituir todos os dados atuais do Cartão de Designações. Deseja continuar?" onCarregado={(obj) => setDados(obj)} />
+        <button style={S.btnFoto} tabIndex={-1} onClick={exportarPDF}><Icone nome="pdf" size={16} color={UI.azul} /> Exportar PDF</button>
       </header>
 
       <div style={S.grid} className="grid">
@@ -2939,16 +2939,16 @@ function TelaCartao({ onVoltar }) {
               onEditaParte={(secao, parteId, campo, valor) => editaParte(s.id, secao, parteId, campo, valor)}
             />
           ))}
-          <button style={S.btnAdd} onClick={addSemana}>+ Adicionar semana</button>
+          <button style={S.btnAdd} tabIndex={-1} onClick={addSemana}>+ Adicionar semana</button>
 
           <h3 style={S.h3}>Observações</h3>
           {dados.observacoes.map((o) => (
             <div key={o.id} style={S.obsCard}>
               <textarea style={S.obsArea} rows={2} value={o.texto} placeholder="Digite a observação…" onChange={(e) => editaObs(o.id, e.target.value)} />
-              <div style={S.cardFooter}><button style={S.btnRemover} onClick={() => removeObs(o.id)}>Remover</button></div>
+              <div style={S.cardFooter}><button style={S.btnRemover} tabIndex={-1} onClick={() => removeObs(o.id)}>Remover</button></div>
             </div>
           ))}
-          <button style={S.btnAdd} onClick={addObs}>+ Adicionar observação</button>
+          <button style={S.btnAdd} tabIndex={-1} onClick={addObs}>+ Adicionar observação</button>
         </section>
 
         <section className="secao-impressao" style={S.previewWrap}>
@@ -2970,7 +2970,7 @@ function SemanaCartao({ semana: s, onEdita, onResetOracao, onToggleSemReuniao, o
         <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: UI.cinza, cursor: "pointer", whiteSpace: "nowrap" }}>
           <input type="checkbox" checked={s.semReuniao} onChange={onToggleSemReuniao} /> Sem reunião
         </label>
-        <button style={S.btnRemoverSemana} onClick={onRemove}>Remover semana</button>
+        <button style={S.btnRemoverSemana} tabIndex={-1} onClick={onRemove}>Remover semana</button>
       </div>
 
       {s.semReuniao ? (
@@ -2986,7 +2986,7 @@ function SemanaCartao({ semana: s, onEdita, onResetOracao, onToggleSemReuniao, o
             <div style={S.field}>
               <label style={S.lab}>Oração inicial{!s.oracaoManual && s.presidente ? " (igual ao presidente)" : ""}</label>
               <input style={S.input} value={s.oracaoInicial} onChange={(e) => onEdita("oracaoInicial", e.target.value)} />
-              {s.oracaoManual && <button style={{ ...S.btnGhostAlt, marginTop: 6 }} onClick={onResetOracao}>Usar mesmo nome do presidente</button>}
+              {s.oracaoManual && <button style={{ ...S.btnGhostAlt, marginTop: 6 }} tabIndex={-1} onClick={onResetOracao}>Usar mesmo nome do presidente</button>}
             </div>
           </div>
 
@@ -3005,7 +3005,7 @@ function SemanaCartao({ semana: s, onEdita, onResetOracao, onToggleSemReuniao, o
               onEdita={(campo, valor) => onEditaParte("ministerio", p.id, campo, valor)}
               onRemove={() => onRemoveParte("ministerio", p.id)} onAdd={() => onAddParte("ministerio")} />
           ))}
-          <button style={S.btnAdd} onClick={() => onAddParte("ministerio")}>+ Adicionar parte</button>
+          <button style={S.btnAdd} tabIndex={-1} onClick={() => onAddParte("ministerio")}>+ Adicionar parte</button>
 
           <div style={S.field}><label style={S.lab}>Cântico (entre as seções)</label><input style={{ ...S.input, maxWidth: 120 }} value={s.canticoMeio} onChange={(e) => onEdita("canticoMeio", e.target.value)} /></div>
 
@@ -3015,7 +3015,7 @@ function SemanaCartao({ semana: s, onEdita, onResetOracao, onToggleSemReuniao, o
               onEdita={(campo, valor) => onEditaParte("vidaCrista", p.id, campo, valor)}
               onRemove={() => onRemoveParte("vidaCrista", p.id)} onAdd={() => onAddParte("vidaCrista")} />
           ))}
-          <button style={S.btnAdd} onClick={() => onAddParte("vidaCrista")}>+ Adicionar parte</button>
+          <button style={S.btnAdd} tabIndex={-1} onClick={() => onAddParte("vidaCrista")}>+ Adicionar parte</button>
 
           <div style={SC.linha2}>
             <div style={S.field}><label style={S.lab}>Cântico final</label><input style={S.input} value={s.canticoFinal} onChange={(e) => onEdita("canticoFinal", e.target.value)} /></div>
