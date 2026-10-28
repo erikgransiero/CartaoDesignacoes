@@ -2907,6 +2907,31 @@ function TelaCartao({ onVoltar }) {
   // base a futuras análises e estatísticas de partes dos publicadores.
   function exportarCartaoJSON() { baixarJSON("cartao.json", dados); }
 
+  // Enter em qualquer input/select da seção do editor move o foco para o
+  // próximo campo editável — alternativa ao Tab, que no iPadOS Safari só
+  // funciona se o usuário habilitar "Acesso Total ao Teclado" nas
+  // configurações do sistema. Enter funciona em todos os navegadores sem
+  // precisar de configuração nenhuma. Exceções:
+  // - textarea: Enter precisa continuar inserindo quebra de linha.
+  // - Designado da ÚLTIMA parte de uma seção: já tem um handler próprio
+  //   que adiciona uma nova parte e preventDefault, então este handler
+  //   ignora via e.defaultPrevented.
+  function navegaPorEnter(e) {
+    if (e.key !== "Enter" || e.defaultPrevented) return;
+    const el = e.target;
+    if (!el || el.tagName !== "INPUT") return;
+    const t = (el.type || "").toLowerCase();
+    if (t === "button" || t === "submit" || t === "reset" || t === "file") return;
+    const editor = e.currentTarget;
+    const campos = Array.from(editor.querySelectorAll("input, select"))
+      .filter((x) => !x.disabled && x.tabIndex !== -1 && x.offsetParent !== null);
+    const idx = campos.indexOf(el);
+    if (idx === -1 || idx >= campos.length - 1) return;
+    e.preventDefault();
+    campos[idx + 1].focus();
+    if (campos[idx + 1].select) campos[idx + 1].select();
+  }
+
   return (
     <div className="pagina-com-impressao" style={S.page}>
       <header className="oculta-impressao" style={S.appbar}>
@@ -2923,7 +2948,7 @@ function TelaCartao({ onVoltar }) {
       </header>
 
       <div style={S.grid} className="grid">
-        <section className="oculta-impressao" style={S.editor}>
+        <section className="oculta-impressao" style={S.editor} onKeyDown={navegaPorEnter}>
           <h2 style={S.h2}>Dados do mês</h2>
           <div style={S.field}><label style={S.lab}>Mês / Ano</label><input style={S.input} value={dados.mesAno} onChange={(e) => editaCampo("mesAno", e.target.value)} /></div>
 
